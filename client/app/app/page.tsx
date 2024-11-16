@@ -110,6 +110,15 @@ export default function App() {
     return totalValue > 0 ? weightedApy / totalValue : 0;
   };
 
+  const calculateBorrowPower = (totalSupplyValue: number, totalDebtValue: number): number => {
+    if (totalDebtValue <= 0) return 0;
+    const currentHealth = totalSupplyValue / totalDebtValue;
+    if (currentHealth <= 1.0) return 100;
+    const borrowPowerPercentage = (totalDebtValue / totalSupplyValue) * 100;
+    console.log("Borrow Power Percentage: ", borrowPowerPercentage);
+    return Math.max(0, Number(borrowPowerPercentage.toFixed(1)));
+  };
+
   const refreshPortfolioData = async () => {
     try {
       setIsLoading(true);
@@ -251,6 +260,9 @@ export default function App() {
 
       setSupplyPortfolioData(supplyPortfolioData);
       setBorrowPortfolioData(borrowPortfolioData);
+
+      const borrowPowerPercentage = calculateBorrowPower(totalSupplyValue, totalDebtValue);
+      setBorrowPowerUsed(borrowPowerPercentage);
     } catch (error) {
       console.error("Error refreshing portfolio data:", error);
     } finally {
