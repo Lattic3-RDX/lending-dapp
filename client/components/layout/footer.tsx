@@ -58,12 +58,12 @@ export function Footer() {
             <h3 className="text-lg font-semibold">Legal</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/privacy" className="hover:text-[#fb3640] transition-colors">
+                <Link href="/privacy" className="hover:text-accent transition-colors">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link href="/terms" className="hover:text-[#fb3640] transition-colors">
+                <Link href="/terms" className="hover:text-accent transition-colors">
                   Terms of Service
                 </Link>
               </li>
@@ -72,7 +72,7 @@ export function Footer() {
 
           {/* Copyright */}
           <div className="space-y-4">
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-muted-background">
               © {new Date().getFullYear()} Lattic3.
               <br />
               All wrights reverted.
