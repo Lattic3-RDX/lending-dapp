@@ -63,7 +63,7 @@ mod lattic3 {
 
     // Importing price stream blueprint
     extern_blueprint! {
-        "package_tdx_2_1ph029rt4c78r3zx0s7q22xnz5eqpu4fajlygqqz7sg95rq026zncwj",
+        "package_sim1pkwaf2l9zkmake5h924229n44wp5pgckmpn0lvtucwers56awywems",
         PriceStream {
             fn get_price(&self, asset: ResourceAddress) -> Option<PreciseDecimal>;
         }
@@ -83,7 +83,7 @@ mod lattic3 {
         price_stream_address: Option<ComponentAddress>,
 
         position_manager: ResourceManager,
-        open_positions: u64,
+        position_id: u64,
     }
 
     impl Lattic3 {
@@ -169,7 +169,7 @@ mod lattic3 {
                 pool_unit_to_address: KeyValueStore::new(),
                 price_stream_address: None,
                 position_manager,
-                open_positions: 0u64,
+                position_id: 0u64,
             };
 
             // Add all assets
@@ -243,6 +243,7 @@ mod lattic3 {
         pub fn open_position(&mut self, supply: Vec<Bucket>) -> (Bucket, Vec<Bucket>) {
             // Sanity checks
             assert!(self.validate_buckets(&supply), "Some supplied resource is invalid, check logs");
+            assert!(self.position_id != u64::MAX, "Cannot open more positions");
 
             // Record supplied resources
             let valuemap = self.buckets_to_value_map(&supply);
@@ -261,15 +262,20 @@ mod lattic3 {
             }
 
             // Mint and return position NFT
+            info!("[open_position] Valuemap: {:#?}", valuemap);
             let position: Position = Position::new(valuemap.clone());
-            self.open_positions += 1;
-            let position_badge = self.position_manager.mint_non_fungible(&NonFungibleLocalId::Integer(self.open_positions.into()), position);
+            info!("[open_position] Position: {:#?}", position);
+            self.position_id += 1;
+            info!("[open_position] Incremented position counter");
+            let position_badge = self.position_manager.mint_non_fungible(&NonFungibleLocalId::Integer(self.position_id.into()), position);
+            info!("[open_position] Minted badge");
 
             // Fire open position event
             Runtime::emit_event(OpenPositionEvent {
-                position_id: NonFungibleLocalId::Integer(self.open_positions.into()),
+                position_id: NonFungibleLocalId::Integer(self.position_id.into()),
                 supply: valuemap,
             });
+            info!("[open_position] Position event");
 
             // Return
             (position_badge, pool_units)
@@ -282,9 +288,10 @@ mod lattic3 {
 
             // Burn the nft
             position_bucket.burn();
+            // self.position_manager.burn(position_bucket);
 
             // Decrement the number of open positions
-            self.open_positions -= 1;
+            // self.open_positions -= 1; // ! Find a way to generate new NFTs with repeatable local ids
 
             // Fire position close event
             Runtime::emit_event(PositionCloseEvent {});

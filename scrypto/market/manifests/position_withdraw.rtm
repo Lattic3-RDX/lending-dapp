@@ -21,11 +21,11 @@ CALL_METHOD
     Address("${user_account}")
     "withdraw"
     Address("${xrd_pool_unit}")
-    Decimal("200");
+    Decimal("10");
 
 TAKE_FROM_WORKTOP
     Address("${xrd_pool_unit}")
-    Decimal("200")
+    Decimal("10")
     Bucket("bucket_lt3XRD");
 # --------
 
