@@ -98,19 +98,20 @@ export default function App() {
     let totalValue = 0;
     let weightedApy = 0;
     
-    for (const asset of assets) {
-      const price = await getAssetPrice(asset.label);
-      const value = asset.select_native * price;
-      totalValue += value;
-      weightedApy += (asset.apy * value);
-    }
+    await Promise.all(
+      assets.map(async (asset) => {
+        const price = await getAssetPrice(asset.label);
+        const value = asset.select_native * price;
+        totalValue += value;
+        weightedApy += value * getAssetApy(asset.label, type);
+      })
+    );
     
     return totalValue > 0 ? weightedApy / totalValue : 0;
   };
 
   const refreshPortfolioData = async () => {
     try {
-      console.log("Starting refreshPortfolioData");
       setIsLoading(true);
       if (!accounts || !gatewayApi) {
         console.log("No accounts or gatewayApi found");
@@ -123,14 +124,11 @@ export default function App() {
         throw new Error("Borrower badge address not configured");
       }
 
-      console.log("Fetching account state...");
       const accountState = await gatewayApi.state.getEntityDetailsVaultAggregated(accounts[0].address);
-      console.log("Account state:", accountState);
 
       const getNFTBalance = accountState.non_fungible_resources.items.find(
         (fr: { resource_address: string }) => fr.resource_address === borrowerBadgeAddr
       )?.vaults.items[0];
-      console.log("NFT Balance:", getNFTBalance);
       
       if (!getNFTBalance) {
         console.log("No NFT balance found, resetting state");
@@ -140,7 +138,6 @@ export default function App() {
         return;
       }
 
-      console.log("Fetching NFT metadata...");
       const metadata = await gatewayApi.state.getNonFungibleData(
         JSON.parse(JSON.stringify(borrowerBadgeAddr)),
         JSON.parse(JSON.stringify(getNFTBalance)).items[0]
@@ -159,7 +156,7 @@ export default function App() {
 
       // Extract borrow positions
       const borrowField = metadata.data.programmatic_json.fields.find(
-        field => field.field_name === "borrow"
+        field => field.field_name === "debt"
       );
 
       const borrowedAssets = borrowField?.entries.map(entry => ({
@@ -233,7 +230,10 @@ export default function App() {
       // Calculate total APYs from the portfolio data
       const calculatedSupplyApy = await calculateTotalApy(supplyPortfolioData, 'supply');
       const calculatedBorrowApy = await calculateTotalApy(borrowPortfolioData, 'borrow');
-      const netApyValue = calculatedSupplyApy - calculatedBorrowApy;
+      const netApyValue = (totalSupplyValue > 0 || totalDebtValue > 0) 
+        ? (calculatedSupplyApy * totalSupplyValue - calculatedBorrowApy * totalDebtValue) 
+          / (totalSupplyValue > 0 ? totalSupplyValue : totalDebtValue)
+        : 0;
 
       console.log("Supply APY: ", calculatedSupplyApy);
       console.log("Borrow APY: ", calculatedBorrowApy);

@@ -1,5 +1,5 @@
 import { ColumnDef } from "@tanstack/react-table";
-import { Asset, getAssetIcon } from "@/types/asset";
+import { Asset, getAssetApy, getAssetIcon } from "@/types/asset";
 import { Button } from "../ui/button";
 import { useState } from "react";
 import { WithdrawDialog } from "./withdraw-dialog";
@@ -45,8 +45,10 @@ export const createPortfolioColumns = (
     header: "APY",
     cell: ({ row }) => {
       return (
-        <div className={row.original.type === 'supply' ? 'text-success' : 'text-destructive'}>
-          {Number(row.getValue("apy")).toFixed(2)}%
+        <div>
+          {row.original.type === 'supply' 
+            ? Number(row.getValue("apy")).toFixed(1)
+            : Number(getAssetApy(row.getValue("label"), 'borrow')).toFixed(1)}%
         </div>
       );
     }
