@@ -59,8 +59,7 @@ impl Pool {
         let meta_symbol = format!("$rrt{symbol}").to_string();
         let meta_description = format!("Lattic3 pool unit for the {symbol} pool").to_string();
 
-        let owner_proof = owner_badge.create_proof_of_all();
-        owner_proof.authorize(|| {
+        owner_badge.authorize_with_all(|| {
             pool_unit_rm.set_metadata("name", meta_name);
             pool_unit_rm.set_metadata("symbol", meta_symbol);
             pool_unit_rm.set_metadata("description", meta_description);

@@ -515,6 +515,8 @@ mod lattic3 {
             // Return 'infinity' if no debt taken out
             if debt.is_empty() {
                 info!("[calculate_position_health] Health: Infinity {:?}", PreciseDecimal::MAX);
+
+                Runtime::emit_event(PositionHealthEvent { health: PreciseDecimal::MAX });
                 return PreciseDecimal::MAX;
             }
 
@@ -640,6 +642,7 @@ mod lattic3 {
             info!("[add_asset] FungibleAsset: {:#?}", asset);
 
             // Set pool unit metadata
+            info!("[add_asset] Setting pool unit metadata");
             let owner_badge = asset.pool.set_pool_unit_metadata(owner_badge, name, symbol);
 
             // Fire AddAssetEvent
