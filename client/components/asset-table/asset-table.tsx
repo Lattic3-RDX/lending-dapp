@@ -30,12 +30,12 @@ import { Asset } from "@/types/asset";
 import { Search } from "lucide-react";
 
 interface AssetTableProps<TData extends Asset, TValue> {
-  columns: ColumnDef<TData, TValue>[];
+  columns: ColumnDef<TData>[];
   data: TData[];
   rowSelection: RowSelectionState;
   onRowSelectionChange: (value: RowSelectionState) => void;
-  onAmountChange: (address: string, amount: number, type: 'borrow' | 'supply') => void;
-  type: 'borrow' | 'supply';
+  onAmountChange: (address: string, amount: number, mode: 'supply' | 'borrow') => void;
+  mode: 'supply' | 'borrow';
 }
 
 export function AssetTable<TData extends Asset, TValue>({
@@ -44,7 +44,7 @@ export function AssetTable<TData extends Asset, TValue>({
   rowSelection,
   onRowSelectionChange,
   onAmountChange,
-  type,
+  mode,
 }: AssetTableProps<TData, TValue>) {
   const [tableData, setTableData] = React.useState(data);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -58,7 +58,7 @@ export function AssetTable<TData extends Asset, TValue>({
           : row
       )
     );
-    onAmountChange(address, amount, type);
+    onAmountChange(address, amount, mode);
   };
 
   const handleConfirm = (asset: Asset, amount: number) => {
@@ -77,7 +77,7 @@ export function AssetTable<TData extends Asset, TValue>({
         const rowIndex = table.getRowModel().rows.findIndex(r => r.original.address === row.address);
         const isSelected = newSelection[rowIndex];
         if (!isSelected) {
-          onAmountChange(row.address, 0, type); // Notify parent of amount change
+          onAmountChange(row.address, 0, mode); // Notify parent of amount change
         }
         return isSelected ? row : { ...row, select_native: 0 };
       })
@@ -224,6 +224,7 @@ export function AssetTable<TData extends Asset, TValue>({
                             asset={row.original} 
                             onAmountChange={(amount) => handleAmountChange(row.original.address, amount)}
                             onConfirm={(amount) => handleConfirm(row.original, amount)}
+                            mode={mode}
                           />
                         </div>
                       </TableCell>

@@ -7,9 +7,10 @@ interface AssetCollapsibleContentProps {
   asset: Asset;
   onAmountChange: (amount: number) => void;
   onConfirm: (amount: number) => void;
+  mode: 'supply' | 'borrow';
 }
 
-export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm }: AssetCollapsibleContentProps) {
+export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm, mode }: AssetCollapsibleContentProps) {
   const [tempAmount, setTempAmount] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -20,7 +21,7 @@ export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm }: As
 
   const validateAmount = (value: string) => {
     const numValue = Number(value);
-    const maxAmount = asset.type === 'borrow'
+    const maxAmount = mode === 'borrow'
       ? (asset.available ?? 0)
       : asset.wallet_balance;
 
@@ -36,7 +37,7 @@ export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm }: As
   };
 
   const handleMaxClick = () => {
-    const maxAmount = asset.type === 'borrow'
+    const maxAmount = mode === 'borrow'
       ? (asset.available ?? 0)
       : asset.wallet_balance;
     setTempAmount(maxAmount.toString());
@@ -81,9 +82,10 @@ export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm }: As
           </Button>
         </div>
         <div className="flex justify-between text-sm text-foreground/80 px-1">
-          <span>Balance: {asset.wallet_balance}</span>
-          {asset.type === 'borrow' && (
+          {mode === 'borrow' ? (
             <span>Available: {asset.available ?? 0}</span>
+          ) : (
+            <span>Balance: {asset.wallet_balance}</span>
           )}
         </div>
         {error && <div className="text-destructive text-sm">{error}</div>}
@@ -91,15 +93,15 @@ export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm }: As
 
       <div className="space-y-3 py-2 border-t border-accent/10">
         <div className="flex justify-between text-base text-foreground">
-          <span>{asset.type === 'borrow' ? 'Borrow APY' : 'Supply APY'}</span>
-          <span className={asset.type === 'borrow' ? 'text-destructive' : 'text-success'}>
+          <span>{mode === 'borrow' ? 'Borrow APY' : 'Supply APY'}</span>
+          <span className={mode === 'borrow' ? 'text-destructive' : 'text-success'}>
             {asset.apy}%
           </span>
         </div>
         <div className="flex justify-between text-base text-foreground">
           <span>Health Factor</span>
           <span className="text-destructive">
-            {asset.type === 'borrow' ? '-0.5' : '+0.5'}
+            {mode === 'borrow' ? '-0.5' : '+0.5'}
           </span>
         </div>
       </div>
@@ -109,7 +111,7 @@ export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm }: As
         onClick={handleConfirm}
         disabled={!!error || !tempAmount || parseFloat(tempAmount) <= 0}
       >
-        {asset.type === 'borrow' ? 'Confirm Borrow' : 'Confirm Supply'}
+        {mode === 'borrow' ? 'Confirm Borrow' : 'Confirm Supply'}
       </Button>
     </div>
   );

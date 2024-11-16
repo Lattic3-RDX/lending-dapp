@@ -75,7 +75,7 @@ export function AssetActionCard({
           rowSelection={isBorrowMode ? borrowRowSelection : supplyRowSelection}
           onRowSelectionChange={isBorrowMode ? onBorrowRowSelectionChange : onSupplyRowSelectionChange}
           onAmountChange={(address, amount) => onAmountChange(address, amount, isBorrowMode ? 'borrow' : 'supply')}
-          type={isBorrowMode ? 'borrow' : 'supply'}
+          mode={isBorrowMode ? 'borrow' : 'supply'}
         />
       </CardContent>
     </Card>

@@ -34,22 +34,13 @@ export const borrowColumns: ColumnDef<Asset>[] = [
         <span className="font-semibold">{row.getValue("label")}</span>
       </div>
     ),
-  },
-  {
-    accessorKey: "wallet_balance",
-    header: "Wallet Balance",
-    cell: ({ row }) => {
-      const balance = row.getValue("wallet_balance");
-      if (balance === -1) {
-        return <span className="text-muted-foreground">Loading...</span>;
-      }
-      return <span className="font-semibold">{Number(balance).toFixed(2)}</span>;
-    },
-  },
+  }, 
   {
     accessorKey: "available",
     header: "Available",
     cell: ({ row }) => {
+      const isExpanded = row.getIsExpanded();
+      if (isExpanded) return null;
       const available = row.getValue("available") ?? 0;
       return `${Number(available).toFixed(2)}`;
     },
