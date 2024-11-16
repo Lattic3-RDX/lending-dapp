@@ -41,8 +41,8 @@ export const borrowColumns: ColumnDef<Asset>[] = [
     cell: ({ row }) => {
       const isExpanded = row.getIsExpanded();
       if (isExpanded) return null;
-      const available = row.getValue("available") ?? 0;
-      return `${Number(available).toFixed(2)}`;
+      const available = row.original.available;
+      return <span className="font-semibold">{available?.toFixed(2)}</span>;
     },
   },
   {

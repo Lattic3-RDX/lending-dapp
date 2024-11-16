@@ -66,6 +66,7 @@ export default function App() {
       address,
       label: label as AssetName,
       wallet_balance: -1,
+      available: 100.00,
       select_native: 0,
       apy: getAssetApy(label as AssetName, 'supply'),
       pool_unit_address: '',

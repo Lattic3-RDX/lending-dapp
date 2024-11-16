@@ -69,7 +69,7 @@ export function AssetActionCard({
           columns={isBorrowMode ? borrowColumns : columns}
           data={isBorrowMode ? supplyData.map(asset => ({
             ...asset,
-            available: asset.wallet_balance * 0.8,
+            available: 100.00,
             type: 'borrow'
           })) : supplyData}
           rowSelection={isBorrowMode ? borrowRowSelection : supplyRowSelection}
