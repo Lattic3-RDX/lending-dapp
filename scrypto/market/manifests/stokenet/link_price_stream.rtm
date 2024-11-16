@@ -1,0 +1,15 @@
+CALL_METHOD
+  Address("account_tdx_2_12xfek2nncckfppcslye0vwusaq6qtt6j896w5tcmfh7wy78hjzqc96")
+  "create_proof_of_amount"
+  Address("resource_tdx_2_1th0yfygydnxm082zukahcuqck36f3sd2qkp9sxcmrevx236hps8wvl")
+  Decimal("1");
+
+CALL_METHOD
+    Address("component_tdx_2_1cpfah67cy63zhaimw7swdeugwnxf6xf57gplawy6t5g09mpwmua2m76c")
+    "link_price_stream"
+    Address("component_tdx_2_1cp7xyve2c0a6mrptqw76dun6et3eq5490qpagrlsfu2a4f29aw5e8n");
+
+CALL_METHOD
+    Address("account_tdx_2_12xfek2nncckfppcslye0vwusaq6qtt6j896w5tcmfh7wy78hjzqc96")
+    "deposit_batch"
+    Expression("ENTIRE_WORKTOP");

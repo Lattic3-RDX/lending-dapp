@@ -89,7 +89,7 @@ mod lattic3 {
     impl Lattic3 {
         pub fn instantiate(
             dapp_definition_address: ComponentAddress,
-            owner_badge: Bucket,
+            mut owner_badge: Bucket,
             // ! -------- TESTING --------
             test_assets: Vec<ResourceAddress>,
             // ! -/-/-/-/-/-/-/-/-/-/-/-/-
@@ -174,7 +174,6 @@ mod lattic3 {
 
             // Add all assets
             let mut assets: Vec<ResourceAddress> = ADDRESSES.clone().to_vec();
-            let owner_proof = owner_badge.create_proof_of_all();
 
             // ! -------- TESTING --------
             for address in test_assets {
@@ -183,20 +182,8 @@ mod lattic3 {
             // ! -/-/-/-/-/-/-/-/-/-/-/-/-
 
             for address in assets {
-                let asset = Lattic3::add_asset(&mut component_data, address);
-
-                // ! Set pool unit metadata; has to be done manually for assets not in the instantisation asset list
-                let pool_unit_rm: ResourceManager = ResourceManager::from_address(asset.pool.pool_unit.clone());
-
-                let meta_name = format!("Lattic3 {} Pool Unit", asset.name).to_string();
-                let meta_symbol = format!("$lt3{}", asset.symbol).to_string();
-                let meta_description = format!("Lattic3 pool unit for the {} pool", asset.symbol).to_string();
-
-                owner_proof.authorize(|| {
-                    pool_unit_rm.set_metadata("name", meta_name);
-                    pool_unit_rm.set_metadata("symbol", meta_symbol);
-                    pool_unit_rm.set_metadata("description", meta_description);
-                });
+                let (used_owner_badge, _) = Lattic3::add_asset(&mut component_data, owner_badge, address);
+                owner_badge = used_owner_badge; // ! Only works as long as the badge is not modified in add_asset
             }
 
             //. Component
@@ -629,44 +616,31 @@ mod lattic3 {
 
         //. --------------- Asset Listing -------------- /
         /// Add a fungible asset into the market, and output a FungibleAsset struct
-        pub fn add_asset(&mut self, address: ResourceAddress) -> AssetEntry {
+        pub fn add_asset(&mut self, owner_badge: Bucket, address: ResourceAddress) -> (Bucket, AssetEntry) {
             info!("[add_asset] Adding asset: {:?}", address);
 
-            // assert_eq!(self.owner_badge_address, owner_badge.resource_address(), "Owner badge must be provided");
+            // Sanity checks
+            assert_eq!(owner_badge.amount(), dec!(1), "Owner badge must be provided");
+            assert_eq!(self.owner_badge_address, owner_badge.resource_address(), "Owner badge must be provided");
 
-            // Validation
             assert!(address.is_fungible(), "Provided asset must be fungible.");
             assert!(self.assets.get(&address).is_none(), "Asset already has an entry");
-            // assert!(self.pools.get(&address).is_none(), "Asset already has a pool");
             assert!(!self.validate_fungible(address), "Cannot add asset {:?}, as it is already added and tracked", address);
 
             // Pool owned by: Lattic3 owner
             // Pool managed by: Lattic3 owner or component calls
-            let pool_owner = OwnerRole::Fixed(rule!(require(self.owner_badge_address)));
+            let pool_owner = self.owner_badge_address;
             let pool_manager = rule!(require(global_caller(self.component_address)) || require(self.owner_badge_address));
             let pool = Pool::create(pool_owner, pool_manager, address);
 
-            // ! Cannot automatically set proof metadata because of "Moving restricted proof downstream"
-            // Set pool unit metadata
-            // let pool_unit_rm: ResourceManager = ResourceManager::from_address(pool.pool_unit.clone());
-
-            // let meta_name = format!("Lattic3 {} Pool Unit", asset.name).to_string();
-            // let meta_symbol = format!("$rrt{}", asset.symbol).to_string();
-            // let meta_description = format!("Lattic3 pool unit for the {} pool", asset.symbol).to_string();
-
-            // info!("Pre-auth");
-            // LocalAuthZone::push(owner_badge.clone());
-
-            // owner_badge.authorize(|| {
-            //     pool_unit_rm.set_metadata("name", meta_name);
-            //     pool_unit_rm.set_metadata("symbol", meta_symbol);
-            //     pool_unit_rm.set_metadata("description", meta_description);
-            // });
-            // info!("Post-auth");
-
             // Create FungibleAsset
             let asset = AssetEntry::new(address, pool);
+            let name = asset.name.clone();
+            let symbol = asset.symbol.clone();
             info!("[add_asset] FungibleAsset: {:#?}", asset);
+
+            // Set pool unit metadata
+            let owner_badge = asset.pool.set_pool_unit_metadata(owner_badge, name, symbol);
 
             // Fire AddAssetEvent
             Runtime::emit_event(AddAssetEvent {
@@ -681,7 +655,7 @@ mod lattic3 {
             self.pool_unit_to_address.insert(asset.pool.pool_unit, address);
             self.track_asset(address);
 
-            asset
+            (owner_badge, asset)
         }
 
         /// Add an asset into the asset list
