@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Asset, getAssetIcon, getAssetPrice } from "@/types/asset";
@@ -12,12 +12,19 @@ interface AssetCollapsibleContentProps {
 export function AssetCollapsibleContent({ asset, onAmountChange, mode }: AssetCollapsibleContentProps) {
   const [tempAmount, setTempAmount] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [usdValue, setUsdValue] = useState(0);
 
-  const usdValue = useMemo(() => {
-    const amount = parseFloat(tempAmount);
-    if (isNaN(amount)) return 0;
-    const price = getAssetPrice(asset.label);
-    return amount * price;
+  useEffect(() => {
+    const calculateUsdValue = async () => {
+      const amount = parseFloat(tempAmount);
+      if (isNaN(amount)) {
+        setUsdValue(0);
+        return;
+      }
+      const price = await getAssetPrice(asset.label);
+      setUsdValue(amount * price);
+    };
+    calculateUsdValue();
   }, [tempAmount, asset.label]);
 
   const handleAmountChange = (value: string) => {

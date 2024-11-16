@@ -80,14 +80,19 @@ const SupplyDialog: React.FC<SupplyDialogProps> = ({
   totalSupply,
   totalBorrowDebt,
 }) => {
-  // Calculate total USD value of new supplies
-  const totalUsdValue = React.useMemo(
-    () => selectedAssets.reduce((sum, asset) => {
-      const price = getAssetPrice(asset.label as AssetName);
-      return sum + (asset.select_native * price);
-    }, 0),
-    [selectedAssets]
-  );
+  const [totalUsdValue, setTotalUsdValue] = React.useState(0);
+
+  React.useEffect(() => {
+    const calculateTotal = async () => {
+      const total = await selectedAssets.reduce(async (sumPromise, asset) => {
+        const sum = await sumPromise;
+        const price = await getAssetPrice(asset.label as AssetName);
+        return sum + (asset.select_native * price);
+      }, Promise.resolve(0));
+      setTotalUsdValue(total);
+    };
+    calculateTotal();
+  }, [selectedAssets]);
 
   // Calculate current and new health factors
   const currentHealthFactor = totalBorrowDebt <= 0 ? -1 : totalSupply / totalBorrowDebt;

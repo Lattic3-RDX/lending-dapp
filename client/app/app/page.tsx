@@ -87,21 +87,23 @@ export default function App() {
   const [netApy, setNetApy] = useState<number>(0);
   const [health, setHealth] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [calculatingApy, setCalculatingApy] = useState(false);
 
   const hasSelectedSupplyAssets = Object.keys(supplyRowSelection).length > 0;
   const hasSelectedBorrowAssets = Object.keys(borrowRowSelection).length > 0;
 
-  const calculateTotalApy = (assets: Asset[], type: 'supply' | 'borrow') => {
+  const calculateTotalApy = async (assets: Asset[], type: 'supply' | 'borrow') => {
     if (assets.length === 0) return 0;
     
     let totalValue = 0;
     let weightedApy = 0;
     
-    assets.forEach(asset => {
-      const value = asset.select_native * getAssetPrice(asset.label);
+    for (const asset of assets) {
+      const price = await getAssetPrice(asset.label);
+      const value = asset.select_native * price;
       totalValue += value;
       weightedApy += (asset.apy * value);
-    });
+    }
     
     return totalValue > 0 ? weightedApy / totalValue : 0;
   };
@@ -179,7 +181,7 @@ export default function App() {
           const [label] = assetConfig;
 
           const amount = suppliedAsset.supplied_amount;
-          const price = getAssetPrice(label as AssetName);
+          const price = await getAssetPrice(label as AssetName);
           totalSupplyValue += amount * price;
 
           return {
@@ -205,7 +207,7 @@ export default function App() {
           const [label] = assetConfig;
 
           const amount = borrowedAsset.borrowed_amount;
-          const price = getAssetPrice(label as AssetName);
+          const price = await getAssetPrice(label as AssetName);
           totalDebtValue += amount * price;
 
           return {
@@ -229,8 +231,8 @@ export default function App() {
       console.log("Net Worth: ", netWorthValue);
 
       // Calculate total APYs from the portfolio data
-      const calculatedSupplyApy = calculateTotalApy(supplyPortfolioData, 'supply');
-      const calculatedBorrowApy = calculateTotalApy(borrowPortfolioData, 'borrow');
+      const calculatedSupplyApy = await calculateTotalApy(supplyPortfolioData, 'supply');
+      const calculatedBorrowApy = await calculateTotalApy(borrowPortfolioData, 'borrow');
       const netApyValue = calculatedSupplyApy - calculatedBorrowApy;
 
       console.log("Supply APY: ", calculatedSupplyApy);
@@ -397,7 +399,6 @@ export default function App() {
         });
         return;
       }
-
       const manifest = position_borrow_rtm({
         component: config.marketComponent,
         account: accounts[0].address,
