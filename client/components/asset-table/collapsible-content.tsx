@@ -6,11 +6,10 @@ import { Asset, getAssetIcon, getAssetPrice } from "@/types/asset";
 interface AssetCollapsibleContentProps {
   asset: Asset;
   onAmountChange: (amount: number) => void;
-  onConfirm: (amount: number) => void;
   mode: 'supply' | 'borrow';
 }
 
-export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm, mode }: AssetCollapsibleContentProps) {
+export function AssetCollapsibleContent({ asset, onAmountChange, mode }: AssetCollapsibleContentProps) {
   const [tempAmount, setTempAmount] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -23,6 +22,14 @@ export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm, mode
 
   const handleAmountChange = (value: string) => {
     setTempAmount(value);
+    const numValue = Number(value);
+    
+    if (!isNaN(numValue) && numValue >= 0) {
+      onAmountChange(numValue);
+    } else {
+      onAmountChange(0);
+    }
+    
     validateAmount(value);
   };
 
@@ -34,8 +41,8 @@ export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm, mode
 
     if (isNaN(numValue)) {
       setError("Please enter a valid number");
-    } else if (numValue <= 0) {
-      setError("Amount must be greater than 0");
+    } else if (numValue < 0) {
+      setError("Amount must be greater than or equal to 0");
     } else if (numValue > maxAmount) {
       setError(`Amount cannot exceed ${maxAmount}`);
     } else {
@@ -48,15 +55,8 @@ export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm, mode
       ? (asset.available ?? 0)
       : asset.wallet_balance;
     setTempAmount(maxAmount.toString());
+    onAmountChange(maxAmount);
     validateAmount(maxAmount.toString());
-  };
-
-  const handleConfirm = () => {
-    if (!error && tempAmount) {
-      onAmountChange(parseFloat(tempAmount));
-      setTempAmount("");
-      onConfirm(parseFloat(tempAmount));
-    }
   };
 
   return (
@@ -106,21 +106,7 @@ export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm, mode
             {Number(asset.apy).toFixed(1)}%
           </span>
         </div>
-        {/* <div className="flex justify-between text-base text-foreground">
-          <span>Health Factor</span>
-          <span className="text-destructive">
-            {mode === 'borrow' ? '-0.5' : '+0.5'}
-          </span>
-        </div> */}
       </div>
-
-      <Button
-        className="w-full h-12 text-base"
-        onClick={handleConfirm}
-        disabled={!!error || !tempAmount || parseFloat(tempAmount) <= 0}
-      >
-        {mode === 'borrow' ? 'Confirm Borrow' : 'Confirm Supply'}
-      </Button>
     </div>
   );
 } 
