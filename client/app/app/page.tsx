@@ -188,28 +188,30 @@ export default function App() {
 
     const fetchPortfolioStats = async () => {
       try {
-        // TODO: Fetch actual stats from backend
-        const dummyStats = {
-          totalSupply: 1234.56,
-          totalApy: 10.3
-        };
-        setTotalSupply(dummyStats.totalSupply);
-        setTotalSupplyApy(dummyStats.totalApy);
+        // Calculate total supply from portfolio data
+        const totalSupplyAmount = portfolioData.reduce(
+          (sum, asset) => sum + asset.select_native,
+          0
+        );
+        setTotalSupply(totalSupplyAmount);
 
-        const dummyBorrowStats = {
-          totalDebt: 700.50,
-          totalApy: 5.3,
-          borrowPowerUsed: 51.4
-        };
-        setTotalBorrowDebt(dummyBorrowStats.totalDebt);
-        setTotalBorrowApy(dummyBorrowStats.totalApy);
-        setBorrowPowerUsed(dummyBorrowStats.borrowPowerUsed);
+        // Calculate total borrow debt
+        const totalBorrowAmount = borrowPortfolioData.reduce(
+          (sum, asset) => sum + asset.select_native,
+          0
+        );
+        setTotalBorrowDebt(totalBorrowAmount);
+
+        // Calculate APYs (using existing dummy values for now)
+        setTotalSupplyApy(10.3);
+        setTotalBorrowApy(5.3);
+        setBorrowPowerUsed(51.4);
       } catch (error) {
-        console.error("Error fetching portfolio stats:", error);
+        console.error("Error calculating portfolio stats:", error);
         toast({
-          variant: "destructive",
+          variant: "destructive", 
           title: "Error",
-          description: "Failed to fetch portfolio statistics",
+          description: "Failed to calculate portfolio statistics",
         });
       }
     };
