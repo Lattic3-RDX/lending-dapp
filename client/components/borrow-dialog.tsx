@@ -84,13 +84,19 @@ const BorrowDialog: React.FC<BorrowDialogProps> = ({
     [selectedAssets]
   );
 
-  const totalUsdValue = React.useMemo(
-    () => assetsToBorrow.reduce((sum, asset) => {
-      const price = getAssetPrice(asset.label as AssetName);
-      return sum + (asset.select_native * price);
-    }, 0),
-    [assetsToBorrow]
-  );
+  const [totalUsdValue, setTotalUsdValue] = React.useState(0);
+
+  React.useEffect(() => {
+    const calculateTotal = async () => {
+      const total = await assetsToBorrow.reduce(async (sumPromise, asset) => {
+        const sum = await sumPromise;
+        const price = await getAssetPrice(asset.label as AssetName);
+        return sum + (asset.select_native * price);
+      }, Promise.resolve(0));
+      setTotalUsdValue(total);
+    };
+    calculateTotal();
+  }, [assetsToBorrow]);
 
   const currentHealthFactor = totalBorrowDebt <= 0 ? -1 : totalSupply / totalBorrowDebt;
   const newHealthFactor = totalSupply / (totalBorrowDebt + totalUsdValue);

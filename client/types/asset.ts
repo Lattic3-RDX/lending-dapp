@@ -166,7 +166,7 @@ export const getWalletBalance = async (asset: AssetName, accountAddress: string)
   return balances[asset] || 0;
 };
 
-export const getAssetPrice = (asset: AssetName): number => {
+export const getAssetPrice = async (asset: AssetName): Promise<number> => {
   // TODO: Replace with actual price fetching logic
   const mockPrices: Record<AssetName, number> = {
     'XRD': 0.0478,
