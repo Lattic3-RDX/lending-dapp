@@ -1,10 +1,9 @@
 import React from "react";
-import { AssetName, getAssetIcon } from "@/types/asset";
+import { getAssetApy, getAssetIcon, Asset } from "@/types/asset";
 import { ColumnDef } from "@tanstack/react-table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { Asset } from "@/types/asset";
 
 export const borrowColumns: ColumnDef<Asset>[] = [
   {
@@ -73,7 +72,9 @@ export const borrowColumns: ColumnDef<Asset>[] = [
     accessorKey: "apy",
     header: "APY",
     cell: ({ row }) => {
-      const apy = row.getValue("apy");
+      const isExpanded = row.getIsExpanded();
+      if (isExpanded) return null;
+      const apy = getAssetApy(row.getValue("label"), 'borrow');
       return `${apy}%`;
     }
   },

@@ -18,7 +18,8 @@ export interface AssetConfig {
   address: string;
   label: AssetName;
   icon: string;
-  apy: number;
+  supply_apy: number;
+  borrow_apy: number;
   pool_unit_address?: string;
 }
 
@@ -27,71 +28,81 @@ export const assetConfigs: Record<AssetName, AssetConfig> = {
     address: "resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxtfd2jc",
     label: "XRD",
     icon: "https://assets.radixdlt.com/icons/icon-xrd-32x32.png",
-    apy: 10.3,
     pool_unit_address: "resource_tdx_2_1tkvdgqm60teajxd44ma6k0xyt6xvxxcyzrmc25q406fx08eaek36e4",
+    supply_apy: 5,
+    borrow_apy: 10
   },
   xwBTC: {
     address: "resource_xwbtc",
     label: "xwBTC",
     icon: "https://assets.instabridge.io/tokens/icons/xwBTC.png",
-    apy: 5.5,
     pool_unit_address: "resource_123",
+    supply_apy: 5,
+    borrow_apy: 10
   },
   FLOOP: {
     address: "resource_floop",
     label: "FLOOP",
     icon: "https://assets.caviarnine.com/tokens/floop_babylon.png",
-    apy: 5.2,
     pool_unit_address: "resource_123",
+    supply_apy: 5,
+    borrow_apy: 10
   },
   xUSDT: {
     address: "resource_tdx_2_1t57e50rm28cyqwn26jn336qyhu8nkt8cknacq8rnsn5kul2l3zvjut",
     label: "xUSDT",
     icon: "https://assets.instabridge.io/tokens/icons/xUSDT.png",
-    apy: 4.8,
-    pool_unit_address: "resource_123",
+    pool_unit_address: "resource_tdx_2_1t5rqzx5xpgdv3dq42gvynlf6t80dvfcdfxt3shl0gj2jvp4v9extcl",
+    supply_apy: 5,
+    borrow_apy: 10
   },
   EARLY: {
     address: "resource_early",
     label: "EARLY",
     icon: "https://arweave.net/uXCQ9YVGkEijn7PS2wdkXqwkU_YrdgpNtQPH2Y1-Qcs",
-    apy: 23.1,
     pool_unit_address: "resource_123",
+    supply_apy: 5,
+    borrow_apy: 10
   },
   HUG: {
     address: "resource_tdx_2_1tkuj2rqsa63f8ygkzezgt27trj50srht5e666jaz28j5ss8fasg5kl",
     label: "HUG",
     icon: "https://tokens.defiplaza.net/cdn-cgi/imagedelivery/QTzOBjs3mHq3EhZxDosDSw/f5cdcf72-c7a2-4032-1252-1be08edb0700/token",
-    apy: 23.1,
-    pool_unit_address: "resource_123",
+    pool_unit_address: "resource_tdx_2_1tk86qnc0xpslwn0fz29gaj7gjfdsndyc0fkagakduk84ml9rg2xxjj",
+    supply_apy: 5,
+    borrow_apy: 10
   },
   DFP2: {
     address: "resource_dfp2",
     label: "DFP2",
     icon: "https://radix.defiplaza.net/assets/img/babylon/defiplaza-icon.png",
-    apy: 23.1,
     pool_unit_address: "resource_123",
+    supply_apy: 5,
+    borrow_apy: 10
   },
   xETH: {
     address: "resource_xeth",
     label: "xETH",
     icon: "https://assets.instabridge.io/tokens/icons/xETH.png",
-    apy: 23.1,
     pool_unit_address: "resource_123",
+    supply_apy: 5,
+    borrow_apy: 10
   },
   ASTRL: {
     address: "resource_astrl",
     label: "ASTRL",
     icon: "https://astrolescent.com/assets/img/tokens/astrl.png",
-    apy: 23.1,
     pool_unit_address: "resource_123",
+    supply_apy: 5,
+    borrow_apy: 10
   },
   CAVIAR: {
     address: "resource_caviar",
     label: "CAVIAR",
     icon: "https://assets.caviarnine.com/tokens/caviar_babylon.png",
-    apy: 23.1,
     pool_unit_address: "resource_123",
+    supply_apy: 5,
+    borrow_apy: 10
   },
 };
 
@@ -100,7 +111,8 @@ export const getAssetConfig = (label: AssetName): AssetConfig | undefined => ass
 export const getAssetIcon = (label: AssetName): string => 
   assetConfigs[label]?.icon || 'https://assets.radixdlt.com/icons/icon-default-32x32.png';
 export const getAssetAddress = (label: AssetName): string => assetConfigs[label]?.address || '';
-export const getAssetApy = (label: AssetName): number => assetConfigs[label]?.apy || 0;
+export const getAssetApy = (label: AssetName, type: 'supply' | 'borrow' = 'supply'): number => 
+  type === 'supply' ? assetConfigs[label]?.supply_apy || 0 : assetConfigs[label]?.borrow_apy || 0;
 
 // Remove the separate assetAddrRecord and instead create a helper function
 export const getAssetAddrRecord = (): Record<AssetName, string> => {

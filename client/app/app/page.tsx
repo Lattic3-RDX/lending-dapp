@@ -20,8 +20,8 @@ import config from "@/lib/config.json";
 import open_position_rtm from "@/lib/manifests/open_position";
 import position_supply_rtm from "@/lib/manifests/position_supply";
 import position_borrow_rtm from "@/lib/manifests/position_borrow";
-import { AssetActionCard } from "@/components/asset-action-card";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { AssetActionCard } from "@/components/asset-action-card";
 
 interface SuppliedAsset {
   address: string;
@@ -67,7 +67,7 @@ export default function App() {
       label: label as AssetName,
       wallet_balance: -1,
       select_native: 0,
-      apy: 0,
+      apy: getAssetApy(label as AssetName, 'supply'),
       pool_unit_address: '',
     }))
   );
@@ -137,47 +137,49 @@ export default function App() {
           borrowed_amount: parseFloat(entry.value.value)
         })) || [];
 
-        // Convert to portfolio data for supply
         const supplyPortfolioData = await Promise.all(
           suppliedAssets.map(async (suppliedAsset) => {
             const assetConfig = Object.entries(getAssetAddrRecord()).find(
               ([_, address]) => address === suppliedAsset.address
             );
-
+        
             if (!assetConfig) return null;
             const [label] = assetConfig;
-
+        
             return {
               address: suppliedAsset.address,
               label: label as AssetName,
               wallet_balance: await getWalletBalance(label as AssetName, accounts[0].address),
               select_native: suppliedAsset.supplied_amount,
-              apy: getAssetApy(label as AssetName),
+              apy: getAssetApy(label as AssetName, 'supply'),
               pool_unit_address: assetConfigs[label as AssetName].pool_unit_address,
-              type: 'supply'
+              type: 'supply' as const
             } as Asset;
           })
         ).then(results => results.filter((asset): asset is Asset => asset !== null));
 
-        // Convert to portfolio data for borrow
-        const borrowPortfolioData: Asset[] = await Promise.all(
+        const borrowPortfolioData = await Promise.all(
           borrowedAssets.map(async (borrowedAsset) => {
             const assetConfig = Object.entries(getAssetAddrRecord()).find(
               ([_, address]) => address === borrowedAsset.address
             );
-
+        
             if (!assetConfig) return null;
             const [label] = assetConfig;
-
+        
             return {
               address: borrowedAsset.address,
               label: label as AssetName,
               wallet_balance: await getWalletBalance(label as AssetName, accounts[0].address),
               select_native: borrowedAsset.borrowed_amount,
-              apy: getAssetApy(label as AssetName),
-            };
+              apy: getAssetApy(label as AssetName, 'borrow'),
+              pool_unit_address: assetConfigs[label as AssetName].pool_unit_address || '',
+              type: 'borrow' as const
+            } satisfies Asset;
           })
-        ).then(results => results.filter((asset): asset is Asset => asset !== null));
+        ).then(results => results.filter((asset): asset is Asset & { type: 'borrow' } => 
+          asset !== null && asset.type === 'borrow'
+        ));
 
         setSupplyPortfolioData(supplyPortfolioData);
         setBorrowPortfolioData(borrowPortfolioData);
@@ -566,9 +568,13 @@ export default function App() {
             wallet_balance: await getWalletBalance(label as AssetName, accounts[0].address),
             select_native: borrowedAsset.borrowed_amount,
             apy: getAssetApy(label as AssetName),
+            pool_unit_address: assetConfigs[label as AssetName].pool_unit_address,
+            type: 'borrow'
           };
         })
-      ).then(results => results.filter((asset): asset is Asset => asset !== null));
+      ).then(results => results.filter((asset): asset is Asset & { type: 'borrow' } => 
+        asset !== null && asset.type === 'borrow'
+      ));
 
       setSupplyPortfolioData(supplyPortfolioData);
       setBorrowPortfolioData(borrowPortfolioData);
