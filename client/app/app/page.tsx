@@ -330,6 +330,7 @@ export default function App() {
           title: "Supply Successful",
           description: `Supplied ${assetsToSupply.length} assets`,
         });
+        await refreshPortfolioData();
       }
     } catch (error) {
       console.error("Supply error:", error);
@@ -483,6 +484,101 @@ export default function App() {
     setIsBorrowDialogOpen(true);
   };
 
+  const refreshPortfolioData = async () => {
+    try {
+      setIsLoading(true);
+      if (!accounts || !gatewayApi) return;
+
+      const borrowerBadgeAddr = config.borrowerBadgeAddr;
+      if (!borrowerBadgeAddr) throw new Error("Borrower badge address not configured");
+
+      const accountState = await gatewayApi.state.getEntityDetailsVaultAggregated(accounts[0].address);
+      const getNFTBalance = accountState.non_fungible_resources.items.find(
+        (fr: { resource_address: string }) => fr.resource_address === borrowerBadgeAddr
+      )?.vaults.items[0];
+      
+      if (!getNFTBalance) {
+        setSupplyPortfolioData([]);
+        setBorrowPortfolioData([]);
+        return;
+      }
+
+      const metadata = await gatewayApi.state.getNonFungibleData(
+        JSON.parse(JSON.stringify(borrowerBadgeAddr)),
+        JSON.parse(JSON.stringify(getNFTBalance)).items[0]
+      ) as NFTData;
+
+      // Extract supply positions
+      const supplyField = metadata.data.programmatic_json.fields.find(
+        field => field.field_name === "supply"
+      );
+
+      const suppliedAssets = supplyField?.entries.map(entry => ({
+        address: entry.key.value,
+        supplied_amount: parseFloat(entry.value.value)
+      })) || [];
+
+      // Extract borrow positions
+      const borrowField = metadata.data.programmatic_json.fields.find(
+        field => field.field_name === "borrow"
+      );
+
+      const borrowedAssets = borrowField?.entries.map(entry => ({
+        address: entry.key.value,
+        borrowed_amount: parseFloat(entry.value.value)
+      })) || [];
+
+      // Convert to portfolio data for supply
+      const supplyPortfolioData = await Promise.all(
+        suppliedAssets.map(async (suppliedAsset) => {
+          const assetConfig = Object.entries(getAssetAddrRecord()).find(
+            ([_, address]) => address === suppliedAsset.address
+          );
+
+          if (!assetConfig) return null;
+          const [label] = assetConfig;
+
+          return {
+            address: suppliedAsset.address,
+            label: label as AssetName,
+            wallet_balance: await getWalletBalance(label as AssetName, accounts[0].address),
+            select_native: suppliedAsset.supplied_amount,
+            apy: getAssetApy(label as AssetName),
+            pool_unit_address: assetConfigs[label as AssetName].pool_unit_address,
+            type: 'supply'
+          } as Asset;
+        })
+      ).then(results => results.filter((asset): asset is Asset => asset !== null));
+
+      // Convert to portfolio data for borrow
+      const borrowPortfolioData: Asset[] = await Promise.all(
+        borrowedAssets.map(async (borrowedAsset) => {
+          const assetConfig = Object.entries(getAssetAddrRecord()).find(
+            ([_, address]) => address === borrowedAsset.address
+          );
+
+          if (!assetConfig) return null;
+          const [label] = assetConfig;
+
+          return {
+            address: borrowedAsset.address,
+            label: label as AssetName,
+            wallet_balance: await getWalletBalance(label as AssetName, accounts[0].address),
+            select_native: borrowedAsset.borrowed_amount,
+            apy: getAssetApy(label as AssetName),
+          };
+        })
+      ).then(results => results.filter((asset): asset is Asset => asset !== null));
+
+      setSupplyPortfolioData(supplyPortfolioData);
+      setBorrowPortfolioData(borrowPortfolioData);
+    } catch (error) {
+      console.error("Error refreshing portfolio data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="container mx-auto py-6 space-y-4">
       {/* First row: Supply and Borrow cards */}
@@ -493,11 +589,12 @@ export default function App() {
             <div className="grid grid-cols-2">
               <CardTitle>Your Supply</CardTitle>
               <div className="flex justify-end">
-                <div className="grid grid-cols-[auto,1fr] gap-x-6 items-center">
-                  <CardDescription className="text-left">Total Supply:</CardDescription>
-                  <CardDescription className="text-right">${totalSupply.toFixed(2)}</CardDescription>
-                  <CardDescription className="text-left">Total APY:</CardDescription>
-                  <CardDescription className="text-right">{totalSupplyApy.toFixed(1)}%</CardDescription>
+                <div className="grid grid-cols-[auto,1fr] gap-x-6 items-center min-h-[72px]">
+                  <CardDescription className="text-left text-foreground">Total Supply:</CardDescription>
+                  <CardDescription className="text-right text-foreground">${totalSupply.toFixed(2)}</CardDescription>
+                  <CardDescription className="text-left text-foreground">Total APY:</CardDescription>
+                  <CardDescription className="text-right text-foreground">{totalSupplyApy.toFixed(1)}%</CardDescription>
+                  <div className="col-span-2"></div>
                 </div>
               </div>
             </div>
@@ -506,6 +603,7 @@ export default function App() {
             <PortfolioTable
               columns={portfolioColumns}
               data={portfolioData}
+              onRefresh={refreshPortfolioData}
             />
           </CardContent>
         </Card>
@@ -516,13 +614,13 @@ export default function App() {
             <div className="grid grid-cols-2">
               <CardTitle>Your Borrows</CardTitle>
               <div className="flex justify-end">
-                <div className="grid grid-cols-[auto,1fr] gap-x-6 items-center">
-                  <CardDescription className="text-left">Total Debt:</CardDescription>
-                  <CardDescription className="text-right">${totalBorrowDebt.toFixed(2)}</CardDescription>
-                  <CardDescription className="text-left">Total APY:</CardDescription>
-                  <CardDescription className="text-right">{totalBorrowApy.toFixed(1)}%</CardDescription>
-                  <CardDescription className="text-left">Borrow Power Used:</CardDescription>
-                  <CardDescription className="text-right">{borrowPowerUsed.toFixed(1)}%</CardDescription>
+                <div className="grid grid-cols-[auto,1fr] gap-x-6 items-center min-h-[72px]">
+                  <CardDescription className="text-left text-foreground">Total Debt:</CardDescription>
+                  <CardDescription className="text-right text-foreground">${totalBorrowDebt.toFixed(2)}</CardDescription>
+                  <CardDescription className="text-left text-foreground">Total APY:</CardDescription>
+                  <CardDescription className="text-right text-foreground">{totalBorrowApy.toFixed(1)}%</CardDescription>
+                  <CardDescription className="text-left text-foreground">Borrow Power Used:</CardDescription>
+                  <CardDescription className="text-right text-foreground">{borrowPowerUsed.toFixed(1)}%</CardDescription>
                 </div>
               </div>
             </div>
@@ -531,6 +629,7 @@ export default function App() {
             <PortfolioTable
               columns={portfolioColumns}
               data={borrowPortfolioData}
+              onRefresh={refreshPortfolioData}
             />
           </CardContent>
         </Card>

@@ -8,7 +8,7 @@ export function LoadingSpinner({ className }: { className?: string }) {
     <div className="flex flex-col items-center justify-center min-h-screen">
       <motion.div
         className={cn(
-          "h-12 w-12 rounded-full border-4 border-accent border-t-transparent",
+          "h-12 w-12 rounded-full border-4 border-accent-foreground border-t-transparent",
           className
         )}
         animate={{ rotate: 360 }}
@@ -22,7 +22,7 @@ export function LoadingSpinner({ className }: { className?: string }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="mt-4 text-muted-foreground"
+        className="mt-4 text-foreground"
       >
         Loading asset data...
       </motion.p>

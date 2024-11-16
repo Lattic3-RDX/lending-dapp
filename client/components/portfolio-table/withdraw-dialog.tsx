@@ -77,7 +77,7 @@ export function WithdrawDialog({ isOpen, onClose, onConfirm, asset }: WithdrawDi
                   type="number"
                   value={tempAmount}
                   onChange={(e) => handleAmountChange(e.target.value)}
-                  className="pr-24 h-12"
+                  className="pr-24 h-12 placeholder:text-foreground"
                   placeholder={asset.label}
                 />
                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">

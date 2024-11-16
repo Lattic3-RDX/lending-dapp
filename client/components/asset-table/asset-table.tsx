@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/collapsible";
 import { AssetCollapsibleContent } from "./collapsible-content";
 import { Asset } from "@/types/asset";
+import { Search } from "lucide-react";
 
 interface AssetTableProps<TData extends Asset, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -171,14 +172,17 @@ export function AssetTable<TData extends Asset, TValue>({
 
   return (
     <div className="rounded-md border">
-      <Input
-        placeholder="Find assets..."
-        value={(table.getColumn("label")?.getFilterValue() as string) ?? ""}
-        onChange={(event) =>
-          table.getColumn("label")?.setFilterValue(event.target.value)
-        }
-        className="max-w-sm m-4"
-      />
+      <div className="relative max-w-sm m-4">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground" />
+        <Input
+          placeholder="Find assets..."
+          value={(table.getColumn("label")?.getFilterValue() as string) ?? ""}
+          onChange={(event) =>
+            table.getColumn("label")?.setFilterValue(event.target.value)
+          }
+          className="pl-9 placeholder:text-foreground"
+        />
+      </div>
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
@@ -215,7 +219,7 @@ export function AssetTable<TData extends Asset, TValue>({
                   <CollapsibleContent asChild>
                     <TableRow>
                       <TableCell className="p-0" colSpan={columns.length}>
-                        <div className="bg-gray-100 p-4">
+                        <div className="bg-accent p-4">
                           <AssetCollapsibleContent 
                             asset={row.original} 
                             onAmountChange={(amount) => handleAmountChange(row.original.address, amount)}

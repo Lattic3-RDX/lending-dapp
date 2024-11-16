@@ -4,11 +4,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 interface PortfolioTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+  onRefresh: () => Promise<void>;
 }
 
 export function PortfolioTable<TData, TValue>({
   columns,
   data,
+  onRefresh,
 }: PortfolioTableProps<TData, TValue>) {
   const table = useReactTable({
     data,

@@ -42,6 +42,9 @@ export const columns: ColumnDef<Asset, unknown>[] = [
     accessorKey: "wallet_balance",
     header: "Wallet Balance",
     cell: ({ row }) => {
+      const isExpanded = row.getIsExpanded();
+      if (isExpanded) return null;
+      
       const balance = row.getValue("wallet_balance");
       if (balance === -1) {
         return <span className="text-muted-foreground">Loading...</span>;
@@ -67,6 +70,9 @@ export const columns: ColumnDef<Asset, unknown>[] = [
     accessorKey: "apy",
     header: "APY",
     cell: ({ row }) => {
+      const isExpanded = row.getIsExpanded();
+      if (isExpanded) return null;
+      
       const apy = row.getValue("apy");
       return `${apy}%`;
     }

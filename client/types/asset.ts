@@ -1,7 +1,7 @@
 import { gatewayApi } from '@/lib/radix';
 import { FungibleResourcesCollectionAllOfToJSON } from '@radixdlt/babylon-gateway-api-sdk';
 
-export type AssetName = 'XRD' | 'xwBTC' | 'FLOOP' | 'xUSDC' | 'EARLY' | 'HUG' | 'DFP2' | 'xETH' | 'ASTRL' | 'CAVIAR';
+export type AssetName = 'XRD' | 'xwBTC' | 'FLOOP' | 'xUSDT' | 'EARLY' | 'HUG' | 'DFP2' | 'xETH' | 'ASTRL' | 'CAVIAR';
 
 export interface Asset {
   address: string;
@@ -44,10 +44,10 @@ export const assetConfigs: Record<AssetName, AssetConfig> = {
     apy: 5.2,
     pool_unit_address: "resource_123",
   },
-  xUSDC: {
-    address: "resource_xusdc",
-    label: "xUSDC",
-    icon: "https://assets.instabridge.io/tokens/icons/xUSDC.png",
+  xUSDT: {
+    address: "resource_tdx_2_1t57e50rm28cyqwn26jn336qyhu8nkt8cknacq8rnsn5kul2l3zvjut",
+    label: "xUSDT",
+    icon: "https://assets.instabridge.io/tokens/icons/xUSDT.png",
     apy: 4.8,
     pool_unit_address: "resource_123",
   },
@@ -59,7 +59,7 @@ export const assetConfigs: Record<AssetName, AssetConfig> = {
     pool_unit_address: "resource_123",
   },
   HUG: {
-    address: "resource_hug",
+    address: "resource_tdx_2_1tkuj2rqsa63f8ygkzezgt27trj50srht5e666jaz28j5ss8fasg5kl",
     label: "HUG",
     icon: "https://tokens.defiplaza.net/cdn-cgi/imagedelivery/QTzOBjs3mHq3EhZxDosDSw/f5cdcf72-c7a2-4032-1252-1be08edb0700/token",
     apy: 23.1,

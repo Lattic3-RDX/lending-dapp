@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Asset } from "@/types/asset";
+import { Asset, getAssetIcon } from "@/types/asset";
 
 interface AssetCollapsibleContentProps {
   asset: Asset;
@@ -52,42 +52,51 @@ export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm }: As
   };
 
   return (
-    <div className="w-full">
-      <div className="flex flex-col space-y-2">
+    <div className="w-full bg-accent/5 rounded-lg p-4 space-y-4">
+      <div className="flex items-center gap-3 mb-2">
+        <img
+          src={getAssetIcon(asset.label)}
+          alt={`${asset.label} icon`}
+          className="w-8 h-8 rounded-full"
+        />
+        <span className="text-lg font-semibold text-foreground">{asset.label}</span>
+      </div>
+
+      <div className="flex flex-col space-y-3">
         <div className="relative">
           <Input
             type="number"
             value={tempAmount}
             onChange={(e) => handleAmountChange(e.target.value)}
-            className="pr-16"
+            className="pr-16 bg-background border-accent/20 focus:border-accent/40 placeholder:text-foreground"
             placeholder="0.00"
           />
           <Button
             variant="ghost"
             size="sm"
-            className="absolute right-0 top-0 h-full px-3"
+            className="absolute right-0 top-0 h-full px-3 hover:bg-accent/10"
             onClick={handleMaxClick}
           >
             Max
           </Button>
         </div>
-        <div className="flex justify-between text-sm text-muted-foreground px-1">
+        <div className="flex justify-between text-sm text-foreground/80 px-1">
           <span>Balance: {asset.wallet_balance}</span>
           {asset.type === 'borrow' && (
             <span>Available: {asset.available ?? 0}</span>
           )}
         </div>
-        {error && <div className="text-red-500 text-sm">{error}</div>}
+        {error && <div className="text-destructive text-sm">{error}</div>}
       </div>
 
-      <div className="space-y-3 py-2">
-        <div className="flex justify-between text-base">
+      <div className="space-y-3 py-2 border-t border-accent/10">
+        <div className="flex justify-between text-base text-foreground">
           <span>{asset.type === 'borrow' ? 'Borrow APY' : 'Supply APY'}</span>
           <span className={asset.type === 'borrow' ? 'text-destructive' : 'text-success'}>
             {asset.apy}%
           </span>
         </div>
-        <div className="flex justify-between text-base">
+        <div className="flex justify-between text-base text-foreground">
           <span>Health Factor</span>
           <span className="text-destructive">
             {asset.type === 'borrow' ? '-0.5' : '+0.5'}
@@ -96,7 +105,7 @@ export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm }: As
       </div>
 
       <Button
-        className="w-full h-12 text-base mt-4"
+        className="w-full h-12 text-base"
         onClick={handleConfirm}
         disabled={!!error || !tempAmount || parseFloat(tempAmount) <= 0}
       >

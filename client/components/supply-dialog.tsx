@@ -54,7 +54,7 @@ const columns: ColumnDef<Asset>[] = [
     cell: ({ row }) => (
       <div className="flex items-center gap-3">
         <span className="font-semibold">
-          ${Number(row.getValue('select_native')).toFixed(2)}
+          {Number(row.getValue('select_native')).toFixed(2)}
         </span>
       </div>
     ),
@@ -105,7 +105,7 @@ const SupplyDialog: React.FC<SupplyDialogProps> = ({
             <div>
               <div className="text-sm text-gray-500">Total Supply</div>
               <div className="text-xl font-semibold">
-                ${totalSupply.toFixed(2)}
+                {totalSupply.toFixed(2)}
               </div>
             </div>
             <div className="flex flex-col items-end">
