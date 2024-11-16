@@ -6,10 +6,11 @@ import { Asset, getAssetIcon, getAssetPrice } from "@/types/asset";
 interface AssetCollapsibleContentProps {
   asset: Asset;
   onAmountChange: (amount: number) => void;
+  onConfirm: (amount: number) => void;
   mode: 'supply' | 'borrow';
 }
 
-export function AssetCollapsibleContent({ asset, onAmountChange, mode }: AssetCollapsibleContentProps) {
+export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm, mode }: AssetCollapsibleContentProps) {
   const [tempAmount, setTempAmount] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [usdValue, setUsdValue] = useState(0);
