@@ -192,23 +192,29 @@ export default function App() {
 
     const fetchPortfolioStats = async () => {
       try {
-        // Calculate total supply from portfolio data
+        // Calculate total supply and average supply APY
         const totalSupplyAmount = portfolioData.reduce(
           (sum, asset) => sum + asset.select_native,
           0
         );
+        const averageSupplyApy = portfolioData.length > 0
+          ? portfolioData.reduce((sum, asset) => sum + asset.apy, 0) / portfolioData.length
+          : 0;
         setTotalSupply(totalSupplyAmount);
+        setTotalSupplyApy(averageSupplyApy);
 
-        // Calculate total borrow debt
+        // Calculate total borrow and average borrow APY
         const totalBorrowAmount = borrowPortfolioData.reduce(
           (sum, asset) => sum + asset.select_native,
           0
         );
+        const averageBorrowApy = borrowPortfolioData.length > 0
+          ? borrowPortfolioData.reduce((sum, asset) => sum + asset.apy, 0) / borrowPortfolioData.length
+          : 0;
         setTotalBorrowDebt(totalBorrowAmount);
+        setTotalBorrowApy(averageBorrowApy);
 
-        // Calculate APYs (using existing dummy values for now)
-        setTotalSupplyApy(10.3);
-        setTotalBorrowApy(5.3);
+        // Keep existing borrow power calculation
         setBorrowPowerUsed(51.4);
       } catch (error) {
         console.error("Error calculating portfolio stats:", error);
