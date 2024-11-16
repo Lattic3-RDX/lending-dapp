@@ -167,19 +167,28 @@ export const getWalletBalance = async (asset: AssetName, accountAddress: string)
 };
 
 export const getAssetPrice = async (asset: AssetName): Promise<number> => {
-  // TODO: Replace with actual price fetching logic
-  const mockPrices: Record<AssetName, number> = {
-    'XRD': 0.0478,
-    'xwBTC': 65000.00,
-    'FLOOP': 0.01,
-    'xUSDT': 1.00,
-    'EARLY': 0.05,
-    'HUG': 0.15,
-    'DFP2': 0.25,
-    'xETH': 3500.00,
-    'ASTRL': 0.10,
-    'CAVIAR': 1.50
-  };
-
-  return mockPrices[asset] || 0;
+  let res = await fetch("api/assets/prices", { method: "GET" });
+  if (res.status !== 200) {
+    console.error("Error fetching asset prices:", res.statusText);
+    return -1;
+  }
+  
+  const { prices } = await res.json();
+  
+  if (!Array.isArray(prices)) {
+    console.error("Unexpected price data format: prices is not an array");
+    return -1;
+  }
+  
+  // Get the resource address for the asset
+  const assetAddress = getAssetAddress(asset);
+  // Find the price entry where asset matches our resource address
+  const priceEntry = prices.find(p => p.asset === assetAddress);
+  
+  if (!priceEntry) {
+    console.warn(`No price found for asset ${asset} (${assetAddress})`);
+    return 0;
+  }
+  
+  return Number(priceEntry.price);
 };
