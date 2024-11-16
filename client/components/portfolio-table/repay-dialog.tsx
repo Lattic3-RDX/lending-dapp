@@ -23,6 +23,7 @@ export function RepayDialog({
 }: RepayDialogProps) {
   const [tempAmount, setTempAmount] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [assetPrice, setAssetPrice] = useState(0);
   const [newHealthFactor, setNewHealthFactor] = useState<number>(
     totalBorrowDebt <= 0 ? -1 : totalSupply / totalBorrowDebt
   );
@@ -34,8 +35,12 @@ export function RepayDialog({
     setNewHealthFactor(totalBorrowDebt <= 0 ? -1 : totalSupply / totalBorrowDebt);
   }, [isOpen, asset.address, totalSupply, totalBorrowDebt]);
 
+  // Add this effect to fetch price when asset changes
+  useEffect(() => {
+    getAssetPrice(asset.label).then(setAssetPrice);
+  }, [asset.label]);
+
   const calculateNewHealthFactor = (repayAmount: number) => {
-    const assetPrice = Number(getAssetPrice(asset.label));
     const repayValue = repayAmount * assetPrice;
     const newDebtValue = totalBorrowDebt - repayValue;
     
@@ -98,7 +103,15 @@ export function RepayDialog({
 
         <div className="space-y-8">
           <div className="space-y-3">
-            <span className="text-lg font-semibold block mb-2">Amount</span>
+            <div className="flex justify-between items-center">
+              <span className="text-lg font-semibold">Amount</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Health factor:</span>
+                <span className={newHealthFactor < 1.5 && newHealthFactor !== -1 ? "text-red-500" : "text-green-500"}>
+                {newHealthFactor === -1 ? '∞' : newHealthFactor.toFixed(2)}
+              </span>
+              </div>
+            </div>
             <div className="space-y-2">
               <div className="relative">
                 <Input
@@ -121,7 +134,7 @@ export function RepayDialog({
               </div>
               
               <div className="flex justify-between text-sm text-foreground px-1">
-                <span>${tempAmount ? (Number(tempAmount) * Number(getAssetPrice(asset.label))).toFixed(2) : "0.00"}</span>
+                <span>${tempAmount ? (Number(tempAmount) * assetPrice).toFixed(2) : "0.00"}</span>
                 <span>Current debt: {asset.select_native}</span>
               </div>
 
@@ -132,8 +145,8 @@ export function RepayDialog({
           <div className="space-y-3">
             <div className="flex justify-between text-base">
               <span>New Health Factor</span>
-              <span className={newHealthFactor < 1.5 ? "text-red-500" : "text-green-500"}>
-                {newHealthFactor.toFixed(2)}
+              <span className={newHealthFactor < 1.5 && newHealthFactor !== -1 ? "text-red-500" : "text-green-500"}>
+                {newHealthFactor === -1 ? '∞' : newHealthFactor.toFixed(2)}
               </span>
             </div>
           </div>
