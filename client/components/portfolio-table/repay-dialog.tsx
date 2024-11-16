@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Asset, getAssetIcon } from "@/types/asset";
+import { Asset, getAssetIcon, getAssetPrice } from "@/types/asset";
 
 interface RepayDialogProps {
   isOpen: boolean;
@@ -75,7 +75,7 @@ export function RepayDialog({ isOpen, onClose, onConfirm, asset }: RepayDialogPr
                   type="number"
                   value={tempAmount}
                   onChange={(e) => handleAmountChange(e.target.value)}
-                  className="pr-24 h-12 placeholder:text-foreground"
+                  className="pr-24 h-12"
                   placeholder={asset.label}
                 />
                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
@@ -90,9 +90,9 @@ export function RepayDialog({ isOpen, onClose, onConfirm, asset }: RepayDialogPr
                 </div>
               </div>
               
-              <div className="flex justify-between text-sm text-muted-foreground px-1">
-                <span>${tempAmount ? Number(tempAmount).toFixed(2) : "0.00"}</span>
-                <span>Current debt {asset.select_native}</span>
+              <div className="flex justify-between text-sm text-foreground px-1">
+                <span>${tempAmount ? (Number(tempAmount) * getAssetPrice(asset.label)).toFixed(2) : "0.00"}</span>
+                <span>Current debt: {asset.select_native}</span>
               </div>
 
               {error && <div className="text-red-500 text-sm">{error}</div>}

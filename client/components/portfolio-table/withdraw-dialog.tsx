@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Asset, getAssetIcon, getWalletBalance } from "@/types/asset";
+import { Asset, getAssetIcon, getAssetPrice } from "@/types/asset";
 
 interface WithdrawDialogProps {
   isOpen: boolean;
@@ -14,12 +14,15 @@ interface WithdrawDialogProps {
 export function WithdrawDialog({ isOpen, onClose, onConfirm, asset }: WithdrawDialogProps) {
   const [tempAmount, setTempAmount] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [newHealthFactor, setNewHealthFactor] = useState<number>(2.0); // This should come from your backend calculation
+  const [newHealthFactor, setNewHealthFactor] = useState<number>(2.0);
+  const [assetPrice, setAssetPrice] = useState<number>(0);
 
   useEffect(() => {
     setTempAmount("");
     setError(null);
-  }, [asset.address]);
+    const price = getAssetPrice(asset.label);
+    setAssetPrice(price);
+  }, [asset.address, asset.label]);
 
   const handleAmountChange = (value: string) => {
     setTempAmount(value);
@@ -30,8 +33,6 @@ export function WithdrawDialog({ isOpen, onClose, onConfirm, asset }: WithdrawDi
       setError("Amount exceeds supplied balance");
     } else {
       setError(null);
-      // Here you would typically make an API call to calculate the new health factor
-      // For now, we'll simulate it
       setNewHealthFactor(2.0 - (amount / asset.select_native) * 0.5);
     }
   };
@@ -77,7 +78,7 @@ export function WithdrawDialog({ isOpen, onClose, onConfirm, asset }: WithdrawDi
                   type="number"
                   value={tempAmount}
                   onChange={(e) => handleAmountChange(e.target.value)}
-                  className="pr-24 h-12 placeholder:text-foreground"
+                  className="pr-24 h-12"
                   placeholder={asset.label}
                 />
                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
@@ -93,9 +94,9 @@ export function WithdrawDialog({ isOpen, onClose, onConfirm, asset }: WithdrawDi
               </div>
               
               {/* Value and available balance */}
-              <div className="flex justify-between text-sm text-muted-foreground px-1">
-                <span>${tempAmount ? Number(tempAmount).toFixed(2) : "0.00"}</span>
-                <span>Current supply {asset.select_native}</span>
+              <div className="flex justify-between text-sm text-foreground px-1">
+                <span>${tempAmount ? (Number(tempAmount) * assetPrice).toFixed(2) : "0.00"}</span>
+                <span>Current supply: {asset.select_native}</span>
               </div>
 
               {error && <div className="text-red-500 text-sm">{error}</div>}
