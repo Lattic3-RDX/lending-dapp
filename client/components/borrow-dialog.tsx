@@ -53,7 +53,7 @@ const columns: ColumnDef<Asset>[] = [
     cell: ({ row }) => (
       <div className="flex items-center gap-3">
         <span className="font-semibold">
-          ${Number(row.getValue('select_native')).toFixed(2)}
+          {Number(row.getValue('select_native')).toFixed(2)}
         </span>
       </div>
     ),
@@ -100,7 +100,7 @@ const BorrowDialog: React.FC<BorrowDialogProps> = ({
             <div>
               <div className="text-sm text-gray-500">Total Borrow</div>
               <div className="text-xl font-semibold">
-                ${totalBorrow.toFixed(2)}
+                {totalBorrow.toFixed(2)}
               </div>
             </div>
             <div className="flex flex-col items-end">
