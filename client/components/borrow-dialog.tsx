@@ -30,6 +30,8 @@ interface BorrowDialogProps {
   onClose: () => void;
   onConfirm: () => void;
   selectedAssets: Asset[];
+  totalSupply: number;
+  totalBorrowDebt: number;
 }
 
 const columns: ColumnDef<Asset>[] = [
@@ -74,6 +76,8 @@ const BorrowDialog: React.FC<BorrowDialogProps> = ({
   onClose,
   onConfirm,
   selectedAssets,
+  totalSupply,
+  totalBorrowDebt,
 }) => {
   const assetsToBorrow = React.useMemo(
     () => selectedAssets.filter((asset) => asset.select_native > 0),
@@ -87,6 +91,9 @@ const BorrowDialog: React.FC<BorrowDialogProps> = ({
     }, 0),
     [assetsToBorrow]
   );
+
+  const currentHealthFactor = totalBorrowDebt <= 0 ? -1 : totalSupply / totalBorrowDebt;
+  const newHealthFactor = totalSupply / (totalBorrowDebt + totalUsdValue);
 
   const table = useReactTable({
     data: assetsToBorrow,
@@ -109,9 +116,13 @@ const BorrowDialog: React.FC<BorrowDialogProps> = ({
             <div className="flex flex-col items-end">
               <div className="text-sm text-gray-500">Health Factor</div>
               <div className="flex items-center gap-2">
-                <div className="text-green-500 font-semibold">2.0</div>
+                <div className={currentHealthFactor < 1.5 && currentHealthFactor !== -1 ? "text-red-500" : "text-green-500"}>
+                  {currentHealthFactor === -1 ? '∞' : currentHealthFactor.toFixed(2)}
+                </div>
                 <ArrowRight className="w-4 h-4" />
-                <div className="text-red-500 font-semibold">1.5</div>
+                <div className={newHealthFactor < 1.5 && newHealthFactor !== -1 ? "text-red-500" : "text-green-500"}>
+                  {newHealthFactor === -1 ? '∞' : newHealthFactor.toFixed(2)}
+                </div>
               </div>
             </div>
           </div>

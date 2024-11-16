@@ -593,6 +593,8 @@ export default function App() {
         onClose={() => setIsPreviewDialogOpen(false)}
         onConfirm={handleSupplyConfirm}
         selectedAssets={getSelectedSupplyAssets().filter(asset => asset.select_native > 0)}
+        totalSupply={totalSupply}
+        totalBorrowDebt={totalBorrowDebt}
       />
 
       <BorrowDialog
@@ -600,6 +602,8 @@ export default function App() {
         onClose={() => setIsBorrowDialogOpen(false)}
         onConfirm={handleBorrowConfirm}
         selectedAssets={getSelectedBorrowAssets().filter(asset => asset.select_native > 0)}
+        totalSupply={totalSupply}
+        totalBorrowDebt={totalBorrowDebt}
       />
     </div>
   );

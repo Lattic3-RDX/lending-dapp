@@ -103,15 +103,15 @@ export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm, mode
         <div className="flex justify-between text-base text-foreground">
           <span>{mode === 'borrow' ? 'Borrow APY' : 'Supply APY'}</span>
           <span className={mode === 'borrow' ? 'text-destructive' : 'text-success'}>
-            {asset.apy}%
+            {Number(asset.apy).toFixed(1)}%
           </span>
         </div>
-        <div className="flex justify-between text-base text-foreground">
+        {/* <div className="flex justify-between text-base text-foreground">
           <span>Health Factor</span>
           <span className="text-destructive">
             {mode === 'borrow' ? '-0.5' : '+0.5'}
           </span>
-        </div>
+        </div> */}
       </div>
 
       <Button
