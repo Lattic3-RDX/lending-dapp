@@ -16,7 +16,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { getAssetIcon, AssetName, getAssetPrice } from '@/types/asset';
+import { getAssetIcon, AssetName, getAssetPrice, getAssetApy } from '@/types/asset';
 
 interface Asset {
   label: string;
@@ -65,7 +65,7 @@ const columns: ColumnDef<Asset>[] = [
     header: () => <div className="text-right">APY</div>,
     cell: ({ row }) => (
       <div className="text-right text-red-500 font-medium">
-        {Number(row.getValue('apy')).toFixed(2)}%
+        {getAssetApy(row.getValue('label') as AssetName, 'borrow').toFixed(2)}%
       </div>
     ),
   },

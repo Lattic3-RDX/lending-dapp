@@ -103,7 +103,7 @@ export function AssetCollapsibleContent({ asset, onAmountChange, mode }: AssetCo
         <div className="flex justify-between text-base text-foreground">
           <span>{mode === 'borrow' ? 'Borrow APY' : 'Supply APY'}</span>
           <span className={mode === 'borrow' ? 'text-destructive' : 'text-success'}>
-            {Number(asset.apy).toFixed(1)}%
+            {mode === 'borrow' ? '10.00' : Number(asset.apy).toFixed(1)}%
           </span>
         </div>
       </div>

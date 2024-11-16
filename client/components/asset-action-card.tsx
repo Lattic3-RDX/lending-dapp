@@ -46,7 +46,7 @@ export function AssetActionCard({
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle>{isBorrowMode ? 'Available Borrows' : 'Your Collateral'}</CardTitle>
+              <CardTitle>{isBorrowMode ? 'Available Borrows' : 'Supply Collateral'}</CardTitle>
             </div>
             {((showSupplyPreview && hasSelectedSupplyAssets && !isBorrowMode) ||
               (showBorrowPreview && hasSelectedBorrowAssets && isBorrowMode)) && (
