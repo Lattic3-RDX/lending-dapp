@@ -1,7 +1,7 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Asset, getAssetIcon } from "@/types/asset";
 import { Button } from "../ui/button";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { WithdrawDialog } from "./withdraw-dialog";
 import { useToast } from "../ui/use-toast";
 import { RepayDialog } from "./repay-dialog";
@@ -11,7 +11,7 @@ import { useRadixContext } from "@/contexts/provider";
 import config from "@/lib/config.json";
 import position_repay_rtm from "@/lib/manifests/position_repay";
 
-export const portfolioColumns: ColumnDef<Asset>[] = [
+export const createPortfolioColumns = (refreshPortfolioData: () => Promise<void>): ColumnDef<Asset>[] => [
   {
     accessorKey: "label",
     header: "Assets",
@@ -40,7 +40,6 @@ export const portfolioColumns: ColumnDef<Asset>[] = [
     accessorKey: "apy",
     header: "APY",
     cell: ({ row }) => {
-      console.log("APY value:", row.getValue("apy"));
       return (
         <div className={row.original.type === 'supply' ? 'text-success' : 'text-destructive'}>
           {Number(row.getValue("apy")).toFixed(2)}%
@@ -117,6 +116,7 @@ export const portfolioColumns: ColumnDef<Asset>[] = [
               title: "Withdrawal Successful",
               description: `Withdrew ${amount} ${row.original.label}`,
             });
+            await refreshPortfolioData();
           }
         } catch (error) {
           console.error("Withdrawal error:", error);
@@ -191,6 +191,7 @@ export const portfolioColumns: ColumnDef<Asset>[] = [
               title: "Repayment Successful",
               description: `Repaid ${amount} ${row.original.label}`,
             });
+            await refreshPortfolioData();
           }
         } catch (error) {
           console.error("Repay error:", error);

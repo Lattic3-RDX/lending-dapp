@@ -11,7 +11,7 @@ import { useRadixContext } from "@/contexts/provider";
 import { gatewayApi, rdt } from "@/lib/radix";
 import { getAssetAddrRecord, Asset, AssetName, getAssetApy, getWalletBalance, assetConfigs, getAssetPrice } from "@/types/asset";
 import { PortfolioTable } from "@/components/portfolio-table/portfolio-table";
-import { portfolioColumns } from "@/components/portfolio-table/portfolio-columns";
+import { createPortfolioColumns } from "@/components/portfolio-table/portfolio-columns";
 import { useToast } from "@/components/ui/use-toast";
 import { ShootingStars } from "@/components/ui/shooting-stars";
 import { borrowColumns } from "@/components/asset-table/borrow-columns";
@@ -22,6 +22,7 @@ import position_supply_rtm from "@/lib/manifests/position_supply";
 import position_borrow_rtm from "@/lib/manifests/position_borrow";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { AssetActionCard } from "@/components/asset-action-card";
+import { StatisticsCard } from "@/components/statistics-card";
 
 interface SuppliedAsset {
   address: string;
@@ -90,165 +91,180 @@ export default function App() {
   const hasSelectedSupplyAssets = Object.keys(supplyRowSelection).length > 0;
   const hasSelectedBorrowAssets = Object.keys(borrowRowSelection).length > 0;
 
+  const calculateTotalApy = (assets: Asset[], type: 'supply' | 'borrow') => {
+    if (assets.length === 0) return 0;
+    
+    let totalValue = 0;
+    let weightedApy = 0;
+    
+    assets.forEach(asset => {
+      const value = asset.select_native * getAssetPrice(asset.label);
+      totalValue += value;
+      weightedApy += (asset.apy * value);
+    });
+    
+    return totalValue > 0 ? weightedApy / totalValue : 0;
+  };
+
+  const refreshPortfolioData = async () => {
+    try {
+      console.log("Starting refreshPortfolioData");
+      setIsLoading(true);
+      if (!accounts || !gatewayApi) {
+        console.log("No accounts or gatewayApi found");
+        return;
+      }
+
+      const borrowerBadgeAddr = config.borrowerBadgeAddr;
+      if (!borrowerBadgeAddr) {
+        console.log("No borrowerBadgeAddr found");
+        throw new Error("Borrower badge address not configured");
+      }
+
+      console.log("Fetching account state...");
+      const accountState = await gatewayApi.state.getEntityDetailsVaultAggregated(accounts[0].address);
+      console.log("Account state:", accountState);
+
+      const getNFTBalance = accountState.non_fungible_resources.items.find(
+        (fr: { resource_address: string }) => fr.resource_address === borrowerBadgeAddr
+      )?.vaults.items[0];
+      console.log("NFT Balance:", getNFTBalance);
+      
+      if (!getNFTBalance) {
+        console.log("No NFT balance found, resetting state");
+        setSupplyPortfolioData([]);
+        setBorrowPortfolioData([]);
+        setHealth(0);
+        return;
+      }
+
+      console.log("Fetching NFT metadata...");
+      const metadata = await gatewayApi.state.getNonFungibleData(
+        JSON.parse(JSON.stringify(borrowerBadgeAddr)),
+        JSON.parse(JSON.stringify(getNFTBalance)).items[0]
+      ) as NFTData;
+      console.log("NFT metadata:", metadata);
+
+      // Extract supply positions
+      const supplyField = metadata.data.programmatic_json.fields.find(
+        field => field.field_name === "supply"
+      );
+
+      const suppliedAssets = supplyField?.entries.map(entry => ({
+        address: entry.key.value,
+        supplied_amount: parseFloat(entry.value.value)
+      })) || [];
+
+      // Extract borrow positions
+      const borrowField = metadata.data.programmatic_json.fields.find(
+        field => field.field_name === "borrow"
+      );
+
+      const borrowedAssets = borrowField?.entries.map(entry => ({
+        address: entry.key.value,
+        borrowed_amount: parseFloat(entry.value.value)
+      })) || [];
+
+      let totalSupplyValue = 0;
+      let totalDebtValue = 0;
+
+      // Convert to portfolio data for supply
+      const supplyPortfolioData = await Promise.all(
+        suppliedAssets.map(async (suppliedAsset) => {
+          const assetConfig = Object.entries(getAssetAddrRecord()).find(
+            ([_, address]) => address === suppliedAsset.address
+          );
+
+          if (!assetConfig) return null;
+          const [label] = assetConfig;
+
+          const amount = suppliedAsset.supplied_amount;
+          const price = getAssetPrice(label as AssetName);
+          totalSupplyValue += amount * price;
+
+          return {
+            address: suppliedAsset.address,
+            label: label as AssetName,
+            wallet_balance: await getWalletBalance(label as AssetName, accounts[0].address),
+            select_native: amount,
+            apy: getAssetApy(label as AssetName),
+            pool_unit_address: assetConfigs[label as AssetName].pool_unit_address,
+            type: 'supply'
+          } as Asset;
+        })
+      ).then(results => results.filter((asset): asset is Asset => asset !== null));
+
+      // Convert to portfolio data for borrow
+      const borrowPortfolioData: Asset[] = await Promise.all(
+        borrowedAssets.map(async (borrowedAsset) => {
+          const assetConfig = Object.entries(getAssetAddrRecord()).find(
+            ([_, address]) => address === borrowedAsset.address
+          );
+
+          if (!assetConfig) return null;
+          const [label] = assetConfig;
+
+          const amount = borrowedAsset.borrowed_amount;
+          const price = getAssetPrice(label as AssetName);
+          totalDebtValue += amount * price;
+
+          return {
+            address: borrowedAsset.address,
+            label: label as AssetName,
+            wallet_balance: await getWalletBalance(label as AssetName, accounts[0].address),
+            select_native: amount,
+            apy: getAssetApy(label as AssetName),
+            pool_unit_address: assetConfigs[label as AssetName].pool_unit_address,
+            type: 'borrow'
+          };
+        })
+      ).then(results => results.filter((asset): asset is Asset & { type: 'borrow' } => 
+        asset !== null && asset.type === 'borrow'
+      ));
+
+      // Calculate health ratio
+      const healthRatio = totalDebtValue > 0 ? totalSupplyValue / totalDebtValue : -1;
+      console.log("Health Ratio: ", healthRatio);
+      const netWorthValue = totalSupplyValue - totalDebtValue;
+      console.log("Net Worth: ", netWorthValue);
+
+      // Calculate total APYs from the portfolio data
+      const calculatedSupplyApy = calculateTotalApy(supplyPortfolioData, 'supply');
+      const calculatedBorrowApy = calculateTotalApy(borrowPortfolioData, 'borrow');
+      const netApyValue = calculatedSupplyApy - calculatedBorrowApy;
+
+      console.log("Supply APY: ", calculatedSupplyApy);
+      console.log("Borrow APY: ", calculatedBorrowApy);
+      console.log("Net APY: ", netApyValue);
+
+      setHealth(healthRatio);
+      setNetWorth(netWorthValue);
+      setNetApy(netApyValue);
+      setTotalSupply(totalSupplyValue);
+      setTotalBorrowDebt(totalDebtValue);
+
+      // Use the calculated values instead of the state values
+      setTotalSupplyApy(calculatedSupplyApy);
+      setTotalBorrowApy(calculatedBorrowApy);
+
+      setSupplyPortfolioData(supplyPortfolioData);
+      setBorrowPortfolioData(borrowPortfolioData);
+    } catch (error) {
+      console.error("Error refreshing portfolio data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     console.log("Account", accounts);
     console.log("RDT", rdt);
     console.log("GatewayApi", gatewayApi);
-  }, [accounts]);
-
-  useEffect(() => {
-    const fetchPortfolioData = async () => {
-      try {
-        if (!accounts || !gatewayApi) return;
-
-        const borrowerBadgeAddr = config.borrowerBadgeAddr;
-        if (!borrowerBadgeAddr) throw new Error("Borrower badge address not configured");
-
-        const accountState = await gatewayApi.state.getEntityDetailsVaultAggregated(accounts[0].address);
-        const getNFTBalance = accountState.non_fungible_resources.items.find(
-          (fr: { resource_address: string }) => fr.resource_address === borrowerBadgeAddr
-        )?.vaults.items[0];
-        
-        if (!getNFTBalance) {
-          return { assets: [], badgeValue: 0 };
-        }
-
-        const metadata = await gatewayApi.state.getNonFungibleData(
-          JSON.parse(JSON.stringify(borrowerBadgeAddr)),
-          JSON.parse(JSON.stringify(getNFTBalance)).items[0]
-        ) as NFTData;
-
-        // Extract supply positions
-        const supplyField = metadata.data.programmatic_json.fields.find(
-          field => field.field_name === "supply"
-        );
-
-        const suppliedAssets = supplyField?.entries.map(entry => ({
-          address: entry.key.value,
-          supplied_amount: parseFloat(entry.value.value)
-        })) || [];
-
-        // Extract borrow positions
-        const borrowField = metadata.data.programmatic_json.fields.find(
-          field => field.field_name === "borrow"
-        );
-
-        const borrowedAssets = borrowField?.entries.map(entry => ({
-          address: entry.key.value,
-          borrowed_amount: parseFloat(entry.value.value)
-        })) || [];
-
-        const supplyPortfolioData = await Promise.all(
-          suppliedAssets.map(async (suppliedAsset) => {
-            const assetConfig = Object.entries(getAssetAddrRecord()).find(
-              ([_, address]) => address === suppliedAsset.address
-            );
-        
-            if (!assetConfig) return null;
-            const [label] = assetConfig;
-        
-            return {
-              address: suppliedAsset.address,
-              label: label as AssetName,
-              wallet_balance: await getWalletBalance(label as AssetName, accounts[0].address),
-              select_native: suppliedAsset.supplied_amount,
-              apy: getAssetApy(label as AssetName, 'supply'),
-              pool_unit_address: assetConfigs[label as AssetName].pool_unit_address,
-              type: 'supply' as const
-            } as Asset;
-          })
-        ).then(results => results.filter((asset): asset is Asset => asset !== null));
-
-        const borrowPortfolioData = await Promise.all(
-          borrowedAssets.map(async (borrowedAsset) => {
-            const assetConfig = Object.entries(getAssetAddrRecord()).find(
-              ([_, address]) => address === borrowedAsset.address
-            );
-        
-            if (!assetConfig) return null;
-            const [label] = assetConfig;
-        
-            return {
-              address: borrowedAsset.address,
-              label: label as AssetName,
-              wallet_balance: await getWalletBalance(label as AssetName, accounts[0].address),
-              select_native: borrowedAsset.borrowed_amount,
-              apy: getAssetApy(label as AssetName, 'borrow'),
-              pool_unit_address: assetConfigs[label as AssetName].pool_unit_address || '',
-              type: 'borrow' as const
-            } satisfies Asset;
-          })
-        ).then(results => results.filter((asset): asset is Asset & { type: 'borrow' } => 
-          asset !== null && asset.type === 'borrow'
-        ));
-
-        setSupplyPortfolioData(supplyPortfolioData);
-        setBorrowPortfolioData(borrowPortfolioData);
-      } catch (error) {
-        console.error("Error fetching portfolio data:", error);
-      }
-    };
-
-    fetchPortfolioData();
-  }, [accounts]);
-
-  // Separate useEffect for portfolio stats
-  useEffect(() => {
-    const calculatePortfolioStats = async () => {
-      try {
-        const totalSupplyAmount = portfolioData.reduce((sum, asset) => {
-          const price = getAssetPrice(asset.label as AssetName);
-          console.log(`Asset: ${asset.label}, Amount: ${asset.select_native}, Price: ${price}`);
-          return sum + (asset.select_native * price);
-        }, 0);
-        setTotalSupply(totalSupplyAmount);
-
-        // Calculate total supply and weighted supply APY
-        const totalValue = portfolioData.reduce((sum, asset) => {
-          const price = getAssetPrice(asset.label as AssetName);
-          return sum + (asset.select_native * price);
-        }, 0);
-
-        const weightedApySum = portfolioData.reduce((sum, asset) => {
-          const price = getAssetPrice(asset.label as AssetName);
-          const assetValue = asset.select_native * price;
-          const weightedApy = (assetValue / totalValue) * asset.apy;
-          return sum + weightedApy;
-        }, 0);
-
-        setTotalSupplyApy(totalValue > 0 ? weightedApySum : 0);
-
-        // Calculate total borrow and weighted borrow APY
-        const totalBorrowValue = borrowPortfolioData.reduce((sum, asset) => {
-          const price = getAssetPrice(asset.label as AssetName);
-          return sum + (asset.select_native * price);
-        }, 0);
-
-        const weightedBorrowApySum = borrowPortfolioData.reduce((sum, asset) => {
-          const price = getAssetPrice(asset.label as AssetName);
-          const assetValue = asset.select_native * price;
-          const weightedApy = (assetValue / totalBorrowValue) * asset.apy;
-          return sum + weightedApy;
-        }, 0);
-
-        setTotalBorrowApy(totalBorrowValue > 0 ? weightedBorrowApySum : 0);
-
-        // Keep existing borrow power calculation
-        setBorrowPowerUsed(51.4);
-      } catch (error) {
-        console.error("Error calculating portfolio stats:", error);
-        toast({
-          variant: "destructive", 
-          title: "Error",
-          description: "Failed to calculate portfolio statistics",
-        });
-      }
-    };
-
-    if (portfolioData.length > 0) {
-      calculatePortfolioStats();
+    
+    if (accounts && gatewayApi) {
+      refreshPortfolioData();
     }
-  }, [portfolioData]); // This will run whenever portfolioData changes
+  }, [accounts, gatewayApi]);
 
   useEffect(() => {
     const updateWalletBalances = async () => {
@@ -489,118 +505,18 @@ export default function App() {
     setIsBorrowDialogOpen(true);
   };
 
-  const calculateAverageApy = (assets: Asset[]) => {
-    if (assets.length === 0) return 0;
-    const totalApy = assets.reduce((sum, asset) => sum + asset.apy, 0);
-    return totalApy / assets.length;
-  };
-
-  const refreshPortfolioData = async () => {
-    try {
-      setIsLoading(true);
-      if (!accounts || !gatewayApi) return;
-
-      const borrowerBadgeAddr = config.borrowerBadgeAddr;
-      if (!borrowerBadgeAddr) throw new Error("Borrower badge address not configured");
-
-      const accountState = await gatewayApi.state.getEntityDetailsVaultAggregated(accounts[0].address);
-      const getNFTBalance = accountState.non_fungible_resources.items.find(
-        (fr: { resource_address: string }) => fr.resource_address === borrowerBadgeAddr
-      )?.vaults.items[0];
-      
-      if (!getNFTBalance) {
-        setSupplyPortfolioData([]);
-        setBorrowPortfolioData([]);
-        return;
-      }
-
-      const metadata = await gatewayApi.state.getNonFungibleData(
-        JSON.parse(JSON.stringify(borrowerBadgeAddr)),
-        JSON.parse(JSON.stringify(getNFTBalance)).items[0]
-      ) as NFTData;
-
-      // Extract supply positions
-      const supplyField = metadata.data.programmatic_json.fields.find(
-        field => field.field_name === "supply"
-      );
-
-      const suppliedAssets = supplyField?.entries.map(entry => ({
-        address: entry.key.value,
-        supplied_amount: parseFloat(entry.value.value)
-      })) || [];
-
-      // Extract borrow positions
-      const borrowField = metadata.data.programmatic_json.fields.find(
-        field => field.field_name === "borrow"
-      );
-
-      const borrowedAssets = borrowField?.entries.map(entry => ({
-        address: entry.key.value,
-        borrowed_amount: parseFloat(entry.value.value)
-      })) || [];
-
-      // Convert to portfolio data for supply
-      const supplyPortfolioData = await Promise.all(
-        suppliedAssets.map(async (suppliedAsset) => {
-          const assetConfig = Object.entries(getAssetAddrRecord()).find(
-            ([_, address]) => address === suppliedAsset.address
-          );
-
-          if (!assetConfig) return null;
-          const [label] = assetConfig;
-
-          return {
-            address: suppliedAsset.address,
-            label: label as AssetName,
-            wallet_balance: await getWalletBalance(label as AssetName, accounts[0].address),
-            select_native: suppliedAsset.supplied_amount,
-            apy: getAssetApy(label as AssetName),
-            pool_unit_address: assetConfigs[label as AssetName].pool_unit_address,
-            type: 'supply'
-          } as Asset;
-        })
-      ).then(results => results.filter((asset): asset is Asset => asset !== null));
-
-      // Convert to portfolio data for borrow
-      const borrowPortfolioData: Asset[] = await Promise.all(
-        borrowedAssets.map(async (borrowedAsset) => {
-          const assetConfig = Object.entries(getAssetAddrRecord()).find(
-            ([_, address]) => address === borrowedAsset.address
-          );
-
-          if (!assetConfig) return null;
-          const [label] = assetConfig;
-
-          return {
-            address: borrowedAsset.address,
-            label: label as AssetName,
-            wallet_balance: await getWalletBalance(label as AssetName, accounts[0].address),
-            select_native: borrowedAsset.borrowed_amount,
-            apy: getAssetApy(label as AssetName),
-            pool_unit_address: assetConfigs[label as AssetName].pool_unit_address,
-            type: 'borrow'
-          };
-        })
-      ).then(results => results.filter((asset): asset is Asset & { type: 'borrow' } => 
-        asset !== null && asset.type === 'borrow'
-      ));
-
-      const totalSupplyApy = calculateAverageApy(supplyPortfolioData);
-      const totalBorrowApy = calculateAverageApy(borrowPortfolioData);
-
-      setSupplyPortfolioData(supplyPortfolioData);
-      setBorrowPortfolioData(borrowPortfolioData);
-      setTotalSupplyApy(totalSupplyApy);
-      setTotalBorrowApy(totalBorrowApy);
-    } catch (error) {
-      console.error("Error refreshing portfolio data:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const columns = createPortfolioColumns(refreshPortfolioData);
 
   return (
     <div className="container mx-auto py-6 space-y-4">
+      {/* Statistics Card */}
+      <StatisticsCard 
+        healthRatio={health}
+        netWorth={netWorth}
+        netApy={netApy}
+        isLoading={isLoading}
+      />
+      
       {/* First row: Supply and Borrow cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Your Supply Card */}
@@ -621,7 +537,7 @@ export default function App() {
           </CardHeader>
           <CardContent>
             <PortfolioTable
-              columns={portfolioColumns}
+              columns={columns}
               data={portfolioData}
               onRefresh={refreshPortfolioData}
             />
@@ -647,7 +563,7 @@ export default function App() {
           </CardHeader>
           <CardContent>
             <PortfolioTable
-              columns={portfolioColumns}
+              columns={columns}
               data={borrowPortfolioData}
               onRefresh={refreshPortfolioData}
             />
