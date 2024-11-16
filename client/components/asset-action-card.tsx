@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { AssetTable } from './asset-table/asset-table';
 import { columns } from './asset-table/columns';
 import { borrowColumns } from './asset-table/borrow-columns';
-import { Asset } from '@/types/asset';
+import { Asset, AssetName, getAssetPrice } from '@/types/asset';
 import { RowSelectionState } from '@tanstack/react-table';
 
 interface AssetActionCardProps {
@@ -45,7 +45,9 @@ export function AssetActionCard({
       <CardHeader>
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <CardTitle>{isBorrowMode ? 'Available Borrows' : 'Available Collateral'}</CardTitle>
+            <div>
+              <CardTitle>{isBorrowMode ? 'Available Borrows' : 'Your Collateral'}</CardTitle>
+            </div>
             {((showSupplyPreview && hasSelectedSupplyAssets && !isBorrowMode) ||
               (showBorrowPreview && hasSelectedBorrowAssets && isBorrowMode)) && (
               <Button onClick={isBorrowMode ? onPreviewBorrow : onPreviewSupply}>

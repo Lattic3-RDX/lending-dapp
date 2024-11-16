@@ -9,7 +9,7 @@ import { columns } from "@/components/asset-table/columns";
 import SupplyDialog from "@/components/supply-dialog";
 import { useRadixContext } from "@/contexts/provider";
 import { gatewayApi, rdt } from "@/lib/radix";
-import { getAssetAddrRecord, Asset, AssetName, getAssetApy, getWalletBalance, assetConfigs } from "@/types/asset";
+import { getAssetAddrRecord, Asset, AssetName, getAssetApy, getWalletBalance, assetConfigs, getAssetPrice } from "@/types/asset";
 import { PortfolioTable } from "@/components/portfolio-table/portfolio-table";
 import { portfolioColumns } from "@/components/portfolio-table/portfolio-columns";
 import { useToast } from "@/components/ui/use-toast";
@@ -190,30 +190,48 @@ export default function App() {
     };
 
     fetchPortfolioData();
+  }, [accounts]);
 
-    const fetchPortfolioStats = async () => {
+  // Separate useEffect for portfolio stats
+  useEffect(() => {
+    const calculatePortfolioStats = async () => {
       try {
-        // Calculate total supply and average supply APY
-        const totalSupplyAmount = portfolioData.reduce(
-          (sum, asset) => sum + asset.select_native,
-          0
-        );
-        const averageSupplyApy = portfolioData.length > 0
-          ? portfolioData.reduce((sum, asset) => sum + asset.apy, 0) / portfolioData.length
-          : 0;
+        const totalSupplyAmount = portfolioData.reduce((sum, asset) => {
+          const price = getAssetPrice(asset.label as AssetName);
+          console.log(`Asset: ${asset.label}, Amount: ${asset.select_native}, Price: ${price}`);
+          return sum + (asset.select_native * price);
+        }, 0);
         setTotalSupply(totalSupplyAmount);
-        setTotalSupplyApy(averageSupplyApy);
 
-        // Calculate total borrow and average borrow APY
-        const totalBorrowAmount = borrowPortfolioData.reduce(
-          (sum, asset) => sum + asset.select_native,
-          0
-        );
-        const averageBorrowApy = borrowPortfolioData.length > 0
-          ? borrowPortfolioData.reduce((sum, asset) => sum + asset.apy, 0) / borrowPortfolioData.length
-          : 0;
-        setTotalBorrowDebt(totalBorrowAmount);
-        setTotalBorrowApy(averageBorrowApy);
+        // Calculate total supply and weighted supply APY
+        const totalValue = portfolioData.reduce((sum, asset) => {
+          const price = getAssetPrice(asset.label as AssetName);
+          return sum + (asset.select_native * price);
+        }, 0);
+
+        const weightedApySum = portfolioData.reduce((sum, asset) => {
+          const price = getAssetPrice(asset.label as AssetName);
+          const assetValue = asset.select_native * price;
+          const weightedApy = (assetValue / totalValue) * asset.apy;
+          return sum + weightedApy;
+        }, 0);
+
+        setTotalSupplyApy(totalValue > 0 ? weightedApySum : 0);
+
+        // Calculate total borrow and weighted borrow APY
+        const totalBorrowValue = borrowPortfolioData.reduce((sum, asset) => {
+          const price = getAssetPrice(asset.label as AssetName);
+          return sum + (asset.select_native * price);
+        }, 0);
+
+        const weightedBorrowApySum = borrowPortfolioData.reduce((sum, asset) => {
+          const price = getAssetPrice(asset.label as AssetName);
+          const assetValue = asset.select_native * price;
+          const weightedApy = (assetValue / totalBorrowValue) * asset.apy;
+          return sum + weightedApy;
+        }, 0);
+
+        setTotalBorrowApy(totalBorrowValue > 0 ? weightedBorrowApySum : 0);
 
         // Keep existing borrow power calculation
         setBorrowPowerUsed(51.4);
@@ -227,32 +245,10 @@ export default function App() {
       }
     };
 
-    fetchPortfolioStats();
-
-    const fetchOverallStats = async () => {
-      try {
-        // TODO: Fetch actual stats from backend
-        const dummyOverallStats = {
-          netWorth: 2500.75,
-          netApy: 8.5,
-          health: 85.2
-        };
-
-        setNetWorth(dummyOverallStats.netWorth);
-        setNetApy(dummyOverallStats.netApy);
-        setHealth(dummyOverallStats.health);
-      } catch (error) {
-        console.error("Error fetching overall stats:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to fetch overall statistics",
-        });
-      }
-    };
-
-    fetchOverallStats();
-  }, [accounts]);
+    if (portfolioData.length > 0) {
+      calculatePortfolioStats();
+    }
+  }, [portfolioData]); // This will run whenever portfolioData changes
 
   useEffect(() => {
     const updateWalletBalances = async () => {
