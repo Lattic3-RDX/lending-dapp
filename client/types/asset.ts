@@ -28,7 +28,7 @@ export const assetConfigs: Record<AssetName, AssetConfig> = {
     label: "XRD",
     icon: "https://assets.radixdlt.com/icons/icon-xrd-32x32.png",
     apy: 10.3,
-    pool_unit_address: "resource_tdx_2_1thengnn9dgrry58kydamk520swxmlyrurxcqt07pr76p627g7ff40v",
+    pool_unit_address: "resource_tdx_2_1tkvdgqm60teajxd44ma6k0xyt6xvxxcyzrmc25q406fx08eaek36e4",
   },
   xwBTC: {
     address: "resource_xwbtc",

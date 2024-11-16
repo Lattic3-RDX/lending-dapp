@@ -1,7 +1,7 @@
 {
     "componentAddr": "account_tdx_2_128zw2yyy9t9966h2eakq8rhedwfwaylfaz53v84fpaq2jeq8y2eaj8",
     "dAppDefinitionAddr": "account_tdx_2_12xfek2nncckfppcslye0vwusaq6qtt6j896w5tcmfh7wy78hjzqc96",
-    "borrowerBadgeAddr": "resource_tdx_2_1ntvrnu7d6qjzralrah033ytegwfnlx0eynw3q93sd8vqd4v3s4lgy2",
-    "marketComponent": "component_tdx_2_1cpfah67cy63zhaw7swdeugwnxf6xf57gplawy6t5g09mpwmua2m76c",
+    "borrowerBadgeAddr": "resource_tdx_2_1n2gy6n2j8rc9c7nhlz423hwa9mqf6kvazrusty7gxwzvqz4aghthth",
+    "marketComponent": "component_tdx_2_1cz9lgv6zpke438kz6fy92gteskgmy4g2xc7d95n0v7s0rn5zy6mplq",
     "gatewayApi": "https://babylon-gateway.radixdlt.com"
   }
