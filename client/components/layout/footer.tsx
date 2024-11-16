@@ -73,7 +73,7 @@ export function Footer() {
           {/* Copyright */}
           <div className="space-y-4">
             <p className="text-sm text-gray-400">
-              © {new Date().getFullYear()} RedRoot.
+              © {new Date().getFullYear()} Lattic3.
               <br />
               All wrights reverted.
             </p>

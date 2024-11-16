@@ -9,7 +9,7 @@ if (typeof window !== 'undefined') {
   rdt = RadixDappToolkit({
     dAppDefinitionAddress: definitionAddress,
     networkId: RadixNetwork.Stokenet,
-    applicationName: "Radish",
+    applicationName: "Lattic3",
     applicationVersion: "1.0.0",
   });
 

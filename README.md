@@ -1,7 +1,6 @@
+# Lattic3 - Multi-Collateralized Lending Platform
 
-# Radish - Multi-Collateralized Lending Platform
-
-**Radish** is a decentralized lending platform that leverages the asset-oriented Radix Layer 1 blockchain to enable users to collateralize multiple assets for loans.
+**Lattic3** is a decentralized lending platform that leverages the asset-oriented Radix Layer 1 blockchain to enable users to collateralize multiple assets for loans.
 
 <div align="center">
 <img width="40%" src=https://github.com/user-attachments/assets/51eb3590-b29d-470f-9ceb-bc00bcb40453/>

@@ -36,8 +36,8 @@ const words = [
     text: "is",
   },
   {
-    text: "RedRoot",
-    className: "text-primary",
+    text: "Lattic3",
+    className: "text-accent",
   },
 ];
 

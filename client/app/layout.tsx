@@ -21,7 +21,7 @@ const geistMono = localFont({
 
 /* ------------------ Layout ------------------ */
 export const metadata: Metadata = {
-  title: "Radish",
+  title: "Lattic3",
   description: "Multi-Collateralized Lending Platform On Radix",
 };
 
