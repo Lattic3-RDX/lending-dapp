@@ -9,6 +9,7 @@ export const borrowColumns: ColumnDef<Asset>[] = [
   {
     id: "select",
     header: "Select assets",
+    size: 100,
     cell: ({ row }) => (
       <Checkbox
         checked={row.getIsSelected()}
@@ -24,6 +25,7 @@ export const borrowColumns: ColumnDef<Asset>[] = [
   {
     accessorKey: "label",
     header: "Asset",
+    size: 200,
     cell: ({ row }) => (
       <div className="flex items-center gap-3">
         <img
@@ -38,6 +40,7 @@ export const borrowColumns: ColumnDef<Asset>[] = [
   {
     accessorKey: "available",
     header: "Available",
+    size: 150,
     cell: ({ row }) => {
       const isExpanded = row.getIsExpanded();
       if (isExpanded) return null;
@@ -48,6 +51,7 @@ export const borrowColumns: ColumnDef<Asset>[] = [
   {
     accessorKey: "select_native",
     header: "Selected Amount",
+    size: 150,
     cell: ({ row }) => {
       const isExpanded = row.getIsExpanded();
       const isSelected = row.getIsSelected();
@@ -62,6 +66,7 @@ export const borrowColumns: ColumnDef<Asset>[] = [
   {
     accessorKey: "apy",
     header: "APY",
+    size: 150,
     cell: ({ row }) => {
       const isExpanded = row.getIsExpanded();
       if (isExpanded) return null;
@@ -71,6 +76,7 @@ export const borrowColumns: ColumnDef<Asset>[] = [
   },
   {
     id: "actions",
+    size: 100,
     cell: ({ row }) => {
       const isExpanded = row.getIsExpanded();
       return (
@@ -83,5 +89,5 @@ export const borrowColumns: ColumnDef<Asset>[] = [
         </Button>
       );
     },
-  },
+  }
 ]; 

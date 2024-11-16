@@ -183,65 +183,71 @@ export function AssetTable<TData extends Asset, TValue>({
           className="pl-9 placeholder:text-foreground"
         />
       </div>
-      <Table>
-        <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <TableHead key={header.id}>
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                </TableHead>
-              ))}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {sortedRows.length ? (
-            sortedRows.map((row) => (
-              <Collapsible
-                key={row.id}
-                asChild
-                open={expandedRows[row.id]}
-              >
-                <>
-                  <TableRow data-state={row.getIsSelected() && "selected"}>
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                  <CollapsibleContent asChild>
-                    <TableRow>
-                      <TableCell className="p-0" colSpan={columns.length}>
-                        <div className="bg-accent p-4">
-                          <AssetCollapsibleContent 
-                            asset={row.original} 
-                            onAmountChange={(amount) => handleAmountChange(row.original.address, amount)}
-                            onConfirm={(amount) => handleConfirm(row.original, amount)}
-                            mode={mode}
-                          />
-                        </div>
-                      </TableCell>
+      <div className="table-fixed w-full">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead 
+                    key={header.id}
+                    style={{ width: header.column.getSize() }}
+                    className="whitespace-nowrap"
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {sortedRows.length ? (
+              sortedRows.map((row) => (
+                <Collapsible
+                  key={row.id}
+                  asChild
+                  open={expandedRows[row.id]}
+                >
+                  <>
+                    <TableRow data-state={row.getIsSelected() && "selected"}>
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
                     </TableRow>
-                  </CollapsibleContent>
-                </>
-              </Collapsible>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={columns.length} className="h-24 text-center">
-                No results.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+                    <CollapsibleContent asChild>
+                      <TableRow>
+                        <TableCell className="p-0" colSpan={columns.length}>
+                          <div className="bg-accent p-4">
+                            <AssetCollapsibleContent 
+                              asset={row.original} 
+                              onAmountChange={(amount) => handleAmountChange(row.original.address, amount)}
+                              onConfirm={(amount) => handleConfirm(row.original, amount)}
+                              mode={mode}
+                            />
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    </CollapsibleContent>
+                  </>
+                </Collapsible>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-24 text-center">
+                  No results.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

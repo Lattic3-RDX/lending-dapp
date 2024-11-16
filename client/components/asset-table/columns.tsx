@@ -12,6 +12,7 @@ export const columns: ColumnDef<Asset, unknown>[] = [
   {
     id: "select",
     header: "Select assets",
+    size: 100,
     cell: ({ row }) => (
       <Checkbox
         checked={row.getIsSelected()}
@@ -27,6 +28,7 @@ export const columns: ColumnDef<Asset, unknown>[] = [
   {
     accessorKey: "label",
     header: "Asset",
+    size: 200,
     cell: ({ row }) => (
       <div className="flex items-center gap-3">
         <img
@@ -40,7 +42,8 @@ export const columns: ColumnDef<Asset, unknown>[] = [
   },
   {
     accessorKey: "wallet_balance",
-    header: "Wallet Balance",
+    header: "Balance",
+    size: 150,
     cell: ({ row }) => {
       const isExpanded = row.getIsExpanded();
       if (isExpanded) return null;
@@ -55,6 +58,7 @@ export const columns: ColumnDef<Asset, unknown>[] = [
   {
     accessorKey: "select_native",
     header: "Selected Amount",
+    size: 150,
     cell: ({ row }) => {
       const isExpanded = row.getIsExpanded();
       const isSelected = row.getIsSelected();
@@ -69,6 +73,7 @@ export const columns: ColumnDef<Asset, unknown>[] = [
   {
     accessorKey: "apy",
     header: "APY",
+    size: 150,
     cell: ({ row }) => {
       const isExpanded = row.getIsExpanded();
       if (isExpanded) return null;
@@ -79,6 +84,7 @@ export const columns: ColumnDef<Asset, unknown>[] = [
   },
   {
     id: "actions",
+    size: 100,
     cell: ({ row }) => {
       const isExpanded = row.getIsExpanded();
       return (
@@ -93,3 +99,12 @@ export const columns: ColumnDef<Asset, unknown>[] = [
     },
   },
 ];
+
+export const columnSizes = {
+  select: 100,
+  asset: 200,
+  balanceOrAvailable: 150,
+  selectedAmount: 150,
+  apy: 150,
+  actions: 100
+} as const;
