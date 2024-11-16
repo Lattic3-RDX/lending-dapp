@@ -71,7 +71,7 @@ export const borrowColumns: ColumnDef<Asset>[] = [
       const isExpanded = row.getIsExpanded();
       if (isExpanded) return null;
       const apy = getAssetApy(row.getValue("label"), 'borrow');
-      return `${apy}%`;
+      return `${Number(apy).toFixed(1)}%`;
     }
   },
   {

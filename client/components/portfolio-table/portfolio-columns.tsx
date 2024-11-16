@@ -32,6 +32,9 @@ export const portfolioColumns: ColumnDef<Asset>[] = [
       const firstRow = table.getRowModel().rows[0];
       return firstRow?.original.type === 'supply' ? "Supplied" : "Debt";
     },
+    cell: ({ row }) => {
+      return Number(row.getValue("select_native")).toFixed(2);
+    }
   },
   {
     accessorKey: "apy",

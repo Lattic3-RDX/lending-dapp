@@ -79,7 +79,7 @@ export const columns: ColumnDef<Asset, unknown>[] = [
       if (isExpanded) return null;
       
       const apy = row.getValue("apy");
-      return `${apy}%`;
+      return `${Number(apy).toFixed(1)}%`;
     }
   },
   {
