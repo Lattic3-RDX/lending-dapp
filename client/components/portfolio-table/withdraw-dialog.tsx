@@ -26,14 +26,20 @@ export function WithdrawDialog({
   const [newHealthFactor, setNewHealthFactor] = useState<number>(
     totalBorrowDebt <= 0 ? -1 : totalSupply / totalBorrowDebt
   );
+  const [assetPrice, setAssetPrice] = useState(0);
 
   // Reset health factor when dialog opens/closes or asset changes
   useEffect(() => {
     setNewHealthFactor(totalBorrowDebt <= 0 ? -1 : totalSupply / totalBorrowDebt);
   }, [isOpen, asset.address, totalSupply, totalBorrowDebt]);
 
-  const calculateNewHealthFactor = (withdrawAmount: number) => {
-    const assetPrice = getAssetPrice(asset.label);
+  // Add this effect to fetch price when asset changes
+  useEffect(() => {
+    getAssetPrice(asset.label).then(setAssetPrice);
+  }, [asset.label]);
+
+  const calculateNewHealthFactor = async (withdrawAmount: number) => {
+    const assetPrice = await getAssetPrice(asset.label);
     const withdrawValue = withdrawAmount * assetPrice;
     const newSupplyValue = totalSupply - withdrawValue;
     
@@ -44,7 +50,7 @@ export function WithdrawDialog({
     return newSupplyValue / totalBorrowDebt;
   };
 
-  const handleAmountChange = (value: string) => {
+  const handleAmountChange = async (value: string) => {
     setTempAmount(value);
     const amount = parseFloat(value);
     
@@ -58,7 +64,7 @@ export function WithdrawDialog({
       return;
     }
 
-    const newHealthRatio = calculateNewHealthFactor(amount);
+    const newHealthRatio = await calculateNewHealthFactor(amount);
     setNewHealthFactor(newHealthRatio);
     
     // Check if withdrawal would make health ratio too low
@@ -127,7 +133,7 @@ export function WithdrawDialog({
               
               {/* Value and available balance */}
               <div className="flex justify-between text-sm text-foreground px-1">
-                <span>${tempAmount ? (Number(tempAmount) * getAssetPrice(asset.label)).toFixed(2) : "0.00"}</span>
+                <span>${tempAmount ? (Number(tempAmount) * assetPrice).toFixed(2) : "0.00"}</span>
                 <span>Current supply: {asset.select_native}</span>
               </div>
 

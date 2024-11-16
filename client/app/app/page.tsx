@@ -399,6 +399,7 @@ export default function App() {
         });
         return;
       }
+
       const manifest = position_borrow_rtm({
         component: config.marketComponent,
         account: accounts[0].address,
@@ -419,6 +420,7 @@ export default function App() {
           title: "Borrow Successful",
           description: `Borrowed ${assetsToBorrow.length} assets`,
         });
+        await refreshPortfolioData();
       }
     } catch (error) {
       console.error("Borrow error:", error);

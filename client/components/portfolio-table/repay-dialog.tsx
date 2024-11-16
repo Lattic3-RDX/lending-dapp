@@ -35,7 +35,7 @@ export function RepayDialog({
   }, [isOpen, asset.address, totalSupply, totalBorrowDebt]);
 
   const calculateNewHealthFactor = (repayAmount: number) => {
-    const assetPrice = getAssetPrice(asset.label);
+    const assetPrice = Number(getAssetPrice(asset.label));
     const repayValue = repayAmount * assetPrice;
     const newDebtValue = totalBorrowDebt - repayValue;
     
@@ -121,7 +121,7 @@ export function RepayDialog({
               </div>
               
               <div className="flex justify-between text-sm text-foreground px-1">
-                <span>${tempAmount ? (Number(tempAmount) * getAssetPrice(asset.label)).toFixed(2) : "0.00"}</span>
+                <span>${tempAmount ? (Number(tempAmount) * Number(getAssetPrice(asset.label))).toFixed(2) : "0.00"}</span>
                 <span>Current debt: {asset.select_native}</span>
               </div>
 
