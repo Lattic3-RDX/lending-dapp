@@ -505,7 +505,7 @@ export default function App() {
     setIsBorrowDialogOpen(true);
   };
 
-  const columns = createPortfolioColumns(refreshPortfolioData);
+  const columns = createPortfolioColumns(refreshPortfolioData, totalSupply, totalBorrowDebt);
 
   return (
     <div className="container mx-auto py-6 space-y-4">

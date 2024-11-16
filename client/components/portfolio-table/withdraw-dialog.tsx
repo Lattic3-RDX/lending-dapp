@@ -9,31 +9,63 @@ interface WithdrawDialogProps {
   onClose: () => void;
   onConfirm: (amount: number) => void;
   asset: Asset;
+  totalSupply: number;
+  totalBorrowDebt: number;
 }
 
-export function WithdrawDialog({ isOpen, onClose, onConfirm, asset }: WithdrawDialogProps) {
+export function WithdrawDialog({ 
+  isOpen, 
+  onClose, 
+  onConfirm, 
+  asset,
+  totalSupply,
+  totalBorrowDebt 
+}: WithdrawDialogProps) {
   const [tempAmount, setTempAmount] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [newHealthFactor, setNewHealthFactor] = useState<number>(2.0);
-  const [assetPrice, setAssetPrice] = useState<number>(0);
+  const [newHealthFactor, setNewHealthFactor] = useState<number>(
+    totalBorrowDebt <= 0 ? -1 : totalSupply / totalBorrowDebt
+  );
 
+  // Reset health factor when dialog opens/closes or asset changes
   useEffect(() => {
-    setTempAmount("");
-    setError(null);
-    const price = getAssetPrice(asset.label);
-    setAssetPrice(price);
-  }, [asset.address, asset.label]);
+    setNewHealthFactor(totalBorrowDebt <= 0 ? -1 : totalSupply / totalBorrowDebt);
+  }, [isOpen, asset.address, totalSupply, totalBorrowDebt]);
+
+  const calculateNewHealthFactor = (withdrawAmount: number) => {
+    const assetPrice = getAssetPrice(asset.label);
+    const withdrawValue = withdrawAmount * assetPrice;
+    const newSupplyValue = totalSupply - withdrawValue;
+    
+    // If there's no debt, health ratio is infinite
+    if (totalBorrowDebt <= 0) return -1;
+    
+    // Calculate new health ratio
+    return newSupplyValue / totalBorrowDebt;
+  };
 
   const handleAmountChange = (value: string) => {
     setTempAmount(value);
     const amount = parseFloat(value);
+    
     if (isNaN(amount)) {
       setError("Please enter a valid number");
-    } else if (amount > asset.select_native) {
+      return;
+    }
+    
+    if (amount > asset.select_native) {
       setError("Amount exceeds supplied balance");
+      return;
+    }
+
+    const newHealthRatio = calculateNewHealthFactor(amount);
+    setNewHealthFactor(newHealthRatio);
+    
+    // Check if withdrawal would make health ratio too low
+    if (newHealthRatio !== -1 && newHealthRatio < 1.1) {
+      setError("Withdrawal would put your position at risk");
     } else {
       setError(null);
-      setNewHealthFactor(2.0 - (amount / asset.select_native) * 0.5);
     }
   };
 
@@ -95,7 +127,7 @@ export function WithdrawDialog({ isOpen, onClose, onConfirm, asset }: WithdrawDi
               
               {/* Value and available balance */}
               <div className="flex justify-between text-sm text-foreground px-1">
-                <span>${tempAmount ? (Number(tempAmount) * assetPrice).toFixed(2) : "0.00"}</span>
+                <span>${tempAmount ? (Number(tempAmount) * getAssetPrice(asset.label)).toFixed(2) : "0.00"}</span>
                 <span>Current supply: {asset.select_native}</span>
               </div>
 
@@ -106,8 +138,8 @@ export function WithdrawDialog({ isOpen, onClose, onConfirm, asset }: WithdrawDi
           <div className="space-y-3">
             <div className="flex justify-between text-base">
               <span>New Health Factor</span>
-              <span className={newHealthFactor < 1.5 ? "text-red-500" : "text-green-500"}>
-                {newHealthFactor.toFixed(2)}
+              <span className={newHealthFactor < 1.5 && newHealthFactor !== -1 ? "text-red-500" : "text-green-500"}>
+                {newHealthFactor === -1 ? '∞' : newHealthFactor.toFixed(2)}
               </span>
             </div>
           </div>

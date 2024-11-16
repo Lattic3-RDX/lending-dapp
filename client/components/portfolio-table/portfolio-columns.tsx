@@ -11,7 +11,11 @@ import { useRadixContext } from "@/contexts/provider";
 import config from "@/lib/config.json";
 import position_repay_rtm from "@/lib/manifests/position_repay";
 
-export const createPortfolioColumns = (refreshPortfolioData: () => Promise<void>): ColumnDef<Asset>[] => [
+export const createPortfolioColumns = (
+  refreshPortfolioData: () => Promise<void>,
+  totalSupply: number,
+  totalBorrowDebt: number
+): ColumnDef<Asset>[] => [
   {
     accessorKey: "label",
     header: "Assets",
@@ -218,10 +222,12 @@ export const createPortfolioColumns = (refreshPortfolioData: () => Promise<void>
 
           {row.original.type === 'supply' ? (
             <WithdrawDialog
-              isOpen={isDialogOpen}
-              onClose={() => setIsDialogOpen(false)}
-              onConfirm={handleWithdraw}
-              asset={row.original}
+            isOpen={isDialogOpen}
+            onClose={() => setIsDialogOpen(false)}
+            onConfirm={handleWithdraw}
+            asset={row.original}
+            totalSupply={totalSupply}
+            totalBorrowDebt={totalBorrowDebt}
             />
           ) : (
             <RepayDialog
@@ -229,6 +235,8 @@ export const createPortfolioColumns = (refreshPortfolioData: () => Promise<void>
               onClose={() => setIsDialogOpen(false)}
               onConfirm={handleRepay}
               asset={row.original}
+              totalSupply={totalSupply}
+              totalBorrowDebt={totalBorrowDebt}
             />
           )}
         </>

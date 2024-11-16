@@ -9,30 +9,60 @@ interface RepayDialogProps {
   onClose: () => void;
   onConfirm: (amount: number) => void;
   asset: Asset;
+  totalSupply: number;
+  totalBorrowDebt: number;
 }
 
-export function RepayDialog({ isOpen, onClose, onConfirm, asset }: RepayDialogProps) {
+export function RepayDialog({ 
+  isOpen, 
+  onClose, 
+  onConfirm, 
+  asset,
+  totalSupply,
+  totalBorrowDebt 
+}: RepayDialogProps) {
   const [tempAmount, setTempAmount] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [newHealthFactor, setNewHealthFactor] = useState<number>(1.5); // This should come from your backend calculation
+  const [newHealthFactor, setNewHealthFactor] = useState<number>(
+    totalBorrowDebt <= 0 ? -1 : totalSupply / totalBorrowDebt
+  );
 
+  // Reset health factor when dialog opens/closes or asset changes
   useEffect(() => {
     setTempAmount("");
     setError(null);
-  }, [asset.address]);
+    setNewHealthFactor(totalBorrowDebt <= 0 ? -1 : totalSupply / totalBorrowDebt);
+  }, [isOpen, asset.address, totalSupply, totalBorrowDebt]);
+
+  const calculateNewHealthFactor = (repayAmount: number) => {
+    const assetPrice = getAssetPrice(asset.label);
+    const repayValue = repayAmount * assetPrice;
+    const newDebtValue = totalBorrowDebt - repayValue;
+    
+    // If repaying all debt, health ratio is infinite
+    if (newDebtValue <= 0) return -1;
+    
+    // Calculate new health ratio
+    return totalSupply / newDebtValue;
+  };
 
   const handleAmountChange = (value: string) => {
     setTempAmount(value);
     const amount = parseFloat(value);
+    
     if (isNaN(amount)) {
       setError("Please enter a valid number");
-    } else if (amount > asset.select_native) {
-      setError("Amount exceeds borrowed balance");
-    } else {
-      setError(null);
-      // Here you would typically make an API call to calculate the new health factor
-      setNewHealthFactor(1.5 + (amount / asset.select_native) * 0.5);
+      return;
     }
+    
+    if (amount > asset.select_native) {
+      setError("Amount exceeds borrowed balance");
+      return;
+    }
+
+    const newHealthRatio = calculateNewHealthFactor(amount);
+    setNewHealthFactor(newHealthRatio);
+    setError(null);
   };
 
   const handleMaxClick = () => {
