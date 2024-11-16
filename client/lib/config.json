@@ -3,5 +3,7 @@
     "dAppDefinitionAddr": "account_tdx_2_12xfek2nncckfppcslye0vwusaq6qtt6j896w5tcmfh7wy78hjzqc96",
     "borrowerBadgeAddr": "resource_tdx_2_1n2gy6n2j8rc9c7nhlz423hwa9mqf6kvazrusty7gxwzvqz4aghthth",
     "marketComponent": "component_tdx_2_1cz9lgv6zpke438kz6fy92gteskgmy4g2xc7d95n0v7s0rn5zy6mplq",
-    "gatewayApi": "https://babylon-gateway.radixdlt.com"
+    "gatewayApi": "https://babylon-gateway.radixdlt.com",
+    "priceStreamPackage": "package_tdx_2_1ph029rt4c78r3zx0s7q22xnz5eqpu4fajlygqqz7sg95rq026zncwj",
+    "priceStreamComponent": "component_tdx_2_1cp7xyve2c0a6mrptqw76dun6et3eq5490qpagrlsfu2a4f29aw5e8n"
   }

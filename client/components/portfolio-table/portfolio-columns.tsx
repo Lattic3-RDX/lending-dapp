@@ -1,7 +1,7 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Asset, getAssetIcon } from "@/types/asset";
 import { Button } from "../ui/button";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { WithdrawDialog } from "./withdraw-dialog";
 import { useToast } from "../ui/use-toast";
 import { RepayDialog } from "./repay-dialog";
@@ -36,6 +36,14 @@ export const portfolioColumns: ColumnDef<Asset>[] = [
   {
     accessorKey: "apy",
     header: "APY",
+    cell: ({ row }) => {
+      console.log("APY value:", row.getValue("apy"));
+      return (
+        <div className={row.original.type === 'supply' ? 'text-success' : 'text-destructive'}>
+          {Number(row.getValue("apy")).toFixed(2)}%
+        </div>
+      );
+    }
   },
   {
     id: "actions",

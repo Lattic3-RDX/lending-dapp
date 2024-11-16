@@ -17,7 +17,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { getAssetIcon, AssetName } from '@/types/asset';
+import { getAssetIcon, AssetName, getAssetPrice } from '@/types/asset';
 
 interface Asset {
   label: string;
@@ -76,25 +76,20 @@ const SupplyDialog: React.FC<SupplyDialogProps> = ({
   onConfirm,
   selectedAssets,
 }) => {
-
-  // Filter out assets with non-zero amounts
-  const assetsToSupply = React.useMemo(
-    () => selectedAssets.filter((asset) => asset.select_native > 0),
+  // Calculate total USD value
+  const totalUsdValue = React.useMemo(
+    () => selectedAssets.reduce((sum, asset) => {
+      const price = getAssetPrice(asset.label as AssetName);
+      return sum + (asset.select_native * price);
+    }, 0),
     [selectedAssets]
   );
 
-  // Calculate totals
-  const totalSupply = React.useMemo(
-    () => assetsToSupply.reduce((sum, asset) => sum + asset.select_native, 0),
-    [assetsToSupply]
-  );
-
   const table = useReactTable({
-    data: assetsToSupply,
+    data: selectedAssets,
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
-
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -103,9 +98,9 @@ const SupplyDialog: React.FC<SupplyDialogProps> = ({
           <DialogTitle className="text-2xl font-bold">Preview Supply</DialogTitle>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <div className="text-sm text-gray-500">Total Supply</div>
+              <div className="text-sm text-gray-500">Total Value</div>
               <div className="text-xl font-semibold">
-                {totalSupply.toFixed(2)}
+                ${totalUsdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
             </div>
             <div className="flex flex-col items-end">
@@ -163,7 +158,7 @@ const SupplyDialog: React.FC<SupplyDialogProps> = ({
           <Button
             onClick={onConfirm}
             className="w-full bg-black text-white hover:bg-gray-800"
-            disabled={assetsToSupply.length === 0}
+            disabled={selectedAssets.length === 0}
           >
             Confirm Supply
           </Button>

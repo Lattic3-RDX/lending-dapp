@@ -493,6 +493,12 @@ export default function App() {
     setIsBorrowDialogOpen(true);
   };
 
+  const calculateAverageApy = (assets: Asset[]) => {
+    if (assets.length === 0) return 0;
+    const totalApy = assets.reduce((sum, asset) => sum + asset.apy, 0);
+    return totalApy / assets.length;
+  };
+
   const refreshPortfolioData = async () => {
     try {
       setIsLoading(true);
@@ -583,8 +589,13 @@ export default function App() {
         asset !== null && asset.type === 'borrow'
       ));
 
+      const totalSupplyApy = calculateAverageApy(supplyPortfolioData);
+      const totalBorrowApy = calculateAverageApy(borrowPortfolioData);
+
       setSupplyPortfolioData(supplyPortfolioData);
       setBorrowPortfolioData(borrowPortfolioData);
+      setTotalSupplyApy(totalSupplyApy);
+      setTotalBorrowApy(totalBorrowApy);
     } catch (error) {
       console.error("Error refreshing portfolio data:", error);
     } finally {

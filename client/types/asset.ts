@@ -165,3 +165,21 @@ export const getWalletBalance = async (asset: AssetName, accountAddress: string)
   const balances = await getWalletBalances(accountAddress);
   return balances[asset] || 0;
 };
+
+export const getAssetPrice = (asset: AssetName): number => {
+  // TODO: Replace with actual price fetching logic
+  const mockPrices: Record<AssetName, number> = {
+    'XRD': 0.0478,
+    'xwBTC': 65000.00,
+    'FLOOP': 0.01,
+    'xUSDT': 1.00,
+    'EARLY': 0.05,
+    'HUG': 0.15,
+    'DFP2': 0.25,
+    'xETH': 3500.00,
+    'ASTRL': 0.10,
+    'CAVIAR': 1.50
+  };
+
+  return mockPrices[asset] || 0;
+};

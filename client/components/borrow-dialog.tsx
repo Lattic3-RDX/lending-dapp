@@ -16,7 +16,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { getAssetIcon, AssetName } from '@/types/asset';
+import { getAssetIcon, AssetName, getAssetPrice } from '@/types/asset';
 
 interface Asset {
   label: string;
@@ -80,8 +80,11 @@ const BorrowDialog: React.FC<BorrowDialogProps> = ({
     [selectedAssets]
   );
 
-  const totalBorrow = React.useMemo(
-    () => assetsToBorrow.reduce((sum, asset) => sum + asset.select_native, 0),
+  const totalUsdValue = React.useMemo(
+    () => assetsToBorrow.reduce((sum, asset) => {
+      const price = getAssetPrice(asset.label as AssetName);
+      return sum + (asset.select_native * price);
+    }, 0),
     [assetsToBorrow]
   );
 
@@ -98,9 +101,9 @@ const BorrowDialog: React.FC<BorrowDialogProps> = ({
           <DialogTitle className="text-2xl font-bold">Preview Borrow</DialogTitle>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <div className="text-sm text-gray-500">Total Borrow</div>
+              <div className="text-sm text-gray-500">Total Value</div>
               <div className="text-xl font-semibold">
-                {totalBorrow.toFixed(2)}
+                ${totalUsdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
             </div>
             <div className="flex flex-col items-end">

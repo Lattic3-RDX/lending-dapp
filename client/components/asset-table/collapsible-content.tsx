@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Asset, getAssetIcon } from "@/types/asset";
+import { Asset, getAssetIcon, getAssetPrice } from "@/types/asset";
 
 interface AssetCollapsibleContentProps {
   asset: Asset;
@@ -13,6 +13,13 @@ interface AssetCollapsibleContentProps {
 export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm, mode }: AssetCollapsibleContentProps) {
   const [tempAmount, setTempAmount] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  const usdValue = useMemo(() => {
+    const amount = parseFloat(tempAmount);
+    if (isNaN(amount)) return 0;
+    const price = getAssetPrice(asset.label);
+    return amount * price;
+  }, [tempAmount, asset.label]);
 
   const handleAmountChange = (value: string) => {
     setTempAmount(value);
@@ -81,7 +88,8 @@ export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm, mode
             Max
           </Button>
         </div>
-        <div className="flex justify-between text-sm text-foreground/80 px-1">
+        <div className="flex justify-between text-sm text-foreground px-1">
+          <span>≈ ${usdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           {mode === 'borrow' ? (
             <span>Available: {asset.available ?? 0}</span>
           ) : (
