@@ -4,11 +4,11 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 interface StatisticsCardProps {
   healthRatio: number;
   netWorth: number;
-  netApy: number;
+  netAPR: number;
   isLoading: boolean;
 }
 
-export function StatisticsCard({ healthRatio, netWorth, netApy, isLoading }: StatisticsCardProps) {
+export function StatisticsCard({ healthRatio, netWorth, netAPR, isLoading }: StatisticsCardProps) {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -56,12 +56,12 @@ export function StatisticsCard({ healthRatio, netWorth, netApy, isLoading }: Sta
 
           <div className="group flex flex-col items-center p-6 rounded-lg bg-background/50 hover:bg-muted/50 transition-all duration-300 hover:shadow-md border border-accent/10">
             <div className="text-2xl font-semibold leading-none tracking-tight">
-              Net APY
+              Net APR
             </div>
             <div className={`text-4xl font-bold transition-colors duration-300 ${
-              netApy > 0 ? 'text-emerald-500' : 'text-destructive'
+              netAPR > 0 ? 'text-emerald-500' : 'text-destructive'
             } group-hover:scale-110 transform transition-transform duration-300`}>
-              {netApy.toFixed(1)}%
+              {netAPR.toFixed(1)}%
             </div>
           </div>
         </div>

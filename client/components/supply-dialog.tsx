@@ -23,7 +23,7 @@ interface Asset {
   label: string;
   address: string;
   select_native: number;
-  apy: number;
+  APR: number;
 }
 
 interface SupplyDialogProps {
@@ -62,11 +62,11 @@ const columns: ColumnDef<Asset>[] = [
     ),
   },
   {
-    accessorKey: 'apy',
-    header: () => <div className="text-right">APY</div>,
+    accessorKey: 'APR',
+    header: () => <div className="text-right">APR</div>,
     cell: ({ row }) => (
       <div className="text-right text-green-500 font-medium">
-        {Number(row.getValue('apy')).toFixed(2)}%
+        {Number(row.getValue('APR')).toFixed(2)}%
       </div>
     ),
   },

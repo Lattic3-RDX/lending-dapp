@@ -14,7 +14,7 @@ interface Asset {
 }
 
 export default function position_repay_rtm({ component, account, position_badge_address, position_badge_local_id, asset }: ManifestArgs) {
-  let rtm = `
+  const rtm = `
 CALL_METHOD
     Address("${account}")
     "withdraw_non_fungibles"

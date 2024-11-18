@@ -37,7 +37,7 @@ TAKE_FROM_WORKTOP
     bucket_vec += `Bucket("bucket_${asset.address}"), `
   })
 
-  let rtm = `
+  const rtm = `
 CALL_METHOD
     Address("${account}")
     "withdraw_non_fungibles"

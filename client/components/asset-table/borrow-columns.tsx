@@ -1,5 +1,5 @@
 import React from "react";
-import { getAssetApy, getAssetIcon, Asset } from "@/types/asset";
+import { getAssetAPR, getAssetIcon, Asset } from "@/types/asset";
 import { ColumnDef } from "@tanstack/react-table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronDown, ChevronUp } from "lucide-react";
@@ -64,14 +64,14 @@ export const borrowColumns: ColumnDef<Asset>[] = [
     },
   },
   {
-    accessorKey: "apy",
-    header: "APY",
+    accessorKey: "APR",
+    header: "APR",
     size: 150,
     cell: ({ row }) => {
       const isExpanded = row.getIsExpanded();
       if (isExpanded) return null;
-      const apy = getAssetApy(row.getValue("label"), 'borrow');
-      return `${Number(apy).toFixed(1)}%`;
+      const APR = getAssetAPR(row.getValue("label"), 'borrow');
+      return `${Number(APR).toFixed(1)}%`;
     }
   },
   {

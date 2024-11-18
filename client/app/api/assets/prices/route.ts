@@ -1,5 +1,6 @@
 /* ------------------ Imports ----------------- */
-import { priceStreamComponent } from "@/lib/config.json";
+import config from "@/lib/config.json";
+const { priceStreamComponent } = config;
 
 /* ------------------- Setup ------------------ */
 // Force caching

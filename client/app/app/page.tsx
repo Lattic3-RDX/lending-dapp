@@ -9,7 +9,7 @@ import { columns } from "@/components/asset-table/columns";
 import SupplyDialog from "@/components/supply-dialog";
 import { useRadixContext } from "@/contexts/provider";
 import { gatewayApi, rdt } from "@/lib/radix";
-import { getAssetAddrRecord, Asset, AssetName, getAssetApy, getWalletBalance, assetConfigs, getAssetPrice } from "@/types/asset";
+import { getAssetAddrRecord, Asset, AssetName, getAssetAPR, getWalletBalance, assetConfigs, getAssetPrice } from "@/types/asset";
 import { PortfolioTable } from "@/components/portfolio-table/portfolio-table";
 import { createPortfolioColumns } from "@/components/portfolio-table/portfolio-columns";
 import { useToast } from "@/components/ui/use-toast";
@@ -69,45 +69,45 @@ export default function App() {
       wallet_balance: -1,
       available: 100.00,
       select_native: 0,
-      apy: getAssetApy(label as AssetName, 'supply'),
+      APR: getAssetAPR(label as AssetName, 'supply'),
       pool_unit_address: '',
     }))
   );
   const [portfolioData, setSupplyPortfolioData] = useState<Asset[]>([]);
   const [totalSupply, setTotalSupply] = useState<number>(0);
-  const [totalSupplyApy, setTotalSupplyApy] = useState<number>(0);
+  const [totalSupplyAPR, setTotalSupplyAPR] = useState<number>(0);
   const [showSupplyPreview, setShowSupplyPreview] = useState(false);
   const [showBorrowPreview, setShowBorrowPreview] = useState(false);
   const [isBorrowDialogOpen, setIsBorrowDialogOpen] = useState(false);
   const [borrowPortfolioData, setBorrowPortfolioData] = useState<Asset[]>([]);
   const [totalBorrowDebt, setTotalBorrowDebt] = useState<number>(0);
-  const [totalBorrowApy, setTotalBorrowApy] = useState<number>(0);
+  const [totalBorrowAPR, setTotalBorrowAPR] = useState<number>(0);
   const [borrowPowerUsed, setBorrowPowerUsed] = useState<number>(0);
   const [netWorth, setNetWorth] = useState<number>(0);
-  const [netApy, setNetApy] = useState<number>(0);
+  const [netAPR, setNetAPR] = useState<number>(0);
   const [health, setHealth] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [calculatingApy, setCalculatingApy] = useState(false);
+  const [calculatingAPR, setCalculatingAPR] = useState(false);
 
   const hasSelectedSupplyAssets = Object.keys(supplyRowSelection).length > 0;
   const hasSelectedBorrowAssets = Object.keys(borrowRowSelection).length > 0;
 
-  const calculateTotalApy = async (assets: Asset[], type: 'supply' | 'borrow') => {
+  const calculateTotalAPR = async (assets: Asset[], type: 'supply' | 'borrow') => {
     if (assets.length === 0) return 0;
     
     let totalValue = 0;
-    let weightedApy = 0;
+    let weightedAPR = 0;
     
     await Promise.all(
       assets.map(async (asset) => {
         const price = await getAssetPrice(asset.label);
         const value = asset.select_native * price;
         totalValue += value;
-        weightedApy += value * getAssetApy(asset.label, type);
+        weightedAPR += value * getAssetAPR(asset.label, type);
       })
     );
     
-    return totalValue > 0 ? weightedApy / totalValue : 0;
+    return totalValue > 0 ? weightedAPR / totalValue : 0;
   };
 
   const calculateBorrowPower = (totalSupplyValue: number, totalDebtValue: number): number => {
@@ -195,7 +195,7 @@ export default function App() {
             label: label as AssetName,
             wallet_balance: await getWalletBalance(label as AssetName, accounts[0].address),
             select_native: amount,
-            apy: getAssetApy(label as AssetName),
+            APR: getAssetAPR(label as AssetName),
             pool_unit_address: assetConfigs[label as AssetName].pool_unit_address,
             type: 'supply'
           } as Asset;
@@ -221,7 +221,7 @@ export default function App() {
             label: label as AssetName,
             wallet_balance: await getWalletBalance(label as AssetName, accounts[0].address),
             select_native: amount,
-            apy: getAssetApy(label as AssetName),
+            APR: getAssetAPR(label as AssetName),
             pool_unit_address: assetConfigs[label as AssetName].pool_unit_address,
             type: 'borrow'
           };
@@ -236,27 +236,27 @@ export default function App() {
       const netWorthValue = totalSupplyValue - totalDebtValue;
       console.log("Net Worth: ", netWorthValue);
 
-      // Calculate total APYs from the portfolio data
-      const calculatedSupplyApy = await calculateTotalApy(supplyPortfolioData, 'supply');
-      const calculatedBorrowApy = await calculateTotalApy(borrowPortfolioData, 'borrow');
-      const netApyValue = (totalSupplyValue > 0 || totalDebtValue > 0) 
-        ? (calculatedSupplyApy * totalSupplyValue - calculatedBorrowApy * totalDebtValue) 
+      // Calculate total APRs from the portfolio data
+      const calculatedSupplyAPR = await calculateTotalAPR(supplyPortfolioData, 'supply');
+      const calculatedBorrowAPR = await calculateTotalAPR(borrowPortfolioData, 'borrow');
+      const netAPRValue = (totalSupplyValue > 0 || totalDebtValue > 0) 
+        ? (calculatedSupplyAPR * totalSupplyValue - calculatedBorrowAPR * totalDebtValue) 
           / (totalSupplyValue > 0 ? totalSupplyValue : totalDebtValue)
         : 0;
 
-      console.log("Supply APY: ", calculatedSupplyApy);
-      console.log("Borrow APY: ", calculatedBorrowApy);
-      console.log("Net APY: ", netApyValue);
+      console.log("Supply APR: ", calculatedSupplyAPR);
+      console.log("Borrow APR: ", calculatedBorrowAPR);
+      console.log("Net APR: ", netAPRValue);
 
       setHealth(healthRatio);
       setNetWorth(netWorthValue);
-      setNetApy(netApyValue);
+      setNetAPR(netAPRValue);
       setTotalSupply(totalSupplyValue);
       setTotalBorrowDebt(totalDebtValue);
 
       // Use the calculated values instead of the state values
-      setTotalSupplyApy(calculatedSupplyApy);
-      setTotalBorrowApy(calculatedBorrowApy);
+      setTotalSupplyAPR(calculatedSupplyAPR);
+      setTotalBorrowAPR(calculatedBorrowAPR);
 
       setSupplyPortfolioData(supplyPortfolioData);
       setBorrowPortfolioData(borrowPortfolioData);
@@ -528,7 +528,7 @@ export default function App() {
       <StatisticsCard 
         healthRatio={health}
         netWorth={netWorth}
-        netApy={netApy}
+        netAPR={netAPR}
         isLoading={isLoading}
       />
       
@@ -543,8 +543,8 @@ export default function App() {
                 <div className="grid grid-cols-[auto,1fr] gap-x-6 items-center min-h-[72px]">
                   <CardDescription className="text-left text-foreground">Total Supply:</CardDescription>
                   <CardDescription className="text-right text-foreground">${totalSupply.toFixed(2)}</CardDescription>
-                  <CardDescription className="text-left text-foreground">Total APY:</CardDescription>
-                  <CardDescription className="text-right text-foreground">{totalSupplyApy.toFixed(1)}%</CardDescription>
+                  <CardDescription className="text-left text-foreground">Total APR:</CardDescription>
+                  <CardDescription className="text-right text-foreground">{totalSupplyAPR.toFixed(1)}%</CardDescription>
                   <div className="col-span-2"></div>
                 </div>
               </div>
@@ -568,8 +568,8 @@ export default function App() {
                 <div className="grid grid-cols-[auto,1fr] gap-x-6 items-center min-h-[72px]">
                   <CardDescription className="text-left text-foreground">Total Debt:</CardDescription>
                   <CardDescription className="text-right text-foreground">${totalBorrowDebt.toFixed(2)}</CardDescription>
-                  <CardDescription className="text-left text-foreground">Total APY:</CardDescription>
-                  <CardDescription className="text-right text-foreground">{totalBorrowApy.toFixed(1)}%</CardDescription>
+                  <CardDescription className="text-left text-foreground">Total APR:</CardDescription>
+                  <CardDescription className="text-right text-foreground">{totalBorrowAPR.toFixed(1)}%</CardDescription>
                   <CardDescription className="text-left text-foreground">Borrow Power Used:</CardDescription>
                   <CardDescription className="text-right text-foreground">{borrowPowerUsed.toFixed(1)}%</CardDescription>
                 </div>

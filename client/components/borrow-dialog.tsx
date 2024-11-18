@@ -16,13 +16,13 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { getAssetIcon, AssetName, getAssetPrice, getAssetApy } from '@/types/asset';
+import { getAssetIcon, AssetName, getAssetPrice, getAssetAPR } from '@/types/asset';
 
 interface Asset {
   label: string;
   address: string;
   select_native: number;
-  apy: number;
+  APR: number;
 }
 
 interface BorrowDialogProps {
@@ -61,11 +61,11 @@ const columns: ColumnDef<Asset>[] = [
     ),
   },
   {
-    accessorKey: 'apy',
-    header: () => <div className="text-right">APY</div>,
+    accessorKey: 'APR',
+    header: () => <div className="text-right">APR</div>,
     cell: ({ row }) => (
       <div className="text-right text-red-500 font-medium">
-        {getAssetApy(row.getValue('label') as AssetName, 'borrow').toFixed(2)}%
+        {getAssetAPR(row.getValue('label') as AssetName, 'borrow').toFixed(2)}%
       </div>
     ),
   },

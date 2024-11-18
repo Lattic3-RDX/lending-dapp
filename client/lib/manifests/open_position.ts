@@ -34,7 +34,7 @@ TAKE_FROM_WORKTOP
   })
 
   // Open position manifest
-  let rtm = `
+  const rtm = `
 ${asset_buckets}
 
 CALL_METHOD

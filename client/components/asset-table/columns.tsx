@@ -71,15 +71,15 @@ export const columns: ColumnDef<Asset, unknown>[] = [
     },
   },
   {
-    accessorKey: "apy",
-    header: "APY",
+    accessorKey: "APR",
+    header: "APR",
     size: 150,
     cell: ({ row }) => {
       const isExpanded = row.getIsExpanded();
       if (isExpanded) return null;
       
-      const apy = row.getValue("apy");
-      return `${Number(apy).toFixed(1)}%`;
+      const APR = row.getValue("APR");
+      return `${Number(APR).toFixed(1)}%`;
     }
   },
   {
@@ -105,6 +105,6 @@ export const columnSizes = {
   asset: 200,
   balanceOrAvailable: 150,
   selectedAmount: 150,
-  apy: 150,
+  APR: 150,
   actions: 100
 } as const;

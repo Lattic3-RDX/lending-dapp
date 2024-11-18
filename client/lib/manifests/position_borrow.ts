@@ -23,7 +23,7 @@ export default function position_borrow_rtm({ component, account, position_badge
     Address("${asset.address}") => PreciseDecimal("${asset.amount}"),`
   })
 
-  let rtm = `
+  const rtm = `
 CALL_METHOD
     Address("${account}")
     "withdraw_non_fungibles"
