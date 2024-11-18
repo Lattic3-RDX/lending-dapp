@@ -49,6 +49,7 @@ export function AssetTable<TData extends Asset, TValue>({
   const [tableData, setTableData] = React.useState(data);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [expandedRows, setExpandedRows] = React.useState<Record<string, boolean>>({});
+  const [selectionOrder, setSelectionOrder] = React.useState<string[]>([]);
 
   const handleAmountChange = (address: string, amount: number) => {
     setTableData(current =>
@@ -112,7 +113,6 @@ export function AssetTable<TData extends Asset, TValue>({
     getCoreRowModel: getCoreRowModel(),
     onColumnFiltersChange: setColumnFilters,
     getFilteredRowModel: getFilteredRowModel(),
-    onRowSelectionChange: handleRowSelectionChange,
     enableExpanding: true,
     onExpandedChange: (updaterOrValue) => {
       const newValue = typeof updaterOrValue === 'function'
@@ -147,9 +147,35 @@ export function AssetTable<TData extends Asset, TValue>({
       rowSelection,
       expanded: expandedRows,
     },
+    enableRowSelection: true,
+    onRowSelectionChange: (updater) => {
+      const newSelection = typeof updater === 'function' 
+        ? updater(rowSelection) 
+        : updater;
+      
+      // Get currently selected rows
+      const selectedRows = Object.entries(newSelection)
+        .filter(([_, isSelected]) => isSelected)
+        .map(([id]) => id);
+
+      // Compare with previous selection to find newly selected row
+      const previouslySelected = Object.entries(rowSelection)
+        .filter(([_, isSelected]) => isSelected)
+        .map(([id]) => id);
+
+      const newlySelected = selectedRows.find(id => !previouslySelected.includes(id));
+      
+      // If there's a newly selected row, expand it and collapse others
+      if (newlySelected) {
+        setExpandedRows({ [newlySelected]: true });
+      } else if (selectedRows.length === 0) {
+        setExpandedRows({});
+      }
+      
+      handleRowSelectionChange(newSelection);
+    },
   });
 
-  // Sort rows: selected first, then by balance, zero/negative at bottom
   const sortedRows = React.useMemo(() => {
     return table.getRowModel().rows.sort((a, b) => {
       const balanceA = Number(a.original.wallet_balance);
@@ -161,8 +187,14 @@ export function AssetTable<TData extends Asset, TValue>({
       if (isSelectedA && !isSelectedB) return -1;
       if (!isSelectedA && isSelectedB) return 1;
       
+      // If both are selected, sort by selection order
+      if (isSelectedA && isSelectedB) {
+        const indexA = selectionOrder.indexOf(a.id);
+        const indexB = selectionOrder.indexOf(b.id);
+        return indexA - indexB; // Earlier selections go to top
+      }
+      
       // Second priority: Balance availability
-      // Put loading states (-1) at the bottom
       if (balanceA === -1) return 1;
       if (balanceB === -1) return -1;
       
@@ -170,22 +202,9 @@ export function AssetTable<TData extends Asset, TValue>({
       if (balanceA <= 0 && balanceB > 0) return 1;
       if (balanceA > 0 && balanceB <= 0) return -1;
       
-      // If both are selected or unselected and have same balance status,
-      // maintain original order
       return 0;
     });
-  }, [table.getRowModel().rows]);
-
-  const handleExpansionChange = (rowId: string) => {
-    setExpandedRows(prev => {
-      // If clicking on already expanded row, allow it to close
-      if (prev[rowId]) {
-        return {};
-      }
-      // Otherwise, expand the clicked row and close others
-      return { [rowId]: true };
-    });
-  };
+  }, [table.getRowModel().rows, selectionOrder]);
 
   return (
     <div className="rounded-md border">
