@@ -6,17 +6,21 @@ use scrypto::prelude::*;
 #[blueprint]
 mod lattic3_cluster {
     enable_method_auth! {
-        // roles {},
+        roles {
+            admin => updatable_by: [OWNER];
+        },
         methods {
-            supply   => restrict_to: [OWNER];
-            borrow   => restrict_to: [OWNER];
-            withdraw => restrict_to: [OWNER];
-            repay    => restrict_to: [OWNER];
+            supply   => restrict_to: [OWNER, admin];
+            borrow   => restrict_to: [OWNER, admin];
+            withdraw => restrict_to: [OWNER, admin];
+            repay    => restrict_to: [OWNER, admin];
 
-            provide_liquidity => restrict_to: [OWNER];
+            get_supply_ratio  => PUBLIC;
+            get_debt_ratio    => PUBLIC;
+            provide_liquidity => restrict_to: [OWNER, admin];
 
             tick_interest              => PUBLIC;
-            set_interest_tick_interval => restrict_to: [OWNER];
+            set_interest_tick_interval => restrict_to: [OWNER, admin];
         }
     }
 
@@ -42,7 +46,11 @@ mod lattic3_cluster {
     }
 
     impl Cluster {
-        pub fn instantiate(resource: ResourceAddress, cluster_owner_rule: AccessRule) -> Global<Cluster> {
+        pub fn instantiate(
+            resource: ResourceAddress,
+            cluster_owner_rule: AccessRule,
+            cluster_admin_rule: AccessRule,
+        ) -> Global<Cluster> {
             // Reserve component address
             let (address_reservation, component_address) = Runtime::allocate_component_address(Cluster::blueprint_id());
 
@@ -130,10 +138,14 @@ mod lattic3_cluster {
                 }
             };
 
+            let component_roles = roles! {
+                admin => cluster_admin_rule;
+            };
+
             let component = component_state
                 .instantiate()
                 .prepare_to_globalize(cluster_owner)
-                // / .roles(component_roles)
+                .roles(component_roles)
                 .metadata(component_metadata)
                 .with_address(address_reservation)
                 .globalize();
@@ -141,27 +153,30 @@ mod lattic3_cluster {
             component
         }
 
+        //. ------------ Position Operations ----------- /
         pub fn supply(&mut self, supply: Bucket) -> Bucket {
             self.__validate_res_bucket(&supply);
 
             info!("Supplying [{:?} : {:?}]", supply.resource_address(), supply.amount());
 
-            let supply_ratio: PreciseDecimal = self.supply.checked_div(self.virtual_supply).unwrap();
+            let supply_ratio: PreciseDecimal = self.get_supply_ratio();
             let amount: PreciseDecimal = supply.amount().into();
 
             // TODO: Validate that the cluster is ready to accept supply
 
-            let unit_amount = amount.checked_mul(supply_ratio).unwrap();
+            self.liquidity.put(supply);
+
             // Mint corresponding number of units
-            let units = self.supply_manager.mint(
-                unit_amount
-                    .checked_truncate(RoundingMode::ToNearestMidpointToEven)
-                    .unwrap(),
-            );
+            let unit_amount = amount.checked_mul(supply_ratio).unwrap();
+            let units = self.supply_manager.mint(trunc(unit_amount));
 
             // Update internal state
             self.supply = self.supply.checked_add(unit_amount).unwrap();
             self.virtual_supply = self.virtual_supply.checked_add(amount).unwrap();
+
+            // TODO: Verify internal state is legal
+
+            self.__tick_interest(); // Internal call to bypass interest_tick_interval
 
             // Return units
             info!("Received units: {}", units.amount());
@@ -171,37 +186,109 @@ mod lattic3_cluster {
         pub fn withdraw(&mut self, units: Bucket) -> Bucket {
             self.__validate_unit_bucket(&units);
 
-            let supply_ratio: PreciseDecimal = self.supply.checked_div(self.virtual_supply).unwrap();
+            info!("Withdrawing [{:?} : {:?}]", units.resource_address(), units.amount());
+
+            let supply_ratio: PreciseDecimal = self.get_supply_ratio();
             let unit_amount: PreciseDecimal = units.amount().into();
 
             // TODO: Validate that the cluster is ready to withdraw
 
             let amount = unit_amount.checked_div(supply_ratio).unwrap();
-            let withdrawn = self
-                .liquidity
-                .take(amount.checked_truncate(RoundingMode::ToNearestMidpointToEven).unwrap());
+            let withdrawn = self.liquidity.take(trunc(amount));
 
             // Update internal state
             self.supply = self.supply.checked_sub(unit_amount).unwrap();
             self.virtual_supply = self.virtual_supply.checked_sub(amount).unwrap();
 
+            // TODO: Verify internal state is legal
+
+            self.__tick_interest(); // Internal call to bypass interest_tick_interval
+
             // Return resource
             info!(
-                "Withdrew [{:?} : {:?}]",
+                "Withdrawn [{:?} : {:?}]",
                 withdrawn.resource_address(),
                 withdrawn.amount()
             );
             withdrawn
         }
 
-        pub fn borrow(&mut self, amount: PreciseDecimal) {}
+        pub fn borrow(&mut self, amount: PreciseDecimal) -> (Bucket, PreciseDecimal) {
+            assert!(amount > pdec!(0), "Borrowed amount must be greater than zero");
 
-        pub fn repay(&mut self, repayment: Bucket) {}
+            let debt_ratio = self.get_debt_ratio();
+            let unit_amount = amount.checked_mul(debt_ratio).unwrap();
+
+            // TODO: Validate that the cluster is ready to accept borrow
+
+            let borrowed = self.liquidity.take(trunc(amount));
+
+            // Update internal state
+            self.debt = self.debt.checked_add(unit_amount).unwrap();
+            self.virtual_debt = self.virtual_debt.checked_add(amount).unwrap();
+
+            // TODO: Verify internal state is legal
+
+            self.__tick_interest(); // Internal call to bypass interest_tick_interval
+
+            // Return resource
+            info!("Borrowed [{:?} : {:?}]", borrowed.resource_address(), borrowed.amount());
+            info!("Debt units: {}", unit_amount);
+
+            (borrowed, unit_amount)
+        }
+
+        pub fn repay(&mut self, repayment: Bucket) -> PreciseDecimal {
+            self.__validate_res_bucket(&repayment);
+
+            info!(
+                "Repaying [{:?} : {:?}]",
+                repayment.resource_address(),
+                repayment.amount()
+            );
+
+            let amount = repayment.amount();
+            let debt_ratio = self.get_debt_ratio();
+            let unit_amount = amount.checked_mul(debt_ratio).unwrap();
+
+            // TODO: Validate that the cluster is ready to accept repayment
+
+            self.liquidity.put(repayment);
+
+            // Update internal state
+            self.debt = self.debt.checked_sub(unit_amount).unwrap();
+            self.virtual_debt = self.virtual_debt.checked_sub(amount).unwrap();
+
+            // TODO: Verify internal state is legal
+
+            self.__tick_interest(); // Internal call to bypass interest_tick_interval
+
+            // Return repaid pool units
+            unit_amount
+        }
+
+        //. ------------ Cluster Management ------------ /
+        pub fn get_supply_ratio(&self) -> PreciseDecimal {
+            if self.virtual_supply == pdec!(0) {
+                pdec!(1)
+            } else {
+                self.supply.checked_div(self.virtual_supply).unwrap()
+            }
+        }
+
+        pub fn get_debt_ratio(&self) -> PreciseDecimal {
+            if self.virtual_debt == pdec!(0) {
+                pdec!(1)
+            } else {
+                self.debt.checked_div(self.virtual_debt).unwrap()
+            }
+        }
 
         pub fn provide_liquidity(&mut self, provided: Bucket) {
             self.liquidity.put(provided);
         }
 
+        //. --------- Internal State Management -------- /
         pub fn tick_interest(&mut self) {
             let interval = now() - self.apr_ticked;
 
