@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Asset } from "@/types/asset";
+import { TruncatedNumber } from "@/components/ui/truncated-number";
 
 export const columns: ColumnDef<Asset, unknown>[] = [
   {
@@ -56,7 +57,7 @@ export const columns: ColumnDef<Asset, unknown>[] = [
       }
       return (
         <span className={`font-semibold ${Number(balance) <= 0 ? "opacity-50" : ""}`}>
-          {Number(balance).toFixed(2)}
+          <TruncatedNumber value={Number(balance)} />
         </span>
       );
     },
@@ -71,7 +72,10 @@ export const columns: ColumnDef<Asset, unknown>[] = [
       if (isExpanded) return null;
       return (
         <div>
-          {isSelected && row.original.select_native > 0 ? row.original.select_native : "-"}
+          {isSelected && row.original.select_native > 0 ? 
+            <TruncatedNumber value={row.original.select_native} /> : 
+            "-"
+          }
         </div>
       );
     },
@@ -85,7 +89,7 @@ export const columns: ColumnDef<Asset, unknown>[] = [
       if (isExpanded) return null;
       
       const APR = row.getValue("APR");
-      return `${Number(APR).toFixed(1)}%`;
+      return <TruncatedNumber value={Number(APR)} decimals={1} prefix="" />;
     }
   },
   {

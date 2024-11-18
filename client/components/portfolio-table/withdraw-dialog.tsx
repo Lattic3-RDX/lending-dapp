@@ -3,6 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Asset, getAssetIcon, getAssetPrice } from "@/types/asset";
+import { ArrowRight } from "lucide-react";
+import { TruncatedNumber } from "@/components/ui/truncated-number";
 
 interface WithdrawDialogProps {
   isOpen: boolean;
@@ -28,6 +30,20 @@ export function WithdrawDialog({
   );
   const [assetPrice, setAssetPrice] = useState(0);
 
+  const validateAmount = (value: string) => {
+    const amount = parseFloat(value);
+    if (!amount || amount <= 0) {
+      setError("Amount must be greater than 0");
+      return false;
+    }
+    if (amount > asset.select_native) {
+      setError("Amount exceeds supplied balance");
+      return false;
+    }
+    setError(null);
+    return true;
+  };
+
   // Reset health factor when dialog opens/closes or asset changes
   useEffect(() => {
     setNewHealthFactor(totalBorrowDebt <= 0 ? -1 : totalSupply / totalBorrowDebt);
@@ -38,41 +54,18 @@ export function WithdrawDialog({
     getAssetPrice(asset.label).then(setAssetPrice);
   }, [asset.label]);
 
-  const calculateNewHealthFactor = async (withdrawAmount: number) => {
-    const assetPrice = await getAssetPrice(asset.label);
-    const withdrawValue = withdrawAmount * assetPrice;
-    const newSupplyValue = totalSupply - withdrawValue;
-    
-    // If there's no debt, health ratio is infinite
-    if (totalBorrowDebt <= 0) return -1;
-    
-    // Calculate new health ratio
-    return newSupplyValue / totalBorrowDebt;
-  };
-
+  // Update health factor when amount changes
   const handleAmountChange = async (value: string) => {
     setTempAmount(value);
-    const amount = parseFloat(value);
+    const amount = parseFloat(value) || 0;
     
-    if (isNaN(amount)) {
-      setError("Please enter a valid number");
-      return;
-    }
+    // Calculate new health factor
+    const withdrawValue = amount * assetPrice;
+    const newSupplyValue = totalSupply - withdrawValue;
+    const newHF = totalBorrowDebt <= 0 ? -1 : newSupplyValue / totalBorrowDebt;
+    setNewHealthFactor(newHF);
     
-    if (amount > asset.select_native) {
-      setError("Amount exceeds supplied balance");
-      return;
-    }
-
-    const newHealthRatio = await calculateNewHealthFactor(amount);
-    setNewHealthFactor(newHealthRatio);
-    
-    // Check if withdrawal would make health ratio too low
-    if (newHealthRatio !== -1 && newHealthRatio < 1.1) {
-      setError("Withdrawal would put your position at risk");
-    } else {
-      setError(null);
-    }
+    validateAmount(value);
   };
 
   const handleMaxClick = () => {
@@ -133,8 +126,8 @@ export function WithdrawDialog({
               
               {/* Value and available balance */}
               <div className="flex justify-between text-sm text-foreground px-1">
-                <span>≈ ${tempAmount ? (Number(tempAmount) * assetPrice).toFixed(2) : "0.00"}</span>
-                <span>Current supply: {asset.select_native}</span>
+                <span>≈ ${tempAmount ? <TruncatedNumber value={Number(tempAmount) * assetPrice} /> : "0.00"}</span>
+                <span>Current supply: <TruncatedNumber value={asset.select_native} /></span>
               </div>
 
               {error && <div className="text-red-500 text-sm">{error}</div>}
@@ -143,10 +136,16 @@ export function WithdrawDialog({
 
           <div className="space-y-3">
             <div className="flex justify-between text-base">
-              <span>New Health Factor</span>
-              <span className={newHealthFactor < 1.5 && newHealthFactor !== -1 ? "text-red-500" : "text-green-500"}>
-                {newHealthFactor === -1 ? '∞' : newHealthFactor.toFixed(2)}
-              </span>
+              <span>Health Factor</span>
+              <div className="flex items-center gap-2">
+                <span className={totalBorrowDebt <= 0 ? "text-green-500" : (totalSupply / totalBorrowDebt < 1.5 ? "text-red-500" : "text-green-500")}>
+                  {totalBorrowDebt <= 0 ? '∞' : (totalSupply / totalBorrowDebt).toFixed(2)}
+                </span>
+                <ArrowRight className="w-4 h-4" />
+                <span className={newHealthFactor === -1 ? "text-green-500" : (newHealthFactor < 1.5 ? "text-red-500" : "text-green-500")}>
+                  {newHealthFactor === -1 ? '∞' : newHealthFactor.toFixed(2)}
+                </span>
+              </div>
             </div>
           </div>
 

@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Asset, getAssetIcon, getAssetPrice } from "@/types/asset";
+import { TruncatedNumber } from "@/components/ui/truncated-number";
 
 interface AssetCollapsibleContentProps {
   asset: Asset;
@@ -97,11 +98,11 @@ export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm, mode
           </Button>
         </div>
         <div className="flex justify-between text-sm text-foreground px-1">
-          <span>≈ ${usdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          <span>≈ $<TruncatedNumber value={usdValue} /></span>
           {mode === 'borrow' ? (
-            <span>Available: {asset.available ?? 0}</span>
+            <span>Available: <TruncatedNumber value={asset.available ?? 0} /></span>
           ) : (
-            <span>Balance: {asset.wallet_balance}</span>
+            <span>Balance: <TruncatedNumber value={asset.wallet_balance} /></span>
           )}
         </div>
         {error && <div className="text-destructive text-sm">{error}</div>}

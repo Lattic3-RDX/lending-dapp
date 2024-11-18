@@ -3,6 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Asset, getAssetIcon, getAssetPrice } from "@/types/asset";
+import { ArrowRight } from "lucide-react";
+import { TruncatedNumber } from "@/components/ui/truncated-number";
 
 interface RepayDialogProps {
   isOpen: boolean;
@@ -23,19 +25,44 @@ export function RepayDialog({
 }: RepayDialogProps) {
   const [tempAmount, setTempAmount] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [assetPrice, setAssetPrice] = useState(0);
   const [newHealthFactor, setNewHealthFactor] = useState<number>(
     totalBorrowDebt <= 0 ? -1 : totalSupply / totalBorrowDebt
   );
+  const [assetPrice, setAssetPrice] = useState(0);
 
-  // Reset health factor when dialog opens/closes or asset changes
-  useEffect(() => {
-    setTempAmount("");
+  const validateAmount = (value: string) => {
+    const amount = parseFloat(value);
+    if (!amount || amount <= 0) {
+      setError("Amount must be greater than 0");
+      return false;
+    }
+    if (amount > asset.wallet_balance) {
+      setError("Amount exceeds wallet balance");
+      return false;
+    }
+    if (amount > asset.select_native) {
+      setError("Amount exceeds borrowed amount");
+      return false;
+    }
     setError(null);
-    setNewHealthFactor(totalBorrowDebt <= 0 ? -1 : totalSupply / totalBorrowDebt);
-  }, [isOpen, asset.address, totalSupply, totalBorrowDebt]);
+    return true;
+  };
 
-  // Add this effect to fetch price when asset changes
+  // Update health factor when amount changes
+  const handleAmountChange = async (value: string) => {
+    setTempAmount(value);
+    const amount = parseFloat(value) || 0;
+    
+    // Calculate new health factor
+    const repayValue = amount * assetPrice;
+    const newBorrowDebt = totalBorrowDebt - repayValue;
+    const newHF = newBorrowDebt <= 0 ? -1 : totalSupply / newBorrowDebt;
+    setNewHealthFactor(newHF);
+    
+    validateAmount(value);
+  };
+
+  // Fetch asset price when dialog opens
   useEffect(() => {
     getAssetPrice(asset.label).then(setAssetPrice);
   }, [asset.label]);
@@ -49,25 +76,6 @@ export function RepayDialog({
     
     // Calculate new health ratio
     return totalSupply / newDebtValue;
-  };
-
-  const handleAmountChange = (value: string) => {
-    setTempAmount(value);
-    const amount = parseFloat(value);
-    
-    if (isNaN(amount)) {
-      setError("Please enter a valid number");
-      return;
-    }
-    
-    if (amount > asset.select_native) {
-      setError("Amount exceeds borrowed balance");
-      return;
-    }
-
-    const newHealthRatio = calculateNewHealthFactor(amount);
-    setNewHealthFactor(newHealthRatio);
-    setError(null);
   };
 
   const handleMaxClick = () => {
@@ -86,7 +94,7 @@ export function RepayDialog({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">Repay</DialogTitle>
+          <DialogTitle>Repay {asset.label}</DialogTitle>
         </DialogHeader>
         
         {/* Asset Header */}
@@ -107,9 +115,13 @@ export function RepayDialog({
               <span className="text-lg font-semibold">Amount</span>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">Health factor:</span>
-                <span className={newHealthFactor < 1.5 && newHealthFactor !== -1 ? "text-red-500" : "text-green-500"}>
-                {newHealthFactor === -1 ? '∞' : newHealthFactor.toFixed(2)}
-              </span>
+                <span className={totalBorrowDebt <= 0 ? "text-green-500" : (totalSupply / totalBorrowDebt < 1.5 ? "text-red-500" : "text-green-500")}>
+                  {totalBorrowDebt <= 0 ? '∞' : (totalSupply / totalBorrowDebt).toFixed(2)}
+                </span>
+                <ArrowRight className="w-4 h-4" />
+                <span className={newHealthFactor === -1 ? "text-green-500" : (newHealthFactor < 1.5 ? "text-red-500" : "text-green-500")}>
+                  {newHealthFactor === -1 ? '∞' : newHealthFactor.toFixed(2)}
+                </span>
               </div>
             </div>
             <div className="space-y-2">
@@ -134,8 +146,8 @@ export function RepayDialog({
               </div>
               
               <div className="flex justify-between text-sm text-foreground px-1">
-                <span>≈ ${tempAmount ? (Number(tempAmount) * assetPrice).toFixed(2) : "0.00"}</span>
-                <span>Current debt: {asset.select_native}</span>
+                <span>≈ ${tempAmount ? <TruncatedNumber value={Number(tempAmount) * assetPrice} /> : "0.00"}</span>
+                <span>Current debt: <TruncatedNumber value={asset.select_native} /></span>
               </div>
 
               {error && <div className="text-red-500 text-sm">{error}</div>}
@@ -144,10 +156,16 @@ export function RepayDialog({
 
           <div className="space-y-3">
             <div className="flex justify-between text-base">
-              <span>New Health Factor</span>
-              <span className={newHealthFactor < 1.5 && newHealthFactor !== -1 ? "text-red-500" : "text-green-500"}>
-                {newHealthFactor === -1 ? '∞' : newHealthFactor.toFixed(2)}
-              </span>
+              <span>Health Factor</span>
+              <div className="flex items-center gap-2">
+                <span className={totalBorrowDebt <= 0 ? "text-green-500" : (totalSupply / totalBorrowDebt < 1.5 ? "text-red-500" : "text-green-500")}>
+                  {totalBorrowDebt <= 0 ? '∞' : (totalSupply / totalBorrowDebt).toFixed(2)}
+                </span>
+                <ArrowRight className="w-4 h-4" />
+                <span className={newHealthFactor === -1 ? "text-green-500" : (newHealthFactor < 1.5 ? "text-red-500" : "text-green-500")}>
+                  {newHealthFactor === -1 ? '∞' : newHealthFactor.toFixed(2)}
+                </span>
+              </div>
             </div>
           </div>
 
