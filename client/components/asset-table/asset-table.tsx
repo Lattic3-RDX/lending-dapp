@@ -258,9 +258,12 @@ export function AssetTable<TData extends Asset, TValue>({
                       ))}
                     </TableRow>
                     <CollapsibleContent asChild>
-                      <TableRow>
+                      <TableRow 
+                        data-state={row.getIsSelected() && "selected"}
+                        className={!row.getIsSelected() ? "bg-transparent" : undefined}
+                      >
                         <TableCell className="p-0" colSpan={columns.length}>
-                          <div className="bg-accent p-4">
+                          <div className={`p-4 ${row.getIsSelected() ? "bg-accent" : "bg-accent/5"}`}>
                             <AssetCollapsibleContent 
                               asset={row.original} 
                               onAmountChange={(amount) => handleAmountChange(row.original.address, amount)}
