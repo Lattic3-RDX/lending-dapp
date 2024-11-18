@@ -20,6 +20,8 @@ export const columns: ColumnDef<Asset, unknown>[] = [
           row.toggleSelected(!!checked);
         }}
         aria-label="Select row"
+        disabled={row.original.wallet_balance <= 0}
+        className={row.original.wallet_balance <= 0 ? "opacity-50" : ""}
       />
     ),
     enableSorting: false,
@@ -30,7 +32,7 @@ export const columns: ColumnDef<Asset, unknown>[] = [
     header: "Asset",
     size: 200,
     cell: ({ row }) => (
-      <div className="flex items-center gap-3">
+      <div className={`flex items-center gap-3 ${row.original.wallet_balance <= 0 ? "opacity-50" : ""}`}>
         <img
           src={getAssetIcon(row.getValue("label"))}
           alt={`${row.getValue("label")} icon`}
@@ -52,7 +54,11 @@ export const columns: ColumnDef<Asset, unknown>[] = [
       if (balance === -1) {
         return <span className="text-muted-foreground">Loading...</span>;
       }
-      return <span className="font-semibold">{Number(balance).toFixed(2)}</span>;
+      return (
+        <span className={`font-semibold ${Number(balance) <= 0 ? "opacity-50" : ""}`}>
+          {Number(balance).toFixed(2)}
+        </span>
+      );
     },
   },
   {

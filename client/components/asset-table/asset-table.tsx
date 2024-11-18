@@ -149,15 +149,32 @@ export function AssetTable<TData extends Asset, TValue>({
     },
   });
 
-  // Custom row sorting function
+  // Sort rows: selected first, then by balance, zero/negative at bottom
   const sortedRows = React.useMemo(() => {
-    const rows = [...table.getRowModel().rows];
-    return rows.sort((a, b) => {
-      const aSelected = a.getIsSelected() ? 1 : 0;
-      const bSelected = b.getIsSelected() ? 1 : 0;
-      return bSelected - aSelected;
+    return table.getRowModel().rows.sort((a, b) => {
+      const balanceA = Number(a.original.wallet_balance);
+      const balanceB = Number(b.original.wallet_balance);
+      const isSelectedA = a.getIsSelected();
+      const isSelectedB = b.getIsSelected();
+      
+      // First priority: Selected status
+      if (isSelectedA && !isSelectedB) return -1;
+      if (!isSelectedA && isSelectedB) return 1;
+      
+      // Second priority: Balance availability
+      // Put loading states (-1) at the bottom
+      if (balanceA === -1) return 1;
+      if (balanceB === -1) return -1;
+      
+      // Sort by balance (non-zero first)
+      if (balanceA <= 0 && balanceB > 0) return 1;
+      if (balanceA > 0 && balanceB <= 0) return -1;
+      
+      // If both are selected or unselected and have same balance status,
+      // maintain original order
+      return 0;
     });
-  }, [table.getRowModel().rows, rowSelection]);
+  }, [table.getRowModel().rows]);
 
   const handleExpansionChange = (rowId: string) => {
     setExpandedRows(prev => {
@@ -241,7 +258,7 @@ export function AssetTable<TData extends Asset, TValue>({
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results.
+                  No assets
                 </TableCell>
               </TableRow>
             )}
