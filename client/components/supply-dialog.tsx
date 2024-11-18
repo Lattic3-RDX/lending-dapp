@@ -113,7 +113,7 @@ const SupplyDialog: React.FC<SupplyDialogProps> = ({
             <div>
               <div className="text-sm text-gray-500">Total Value</div>
               <div className="text-xl font-semibold">
-                ${totalUsdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                ≈ ${totalUsdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
             </div>
             <div className="flex flex-col items-end">

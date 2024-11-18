@@ -133,7 +133,7 @@ export function WithdrawDialog({
               
               {/* Value and available balance */}
               <div className="flex justify-between text-sm text-foreground px-1">
-                <span>${tempAmount ? (Number(tempAmount) * assetPrice).toFixed(2) : "0.00"}</span>
+                <span>≈ ${tempAmount ? (Number(tempAmount) * assetPrice).toFixed(2) : "0.00"}</span>
                 <span>Current supply: {asset.select_native}</span>
               </div>
 

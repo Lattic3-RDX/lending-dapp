@@ -134,7 +134,7 @@ export function RepayDialog({
               </div>
               
               <div className="flex justify-between text-sm text-foreground px-1">
-                <span>${tempAmount ? (Number(tempAmount) * assetPrice).toFixed(2) : "0.00"}</span>
+                <span>≈ ${tempAmount ? (Number(tempAmount) * assetPrice).toFixed(2) : "0.00"}</span>
                 <span>Current debt: {asset.select_native}</span>
               </div>
 
