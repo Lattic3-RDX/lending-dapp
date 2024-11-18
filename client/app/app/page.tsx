@@ -56,6 +56,23 @@ interface NFTData {
   };
 }
 
+// Add this styled div for the grid background
+function GridBackground() {
+  return (
+    <div className="fixed inset-0 -z-10">
+      <div 
+        className="absolute inset-0 bg-background"
+        style={{
+          backgroundImage: `linear-gradient(to right, var(--foreground) 1px, transparent 1px),
+                           linear-gradient(to bottom, var(--foreground) 1px, transparent 1px)`,
+          backgroundSize: '40px 40px',
+          opacity: '0.05'
+        }}
+      />
+    </div>
+  );
+}
+
 export default function App() {
   const { accounts } = useRadixContext();
   const [supplyRowSelection, setSupplyRowSelection] = React.useState<RowSelectionState>({});
@@ -523,103 +540,109 @@ export default function App() {
   const columns = createPortfolioColumns(refreshPortfolioData, totalSupply, totalBorrowDebt);
 
   return (
-    <div className="container mx-auto py-6 space-y-4">
-      {/* Statistics Card */}
-      <StatisticsCard 
-        healthRatio={health}
-        netWorth={netWorth}
-        netAPR={netAPR}
-        isLoading={isLoading}
-      />
-      
-      {/* First row: Supply and Borrow cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Your Supply Card */}
-        <Card>
-          <CardHeader>
-            <div className="grid grid-cols-2">
-              <CardTitle>Your Supply</CardTitle>
-              <div className="flex justify-end">
-                <div className="grid grid-cols-[auto,1fr] gap-x-6 items-center min-h-[72px]">
-                  <CardDescription className="text-left text-foreground">Total Supply:</CardDescription>
-                  <CardDescription className="text-right text-foreground">${totalSupply.toFixed(2)}</CardDescription>
-                  <CardDescription className="text-left text-foreground">Total APR:</CardDescription>
-                  <CardDescription className="text-right text-foreground">{totalSupplyAPR.toFixed(1)}%</CardDescription>
-                  <div className="col-span-2"></div>
+    <div>
+      <GridBackground />
+      <div className="container mx-auto py-10 space-y-8">
+        {/* Statistics Card */}
+        <StatisticsCard 
+          healthRatio={health}
+          netWorth={netWorth}
+          netAPR={netAPR}
+          isLoading={isLoading}
+        />
+        
+        {/* First row: Supply and Borrow cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Your Supply Card */}
+          <Card>
+            <CardHeader>
+              <div className="grid grid-cols-2">
+                <CardTitle>Your Supply</CardTitle>
+                <div className="flex justify-end">
+                  <div className="grid grid-cols-[auto,1fr] gap-x-6 items-center min-h-[72px]">
+                    <CardDescription className="text-left text-foreground">Total Supply:</CardDescription>
+                    <CardDescription className="text-right text-foreground">${totalSupply.toFixed(2)}</CardDescription>
+                    <CardDescription className="text-left text-foreground">Total APR:</CardDescription>
+                    <CardDescription className="text-right text-foreground">{totalSupplyAPR.toFixed(1)}%</CardDescription>
+                    <div className="col-span-2"></div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <PortfolioTable
-              columns={columns}
-              data={portfolioData}
-              onRefresh={refreshPortfolioData}
-            />
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent>
+              <PortfolioTable
+                columns={columns}
+                data={portfolioData}
+                onRefresh={refreshPortfolioData}
+              />
+            </CardContent>
+          </Card>
 
-        {/* Your Borrows Card */}
-        <Card>
-          <CardHeader>
-            <div className="grid grid-cols-2">
-              <CardTitle>Your Borrows</CardTitle>
-              <div className="flex justify-end">
-                <div className="grid grid-cols-[auto,1fr] gap-x-6 items-center min-h-[72px]">
-                  <CardDescription className="text-left text-foreground">Total Debt:</CardDescription>
-                  <CardDescription className="text-right text-foreground">${totalBorrowDebt.toFixed(2)}</CardDescription>
-                  <CardDescription className="text-left text-foreground">Total APR:</CardDescription>
-                  <CardDescription className="text-right text-foreground">{totalBorrowAPR.toFixed(1)}%</CardDescription>
-                  <CardDescription className="text-left text-foreground">Borrow Power Used:</CardDescription>
-                  <CardDescription className="text-right text-foreground">{borrowPowerUsed.toFixed(1)}%</CardDescription>
+          {/* Your Borrows Card */}
+          <Card>
+            <CardHeader>
+              <div className="grid grid-cols-2">
+                <CardTitle>Your Borrows</CardTitle>
+                <div className="flex justify-end">
+                  <div className="grid grid-cols-[auto,1fr] gap-x-6 items-center min-h-[72px]">
+                    <CardDescription className="text-left text-foreground">Total Debt:</CardDescription>
+                    <CardDescription className="text-right text-foreground">${totalBorrowDebt.toFixed(2)}</CardDescription>
+                    <CardDescription className="text-left text-foreground">Total APR:</CardDescription>
+                    <CardDescription className="text-right text-foreground">{totalBorrowAPR.toFixed(1)}%</CardDescription>
+                    <CardDescription className="text-left text-foreground">Borrow Power Used:</CardDescription>
+                    <CardDescription className="text-right text-foreground">{borrowPowerUsed.toFixed(1)}%</CardDescription>
+                  </div>
                 </div>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <PortfolioTable
-              columns={columns}
-              data={borrowPortfolioData}
-              onRefresh={refreshPortfolioData}
-            />
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent>
+              <PortfolioTable
+                columns={columns}
+                data={borrowPortfolioData}
+                onRefresh={refreshPortfolioData}
+              />
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Asset Action Card - Full Width */}
+        <AssetActionCard
+          supplyData={supplyData}
+          supplyRowSelection={supplyRowSelection}
+          borrowRowSelection={borrowRowSelection}
+          onSupplyRowSelectionChange={handleSupplyRowSelectionChange}
+          onBorrowRowSelectionChange={setBorrowRowSelection}
+          onAmountChange={handleAmountChange}
+          showSupplyPreview={showSupplyPreview}
+          showBorrowPreview={showBorrowPreview}
+          hasSelectedSupplyAssets={hasSelectedSupplyAssets}
+          hasSelectedBorrowAssets={hasSelectedBorrowAssets}
+          onPreviewSupply={handlePreviewSupply}
+          onPreviewBorrow={handlePreviewBorrow}
+        />
+
+        {/* Add these dialogs here, right before the closing div */}
+        <SupplyDialog
+          isOpen={isPreviewDialogOpen}
+          onClose={() => setIsPreviewDialogOpen(false)}
+          onConfirm={handleSupplyConfirm}
+          selectedAssets={getSelectedSupplyAssets().filter(asset => asset.select_native > 0)}
+          totalSupply={totalSupply}
+          totalBorrowDebt={totalBorrowDebt}
+        />
+
+        <BorrowDialog
+          isOpen={isBorrowDialogOpen}
+          onClose={() => setIsBorrowDialogOpen(false)}
+          onConfirm={handleBorrowConfirm}
+          selectedAssets={getSelectedBorrowAssets().filter(asset => asset.select_native > 0)}
+          totalSupply={totalSupply}
+          totalBorrowDebt={totalBorrowDebt}
+        />
       </div>
-
-      {/* Asset Action Card - Full Width */}
-      <AssetActionCard
-        supplyData={supplyData}
-        supplyRowSelection={supplyRowSelection}
-        borrowRowSelection={borrowRowSelection}
-        onSupplyRowSelectionChange={handleSupplyRowSelectionChange}
-        onBorrowRowSelectionChange={setBorrowRowSelection}
-        onAmountChange={handleAmountChange}
-        showSupplyPreview={showSupplyPreview}
-        showBorrowPreview={showBorrowPreview}
-        hasSelectedSupplyAssets={hasSelectedSupplyAssets}
-        hasSelectedBorrowAssets={hasSelectedBorrowAssets}
-        onPreviewSupply={handlePreviewSupply}
-        onPreviewBorrow={handlePreviewBorrow}
-      />
-
-      {/* Add these dialogs here, right before the closing div */}
-      <SupplyDialog
-        isOpen={isPreviewDialogOpen}
-        onClose={() => setIsPreviewDialogOpen(false)}
-        onConfirm={handleSupplyConfirm}
-        selectedAssets={getSelectedSupplyAssets().filter(asset => asset.select_native > 0)}
-        totalSupply={totalSupply}
-        totalBorrowDebt={totalBorrowDebt}
-      />
-
-      <BorrowDialog
-        isOpen={isBorrowDialogOpen}
-        onClose={() => setIsBorrowDialogOpen(false)}
-        onConfirm={handleBorrowConfirm}
-        selectedAssets={getSelectedBorrowAssets().filter(asset => asset.select_native > 0)}
-        totalSupply={totalSupply}
-        totalBorrowDebt={totalBorrowDebt}
-      />
+      <div className="pointer-events-none">
+        <ShootingStars />
+      </div>
     </div>
   );
 }
