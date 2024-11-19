@@ -25,6 +25,12 @@ pub struct ClusterState {
     pub apr_ticked: i64, // seconds
 }
 
+#[derive(ScryptoSbor, Debug, Clone)]
+pub enum ClusterLayer {
+    Supply,
+    Debt,
+}
+
 /* ------------------ Cluster ----------------- */
 #[blueprint]
 mod lattic3_cluster {
@@ -38,10 +44,12 @@ mod lattic3_cluster {
             withdraw => restrict_to: [OWNER, admin];
             repay    => restrict_to: [OWNER, admin];
 
-            get_supply_ratio  => PUBLIC;
-            get_debt_ratio    => PUBLIC;
-            provide_liquidity => restrict_to: [OWNER, admin];
+            get_ratio         => PUBLIC;
+            get_value         => PUBLIC;
+            get_units         => PUBLIC;
             get_cluster_state => PUBLIC;
+
+            provide_liquidity => restrict_to: [OWNER, admin];
 
             tick_interest              => PUBLIC;
             set_interest_tick_interval => restrict_to: [OWNER, admin];
@@ -71,7 +79,11 @@ mod lattic3_cluster {
     }
 
     impl Cluster {
-        pub fn instantiate(resource: ResourceAddress, cluster_owner_rule: AccessRule, cluster_admin_rule: AccessRule) -> Global<Cluster> {
+        pub fn instantiate(
+            resource: ResourceAddress,
+            cluster_owner_rule: AccessRule,
+            cluster_admin_rule: AccessRule,
+        ) -> Global<Cluster> {
             // Reserve component address
             let (address_reservation, component_address) = Runtime::allocate_component_address(Cluster::blueprint_id());
 
@@ -185,17 +197,16 @@ mod lattic3_cluster {
         pub fn supply(&mut self, supply: Bucket) -> Bucket {
             self.__validate_res_bucket(&supply);
 
+            let amount: PreciseDecimal = supply.amount().into();
             info!("Supplying [{:?} : {:?}]", supply.resource_address(), supply.amount());
 
-            let supply_ratio: PreciseDecimal = self.get_supply_ratio();
-            let amount: PreciseDecimal = supply.amount().into();
-
             // TODO: Validate that the cluster is ready to accept supply
+            self.tick_interest(true); // Update interest such that units are minted at current rate
 
             self.liquidity.put(supply);
 
             // Mint corresponding number of units
-            let unit_amount = amount.checked_mul(supply_ratio).unwrap();
+            let unit_amount = self.get_units(ClusterLayer::Supply, amount);
             let units = self.supply_unit_manager.mint(trunc(unit_amount));
 
             // Update internal state
@@ -205,8 +216,6 @@ mod lattic3_cluster {
 
             // TODO: Verify internal state is legal
 
-            self.__tick_interest(); // Internal call to bypass interest_tick_interval
-
             // Return units
             info!("Received units: {}", units.amount());
             units
@@ -215,14 +224,13 @@ mod lattic3_cluster {
         pub fn withdraw(&mut self, units: Bucket) -> Bucket {
             self.__validate_unit_bucket(&units);
 
+            let unit_amount: PreciseDecimal = units.amount().into();
             info!("Withdrawing [{:?} : {:?}]", units.resource_address(), units.amount());
 
-            let supply_ratio: PreciseDecimal = self.get_supply_ratio();
-            let unit_amount: PreciseDecimal = units.amount().into();
-
             // TODO: Validate that the cluster is ready to withdraw
+            self.tick_interest(true); // Update interest such that units are withdrawn at current rate
 
-            let amount = unit_amount.checked_div(supply_ratio).unwrap();
+            let amount = self.get_value(ClusterLayer::Supply, unit_amount);
             let withdrawn = self.liquidity.take(trunc(amount));
 
             // Update internal state
@@ -232,20 +240,22 @@ mod lattic3_cluster {
 
             // TODO: Verify internal state is legal
 
-            self.__tick_interest(); // Internal call to bypass interest_tick_interval
-
             // Return resource
-            info!("Withdrawn [{:?} : {:?}]", withdrawn.resource_address(), withdrawn.amount());
+            info!(
+                "Withdrawn [{:?} : {:?}]",
+                withdrawn.resource_address(),
+                withdrawn.amount()
+            );
             withdrawn
         }
 
         pub fn borrow(&mut self, amount: PreciseDecimal) -> (Bucket, PreciseDecimal) {
             assert!(amount > pdec!(0), "Borrowed amount must be greater than zero");
 
-            let debt_ratio = self.get_debt_ratio();
-            let unit_amount = amount.checked_mul(debt_ratio).unwrap();
+            let unit_amount = self.get_units(ClusterLayer::Debt, amount);
 
             // TODO: Validate that the cluster is ready to accept borrow
+            self.tick_interest(true); // Update interest such that units are minted at current rate
 
             let borrowed = self.liquidity.take(trunc(amount));
 
@@ -255,8 +265,6 @@ mod lattic3_cluster {
             self.virtual_debt = self.virtual_debt.checked_add(amount).unwrap();
 
             // TODO: Verify internal state is legal
-
-            self.__tick_interest(); // Internal call to bypass interest_tick_interval
 
             // Return resource
             info!("Borrowed [{:?} : {:?}]", borrowed.resource_address(), borrowed.amount());
@@ -268,11 +276,14 @@ mod lattic3_cluster {
         pub fn repay(&mut self, repayment: Bucket) -> PreciseDecimal {
             self.__validate_res_bucket(&repayment);
 
-            info!("Repaying [{:?} : {:?}]", repayment.resource_address(), repayment.amount());
+            let amount = repayment.amount().into();
+            info!(
+                "Repaying [{:?} : {:?}]",
+                repayment.resource_address(),
+                repayment.amount()
+            );
 
-            let amount = repayment.amount();
-            let debt_ratio = self.get_debt_ratio();
-            let unit_amount = amount.checked_mul(debt_ratio).unwrap();
+            let unit_amount = self.get_units(ClusterLayer::Debt, amount);
 
             // TODO: Validate that the cluster is ready to accept repayment
 
@@ -285,31 +296,50 @@ mod lattic3_cluster {
 
             // TODO: Verify internal state is legal
 
-            self.__tick_interest(); // Internal call to bypass interest_tick_interval
+            // ! Ticked here to not mess up external repayment amount calculation
+            // TODO: Find way to consistently externally execute full repayment
+            self.tick_interest(true);
 
             // Return repaid pool units
             unit_amount
         }
 
         //. ------------ Cluster Management ------------ /
-        pub fn get_supply_ratio(&self) -> PreciseDecimal {
-            if self.virtual_supply == pdec!(0) {
-                pdec!(1)
-            } else {
-                self.supply_units.checked_div(self.virtual_supply).unwrap()
+        pub fn get_ratio(&self, layer: ClusterLayer) -> PreciseDecimal {
+            match layer {
+                ClusterLayer::Supply => {
+                    if self.virtual_supply == pdec!(0) {
+                        pdec!(1)
+                    } else {
+                        self.supply_units.checked_div(self.virtual_supply).unwrap()
+                    }
+                }
+                ClusterLayer::Debt => {
+                    if self.virtual_debt == pdec!(0) {
+                        pdec!(1)
+                    } else {
+                        self.debt_units.checked_div(self.virtual_debt).unwrap()
+                    }
+                }
             }
         }
 
-        pub fn get_debt_ratio(&self) -> PreciseDecimal {
-            if self.virtual_debt == pdec!(0) {
-                pdec!(1)
-            } else {
-                self.debt_units.checked_div(self.virtual_debt).unwrap()
-            }
+        pub fn get_units(&self, layer: ClusterLayer, amount: PreciseDecimal) -> PreciseDecimal {
+            assert!(amount > pdec!(0), "Amount must be greater than zero");
+
+            let ratio = self.get_ratio(layer);
+            let amount = amount.checked_mul(ratio).unwrap();
+
+            amount
         }
 
-        pub fn provide_liquidity(&mut self, provided: Bucket) {
-            self.liquidity.put(provided);
+        pub fn get_value(&self, layer: ClusterLayer, unit_amount: PreciseDecimal) -> PreciseDecimal {
+            assert!(unit_amount > pdec!(0), "Unit amount must be greater than zero");
+
+            let ratio = self.get_ratio(layer);
+            let amount = unit_amount.checked_div(ratio).unwrap();
+
+            amount
         }
 
         pub fn get_cluster_state(&self) -> ClusterState {
@@ -323,12 +353,12 @@ mod lattic3_cluster {
                 supply: self.supply,
                 supply_units: self.supply_units,
                 virtual_supply: self.virtual_supply,
-                supply_ratio: self.get_supply_ratio(),
+                supply_ratio: self.get_ratio(ClusterLayer::Supply),
 
                 debt: self.debt,
                 debt_units: self.debt_units,
                 virtual_debt: self.virtual_debt,
-                debt_ratio: self.get_debt_ratio(),
+                debt_ratio: self.get_ratio(ClusterLayer::Debt),
 
                 apr: self.apr,
                 apr_ticked: self.apr_ticked,
@@ -338,8 +368,12 @@ mod lattic3_cluster {
             state
         }
 
+        pub fn provide_liquidity(&mut self, provided: Bucket) {
+            self.liquidity.put(provided);
+        }
+
         //. --------- Internal State Management -------- /
-        pub fn tick_interest(&mut self) {
+        pub fn tick_interest(&mut self, force: bool) {
             let interval = now() - self.apr_ticked;
 
             info!(
@@ -350,7 +384,7 @@ mod lattic3_cluster {
                 self.interest_tick_interval
             );
 
-            if interval > self.interest_tick_interval {
+            if (interval > self.interest_tick_interval) || force {
                 info!("Ticking interest");
                 self.__tick_interest();
                 self.apr_ticked = now();
@@ -369,7 +403,10 @@ mod lattic3_cluster {
         }
 
         fn __validate_unit_bucket(&self, bucket: &Bucket) {
-            assert!(bucket.resource_address() == self.supply_unit_manager.address(), "Invalid unit provided");
+            assert!(
+                bucket.resource_address() == self.supply_unit_manager.address(),
+                "Invalid unit provided"
+            );
             assert!(bucket.amount() > dec!(0), "Provided amount must be greater than zero");
         }
 

@@ -21,7 +21,7 @@ CALL_METHOD
     "position_borrow"
     Bucket("market_position_badge")
     Map<Address, PreciseDecimal>(
-        Address("${xrd}") => PreciseDecimal("2")
+        Address("${xrd}") => PreciseDecimal("100")
     );
 
 CALL_METHOD

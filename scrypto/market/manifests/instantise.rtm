@@ -21,8 +21,7 @@ CALL_FUNCTION
     "Lattic3"
     "instantiate"
     Address("${main_account}")
-    Bucket("bucket_owner_badge")
-    Array<Address>();
+    Bucket("bucket_owner_badge");
 
 CALL_METHOD
     Address("${main_account}")

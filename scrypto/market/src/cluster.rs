@@ -26,6 +26,12 @@ pub struct ClusterState {
 }
 
 #[derive(ScryptoSbor, Debug, Clone)]
+pub enum ClusterLayer {
+    Supply,
+    Debt,
+}
+
+#[derive(ScryptoSbor, Debug, Clone)]
 pub struct ClusterWrapper {
     pub cluster: Global<Cluster>,
 
@@ -54,10 +60,6 @@ impl ClusterWrapper {
             resource: cluster_state.resource,
             supply_unit: cluster_state.supply_unit,
         }
-    }
-
-    pub fn get_state(&self) -> ClusterState {
-        self.cluster.get_cluster_state()
     }
 
     pub fn set_supply_unit_metadata(&self, owner_badge: Bucket, name: String, symbol: String) -> Bucket {

@@ -8,11 +8,13 @@ COMMANDS=(
     "init" "reset" "deploy" "init_position"
     # -------- Market
     # Deployment
-    "publish_market" "instantise_market" "link_price_stream"
+    "publish_market" "instantise_market" "link_price_stream" "add_asset"
     # Position management
     "open_position" "position_supply" "position_borrow" "position_withdraw" "position_repay"
     # Internal position operations
     "get_position_health"
+    # -------- Cluster
+    "publish_cluster"
     # -------- Price stream
     "publish_price_stream" "instantise_price_stream"
 )
@@ -62,6 +64,9 @@ cmd_deploy() {
     heading "Instantising price stream"
     . ./resim-helper.sh instantise_price_stream
 
+    heading "Publishing cluster"
+    . ./resim-helper.sh publish_cluster
+
     heading "Publishing market"
     . ./resim-helper.sh publish_market
 
@@ -75,6 +80,9 @@ cmd_deploy() {
 
     heading "Linking price stream to market"
     . ./resim-helper.sh link_price_stream
+
+    heading "Add XRD cluster"
+    . ./resim-helper.sh add_asset
 }
 
 cmd_init_position() {
@@ -94,7 +102,7 @@ cmd_publish_market() {
     if [[ $market_package = "" ]]; then
         tput bold
         tput setaf 1
-        printf "Failed to publish market; PriceStream package probably changed address\n"
+        printf "Failed to publish market; PriceStream or Cluster package probably changed address\n"
         tput sgr0
         return 0
     fi
@@ -121,20 +129,32 @@ cmd_instantise_market() {
 
     heading "Fetching component address"
     export market_component=$(printf "$instantise_rtm" | grep "Component:" | grep -o "component_.*")
-    printf "$market_component"
 
     heading "Fetching resources"
     resources=$(printf "$instantise_rtm" | grep "Resource: ") # Gets all the outputted resource addresses
-    printf "$resources" | grep -o "Resource:.*"
     # sed -n '[line],[line]p' specifies the line number of the resource address; both of the [line] parameters should be the same
     export market_position_badge=$(printf "$resources" | sed -n '2,2p' | grep -o "resource_.*")
-    export xrd_pool_unit=$(printf "$resources" | sed -n '3,3p' | grep -o "resource_.*")
 
     heading "Assigned env variables"
     tbl_out "market component:     " "$market_component"
     tbl_out "market position badge:" "$market_position_badge"
     tbl_out "xrd pool unit:        " "$xrd_pool_unit"
     tbl_out "market owner badge:   " "$market_owner_badge"
+}
+
+cmd_add_asset() {
+    # Validation
+    is_pkg_deployed
+
+    if [[ $PKG_DEPLOYED = "FALSE" ]]; then
+        return 0
+    fi
+
+    heading "Running transaction manifest"
+    add_asset_rtm=$(resim run $(printf "$MARKET_PATH/$MARKET_MANIFESTS_PATH/add_asset.rtm"))
+
+    export xrd_cluster=$(printf "$add_asset_rtm" | grep "Component:" | grep -o "component_.*")
+    export xrd_unit=$(printf "$resources" | sed -n '3,3p' | grep -o "resource_.*")
 }
 
 # Position management
@@ -248,6 +268,15 @@ cmd_link_price_stream() {
     resim run $(printf "$MARKET_PATH/$MARKET_MANIFESTS_PATH/$LINK_PRICE_STREAM_RTM")
 }
 
+#. -------------- Cluster Commands -------------- #
+cmd_publish_cluster() {
+    heading "Publishing cluster"
+    export cluster_package=$(resim publish $(printf "$CLUSTER_PATH") | sed "s/Success! New Package: //")
+
+    heading "Assigned env variables"
+    tbl_out "cluster package:" "$cluster_package"
+}
+
 #. ------------ Price Stream Commands ----------- #
 # Deployment
 cmd_publish_price_stream() {
@@ -267,7 +296,7 @@ cmd_instantise_price_stream() {
     fi
 
     heading "Creating price stream owner badge"
-    create_price_stream_owner_badge_rtm=$(resim run $(printf "$MARKET_PATH/$MARKET_MANIFESTS_PATH/create_price_stream_badge.rtm"))
+    create_price_stream_owner_badge_rtm=$(resim run $(printf "$PRICE_STREAM_PATH/$PRICE_STREAM_MANIFESTS_PATH/create_price_stream_badge.rtm"))
     export price_stream_owner_badge=$(printf "$create_price_stream_owner_badge_rtm" | grep "Resource: " | sed -n '1,1p' | grep -o "resource_.*")
 
     heading "Running transaction manifest"
@@ -297,7 +326,7 @@ cmd_instantise_price_stream() {
 # Validation function return values
 PKG_DEPLOYED="TRUE"
 COMPONENT_INST="TRUE"
-# Manifests
+
 MARKET_PATH="/home/tymur/programs/lending-dapp/scrypto/market"
 MARKET_MANIFESTS_PATH="manifests"
 INSTANTISE_MARKET_RTM="instantise.rtm"
@@ -307,6 +336,7 @@ PRICE_STREAM_PATH="/home/tymur/programs/lending-dapp/scrypto/price-stream"
 PRICE_STREAM_MANIFESTS_PATH="manifests"
 INSTANTISE_PRICE_STREAM_RTM="instantise.rtm"
 
+CLUSTER_PATH="/home/tymur/programs/lending-dapp/scrypto/cluster"
 
 # ------------------ Functions ----------------- #
 # Text formatting

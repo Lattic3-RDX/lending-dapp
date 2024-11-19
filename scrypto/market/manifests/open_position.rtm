@@ -8,11 +8,11 @@ CALL_METHOD
     Address("${user_account}")
     "withdraw"
     Address("${xrd}")
-    Decimal("10");
+    Decimal("100");
 
 TAKE_FROM_WORKTOP
     Address("${xrd}")
-    Decimal("10")
+    Decimal("100")
     Bucket("bucket_xrd");
 # --------
 

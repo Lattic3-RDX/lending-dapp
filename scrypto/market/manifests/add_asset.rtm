@@ -5,29 +5,14 @@ CALL_METHOD
 
 CALL_METHOD
     Address("${main_account}")
-    "withdraw"
+    "create_proof_of_amount"
     Address("${market_owner_badge}")
     Decimal("1");
-
-TAKE_FROM_WORKTOP
-    Address("${market_owner_badge}")
-    Decimal("1")
-    Bucket("bucket_owner_badge");
-
-CREATE_PROOF_FROM_BUCKET_OF_ALL
-    Bucket("bucket_owner_badge")
-    Proof("owner_proof");
-
-PUSH_TO_AUTH_ZONE
-    Proof("owner_proof");
 
 CALL_METHOD
     Address("${market_component}")
     "add_asset"
-    Bucket("bucket_owner_badge")
-    Address("resource_sim1thzy4py7qsq2z6z6dm8w5lwky9s7yxlnmwkvw84u8gcnjfp87gkqnx");
-
-DROP_AUTH_ZONE_REGULAR_PROOFS;
+    Address("${xrd}");
 
 CALL_METHOD
     Address("${main_account}")
