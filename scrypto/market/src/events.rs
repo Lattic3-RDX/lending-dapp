@@ -7,7 +7,7 @@ use scrypto::prelude::*;
 #[derive(ScryptoSbor, ScryptoEvent)]
 pub struct InstantiseEvent {
     pub component_address: ComponentAddress,
-    pub asset_list: Vec<ResourceAddress>,
+    pub asset_list: IndexSet<ResourceAddress>,
 }
 
 //. Position management
@@ -22,38 +22,31 @@ pub struct OpenPositionEvent {
 pub struct PositionSupplyEvent {
     pub position_id: NonFungibleLocalId,
 
-    pub provided: ValueMap,
-
     pub supply: ValueMap,
-    pub pool_units: ValueMap,
+    pub supply_units: ValueMap,
 }
 
 #[derive(ScryptoSbor, ScryptoEvent)]
 pub struct PositionBorrowEvent {
     pub position_id: NonFungibleLocalId,
 
-    pub requested: ValueMap,
-
     pub debt: ValueMap,
+    pub debt_units: ValueMap,
 }
 
 #[derive(ScryptoSbor, ScryptoEvent)]
 pub struct PositionWithdrawEvent {
     pub position_id: NonFungibleLocalId,
 
-    pub provided_pool_unit: ValueTuple,
-
-    pub supply: ValueMap,
-    pub withdrawn: ValueTuple,
+    pub supply_unit: ValueTuple,
+    pub withdraw: ValueTuple,
 }
 
 #[derive(ScryptoSbor, ScryptoEvent)]
 pub struct PositionRepayEvent {
     pub position_id: NonFungibleLocalId,
 
-    pub repaid: ValueTuple,
-
-    pub debt: ValueMap,
+    pub repay: ValueTuple,
 }
 
 #[derive(ScryptoSbor, ScryptoEvent)]
@@ -69,8 +62,8 @@ pub struct PositionHealthEvent {
 #[derive(ScryptoSbor, ScryptoEvent)]
 pub struct AddAssetEvent {
     pub asset: ResourceAddress,
-    pub pool_address: ComponentAddress,
-    pub pool_unit_address: GlobalAddress,
+    pub cluster_address: ComponentAddress,
+    pub supply_unit_address: ResourceAddress,
 }
 
 #[derive(ScryptoSbor, ScryptoEvent)]

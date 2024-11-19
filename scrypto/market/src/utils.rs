@@ -7,7 +7,7 @@ pub type ValueMap = HashMap<ResourceAddress, PreciseDecimal>;
 pub type ValueTuple = (ResourceAddress, PreciseDecimal);
 
 /* ---------- Mathematical Operations --------- */
-pub fn p_to_dec(precise: PreciseDecimal) -> Decimal {
+pub fn trunc(precise: PreciseDecimal) -> Decimal {
     return precise.checked_truncate(RoundingMode::ToZero).unwrap();
 }
 

@@ -2,6 +2,29 @@
 use crate::utils::*;
 use scrypto::prelude::*;
 
+/* ---------------- Structures ---------------- */
+#[derive(ScryptoSbor, Debug, Clone)]
+pub struct ClusterState {
+    pub at: i64, // seconds
+
+    pub resource: ResourceAddress,
+    pub supply_unit: ResourceAddress,
+    pub liquidity: Decimal,
+
+    pub supply: PreciseDecimal,
+    pub supply_units: PreciseDecimal,
+    pub virtual_supply: PreciseDecimal,
+    pub supply_ratio: PreciseDecimal,
+
+    pub debt: PreciseDecimal,
+    pub debt_units: PreciseDecimal,
+    pub virtual_debt: PreciseDecimal,
+    pub debt_ratio: PreciseDecimal,
+
+    pub apr: PreciseDecimal,
+    pub apr_ticked: i64, // seconds
+}
+
 /* ------------------ Cluster ----------------- */
 #[blueprint]
 mod lattic3_cluster {
@@ -18,6 +41,7 @@ mod lattic3_cluster {
             get_supply_ratio  => PUBLIC;
             get_debt_ratio    => PUBLIC;
             provide_liquidity => restrict_to: [OWNER, admin];
+            get_cluster_state => PUBLIC;
 
             tick_interest              => PUBLIC;
             set_interest_tick_interval => restrict_to: [OWNER, admin];
@@ -27,20 +51,21 @@ mod lattic3_cluster {
     struct Cluster {
         component: ComponentAddress, // Address of the cluster component
 
-        resource: ResourceAddress, // Resource that the cluster contains
-        liquidity: Vault,          // Vault that holds liquidity
+        resource: ResourceAddress,            // Resource that the cluster contains
+        supply_unit_manager: ResourceManager, // Manager for the supply units
+        liquidity: Vault,                     // Vault that holds liquidity
 
-        supply: PreciseDecimal,          // Number of supply units issued
-        virtual_supply: PreciseDecimal,  // Adjustable value of the supply units
-        supply_manager: ResourceManager, // Manager for the supply units
+        supply: PreciseDecimal,         // Raw supply value, equivalent to liquidity + debt
+        supply_units: PreciseDecimal,   // Number of supply units issued
+        virtual_supply: PreciseDecimal, // Adjustable value of the supply units
 
-        debt: PreciseDecimal,         // Number of debt units issued
+        debt: PreciseDecimal,         // Raw debt value
+        debt_units: PreciseDecimal,   // Number of debt units issued
         virtual_debt: PreciseDecimal, // Adjustable value of the supply units
 
         apr: PreciseDecimal, // The interest rate, updated at interest_tick_interval
         apr_ticked: i64,     // Last time the interest rate was ticked
 
-        // Settings
         // price_update_interval: i64,  // Interval (in minutes) between price updates
         interest_tick_interval: i64, // Interval (in minutes) between interest ticks
     }
@@ -109,15 +134,22 @@ mod lattic3_cluster {
 
             let component_state = Cluster {
                 component: component_address,
+
                 resource,
+                supply_unit_manager,
                 liquidity: Vault::new(resource),
+
                 supply: PreciseDecimal::zero(),
+                supply_units: PreciseDecimal::zero(),
                 virtual_supply: PreciseDecimal::zero(),
-                supply_manager: supply_unit_manager,
+
                 debt: PreciseDecimal::zero(),
+                debt_units: PreciseDecimal::zero(),
                 virtual_debt: PreciseDecimal::zero(),
+
                 apr: PreciseDecimal::zero(),
                 apr_ticked: 0,
+
                 interest_tick_interval: 2,
             };
 
@@ -168,10 +200,11 @@ mod lattic3_cluster {
 
             // Mint corresponding number of units
             let unit_amount = amount.checked_mul(supply_ratio).unwrap();
-            let units = self.supply_manager.mint(trunc(unit_amount));
+            let units = self.supply_unit_manager.mint(trunc(unit_amount));
 
             // Update internal state
-            self.supply = self.supply.checked_add(unit_amount).unwrap();
+            self.supply = self.supply.checked_add(amount).unwrap();
+            self.supply_units = self.supply_units.checked_add(unit_amount).unwrap();
             self.virtual_supply = self.virtual_supply.checked_add(amount).unwrap();
 
             // TODO: Verify internal state is legal
@@ -197,7 +230,8 @@ mod lattic3_cluster {
             let withdrawn = self.liquidity.take(trunc(amount));
 
             // Update internal state
-            self.supply = self.supply.checked_sub(unit_amount).unwrap();
+            self.supply = self.supply.checked_sub(amount).unwrap();
+            self.supply_units = self.supply_units.checked_sub(unit_amount).unwrap();
             self.virtual_supply = self.virtual_supply.checked_sub(amount).unwrap();
 
             // TODO: Verify internal state is legal
@@ -224,7 +258,8 @@ mod lattic3_cluster {
             let borrowed = self.liquidity.take(trunc(amount));
 
             // Update internal state
-            self.debt = self.debt.checked_add(unit_amount).unwrap();
+            self.debt = self.debt.checked_add(amount).unwrap();
+            self.debt_units = self.debt_units.checked_add(unit_amount).unwrap();
             self.virtual_debt = self.virtual_debt.checked_add(amount).unwrap();
 
             // TODO: Verify internal state is legal
@@ -256,7 +291,8 @@ mod lattic3_cluster {
             self.liquidity.put(repayment);
 
             // Update internal state
-            self.debt = self.debt.checked_sub(unit_amount).unwrap();
+            self.debt = self.debt.checked_sub(amount).unwrap();
+            self.debt_units = self.debt_units.checked_sub(unit_amount).unwrap();
             self.virtual_debt = self.virtual_debt.checked_sub(amount).unwrap();
 
             // TODO: Verify internal state is legal
@@ -272,7 +308,7 @@ mod lattic3_cluster {
             if self.virtual_supply == pdec!(0) {
                 pdec!(1)
             } else {
-                self.supply.checked_div(self.virtual_supply).unwrap()
+                self.supply_units.checked_div(self.virtual_supply).unwrap()
             }
         }
 
@@ -280,12 +316,38 @@ mod lattic3_cluster {
             if self.virtual_debt == pdec!(0) {
                 pdec!(1)
             } else {
-                self.debt.checked_div(self.virtual_debt).unwrap()
+                self.debt_units.checked_div(self.virtual_debt).unwrap()
             }
         }
 
         pub fn provide_liquidity(&mut self, provided: Bucket) {
             self.liquidity.put(provided);
+        }
+
+        pub fn get_cluster_state(&self) -> ClusterState {
+            let state = ClusterState {
+                at: now(),
+
+                resource: self.resource,
+                supply_unit: self.supply_unit_manager.address(),
+                liquidity: self.liquidity.amount(),
+
+                supply: self.supply,
+                supply_units: self.supply_units,
+                virtual_supply: self.virtual_supply,
+                supply_ratio: self.get_supply_ratio(),
+
+                debt: self.debt,
+                debt_units: self.debt_units,
+                virtual_debt: self.virtual_debt,
+                debt_ratio: self.get_debt_ratio(),
+
+                apr: self.apr,
+                apr_ticked: self.apr_ticked,
+            };
+
+            info!("Cluster state: {:#?}", state);
+            state
         }
 
         //. --------- Internal State Management -------- /
@@ -320,7 +382,7 @@ mod lattic3_cluster {
 
         fn __validate_unit_bucket(&self, bucket: &Bucket) {
             assert!(
-                bucket.resource_address() == self.supply_manager.address(),
+                bucket.resource_address() == self.supply_unit_manager.address(),
                 "Invalid unit provided"
             );
             assert!(bucket.amount() > dec!(0), "Provided amount must be greater than zero");
