@@ -71,11 +71,7 @@ mod lattic3_cluster {
     }
 
     impl Cluster {
-        pub fn instantiate(
-            resource: ResourceAddress,
-            cluster_owner_rule: AccessRule,
-            cluster_admin_rule: AccessRule,
-        ) -> Global<Cluster> {
+        pub fn instantiate(resource: ResourceAddress, cluster_owner_rule: AccessRule, cluster_admin_rule: AccessRule) -> Global<Cluster> {
             // Reserve component address
             let (address_reservation, component_address) = Runtime::allocate_component_address(Cluster::blueprint_id());
 
@@ -239,11 +235,7 @@ mod lattic3_cluster {
             self.__tick_interest(); // Internal call to bypass interest_tick_interval
 
             // Return resource
-            info!(
-                "Withdrawn [{:?} : {:?}]",
-                withdrawn.resource_address(),
-                withdrawn.amount()
-            );
+            info!("Withdrawn [{:?} : {:?}]", withdrawn.resource_address(), withdrawn.amount());
             withdrawn
         }
 
@@ -276,11 +268,7 @@ mod lattic3_cluster {
         pub fn repay(&mut self, repayment: Bucket) -> PreciseDecimal {
             self.__validate_res_bucket(&repayment);
 
-            info!(
-                "Repaying [{:?} : {:?}]",
-                repayment.resource_address(),
-                repayment.amount()
-            );
+            info!("Repaying [{:?} : {:?}]", repayment.resource_address(), repayment.amount());
 
             let amount = repayment.amount();
             let debt_ratio = self.get_debt_ratio();
@@ -381,10 +369,7 @@ mod lattic3_cluster {
         }
 
         fn __validate_unit_bucket(&self, bucket: &Bucket) {
-            assert!(
-                bucket.resource_address() == self.supply_unit_manager.address(),
-                "Invalid unit provided"
-            );
+            assert!(bucket.resource_address() == self.supply_unit_manager.address(), "Invalid unit provided");
             assert!(bucket.amount() > dec!(0), "Provided amount must be greater than zero");
         }
 
