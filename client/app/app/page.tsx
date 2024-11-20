@@ -17,6 +17,7 @@ import {
   getWalletBalance,
   assetConfigs,
   getAssetPrice,
+  supplyUnitsToAmount,
 } from "@/types/asset";
 import { PortfolioTable } from "@/components/portfolio-table/portfolio-table";
 import { createPortfolioColumns } from "@/components/portfolio-table/portfolio-columns";
@@ -31,20 +32,7 @@ import position_borrow_rtm from "@/lib/manifests/position_borrow";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { AssetActionCard } from "@/components/asset-action-card";
 import { StatisticsCard } from "@/components/statistics-card";
-
-interface SuppliedAsset {
-  address: string;
-  supplied_amount: number;
-}
-
-interface NFTMetadata {
-  position_type?: string;
-  supplied_assets?: string;
-}
-
-interface StateNonFungibleDetailsResponseItem {
-  metadata?: NFTMetadata;
-}
+import { StarsBackground } from "@/components/ui/stars-background";
 
 interface NFTData {
   data: {
@@ -62,23 +50,6 @@ interface NFTData {
       }>;
     };
   };
-}
-
-// Add this styled div for the grid background
-function GridBackground() {
-  return (
-    <div className="fixed inset-0 -z-10">
-      <div
-        className="absolute inset-0 bg-background"
-        style={{
-          backgroundImage: `linear-gradient(to right, var(--foreground) 1px, transparent 1px),
-                           linear-gradient(to bottom, var(--foreground) 1px, transparent 1px)`,
-          backgroundSize: "40px 40px",
-          opacity: "0.05",
-        }}
-      />
-    </div>
-  );
 }
 
 export default function App() {
@@ -112,7 +83,6 @@ export default function App() {
   const [netAPR, setNetAPR] = useState<number>(0);
   const [health, setHealth] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [calculatingAPR, setCalculatingAPR] = useState(false);
 
   const hasSelectedSupplyAssets = Object.keys(supplyRowSelection).length > 0;
   const hasSelectedBorrowAssets = Object.keys(borrowRowSelection).length > 0;
@@ -198,8 +168,6 @@ export default function App() {
 
       let totalSupplyValue = 0;
       let totalDebtValue = 0;
-      
-      // TODO: call getRequest /api/assets/clusters to get the ratio supply_ratio, divide the shit from the NFT by supply_ratio and multiply by the price
 
       // Convert to portfolio data for supply
       const supplyPortfolioData = await Promise.all(
@@ -210,24 +178,30 @@ export default function App() {
 
           if (!assetConfig) return null;
           const [label] = assetConfig;
+          const assetName = label as AssetName;
 
-          const amount = suppliedAsset.supplied_amount;
-          const price = await getAssetPrice(label as AssetName);
-          totalSupplyValue += amount * price;
+          console.log("Supplied amount: ", suppliedAsset.supplied_amount);
+          // Create a properly typed record with a single asset
+          const unitRecord: Record<AssetName, number> = {
+            [assetName]: suppliedAsset.supplied_amount
+          } as Record<AssetName, number>;
+          const convertedFromAmountUnits = await supplyUnitsToAmount(unitRecord);
+          console.log("Amount units: ", convertedFromAmountUnits);
+          const price = await getAssetPrice(assetName);
+          totalSupplyValue += convertedFromAmountUnits * price;
 
+          console.log("Get wallet balance: ", await getWalletBalance(label as AssetName, accounts[0].address));
           return {
             address: suppliedAsset.address,
             label: label as AssetName,
             wallet_balance: await getWalletBalance(label as AssetName, accounts[0].address),
-            select_native: amount,
+            select_native: convertedFromAmountUnits,
             APR: getAssetAPR(label as AssetName),
             pool_unit_address: assetConfigs[label as AssetName].pool_unit_address,
             type: "supply",
           } as Asset;
         }),
       ).then((results) => results.filter((asset): asset is Asset => asset !== null));
-
-      // TODO: call getRequest /api/assets/clusters to get the ratio borrow_ratio, divide the shit from the NFT by borrow_ratio and multiply by the price
 
       // Convert to portfolio data for borrow
       const borrowPortfolioData: Asset[] = await Promise.all(
@@ -239,9 +213,14 @@ export default function App() {
           if (!assetConfig) return null;
           const [label] = assetConfig;
 
+          const assetName = label as AssetName;
           const amount = borrowedAsset.borrowed_amount;
-          const price = await getAssetPrice(label as AssetName);
-          totalDebtValue += amount * price;
+          const unitRecord: Record<AssetName, number> = {
+            [assetName]: borrowedAsset.borrowed_amount
+          } as Record<AssetName, number>;
+          const amountUnits = await supplyUnitsToAmount(unitRecord);
+          const price = await getAssetPrice(assetName);
+          totalDebtValue += amountUnits * price;
 
           return {
             address: borrowedAsset.address,
@@ -269,7 +248,7 @@ export default function App() {
       const netAPRValue =
         totalSupplyValue > 0 || totalDebtValue > 0
           ? (calculatedSupplyAPR * totalSupplyValue - calculatedBorrowAPR * totalDebtValue) /
-            (totalSupplyValue > 0 ? totalSupplyValue : totalDebtValue)
+          (totalSupplyValue > 0 ? totalSupplyValue : totalDebtValue)
           : 0;
 
       console.log("Supply APR: ", calculatedSupplyAPR);
@@ -300,8 +279,6 @@ export default function App() {
 
   useEffect(() => {
     console.log("Account", accounts);
-    console.log("RDT", rdt);
-    console.log("GatewayApi", gatewayApi);
 
     if (accounts && gatewayApi) {
       refreshPortfolioData();
@@ -546,7 +523,6 @@ export default function App() {
 
   return (
     <div>
-      <GridBackground />
       <div className="container mx-auto py-10 space-y-8">
         {/* Statistics Card */}
         <StatisticsCard healthRatio={health} netWorth={netWorth} netAPR={netAPR} isLoading={isLoading} />

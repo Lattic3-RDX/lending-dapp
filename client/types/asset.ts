@@ -28,7 +28,7 @@ export const assetConfigs: Record<AssetName, AssetConfig> = {
     address: "resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxtfd2jc",
     label: "XRD",
     icon: "https://assets.radixdlt.com/icons/icon-xrd-32x32.png",
-    pool_unit_address: "resource_tdx_2_1tkvdgqm60teajxd44ma6k0xyt6xvxxcyzrmc25q406fx08eaek36e4",
+    pool_unit_address: "resource_tdx_2_1tkzjn6yxfy29afl4xfjrw76mt4uvkyt6727c93xr7n3k50my8k6ert",
     supply_APR: 5,
     borrow_APR: 10,
   },
@@ -52,7 +52,7 @@ export const assetConfigs: Record<AssetName, AssetConfig> = {
     address: "resource_tdx_2_1t57e50rm28cyqwn26jn336qyhu8nkt8cknacq8rnsn5kul2l3zvjut",
     label: "xUSDT",
     icon: "https://assets.instabridge.io/tokens/icons/xUSDT.png",
-    pool_unit_address: "resource_tdx_2_1t5rqzx5xpgdv3dq42gvynlf6t80dvfcdfxt3shl0gj2jvp4v9extcl",
+    pool_unit_address: "resource_tdx_2_1t4tf5u3fayhnyxcf6f0qzsn6zfejn3zteuu72c08vqyxnqz3xpylmn",
     supply_APR: 5,
     borrow_APR: 10,
   },
@@ -68,7 +68,7 @@ export const assetConfigs: Record<AssetName, AssetConfig> = {
     address: "resource_tdx_2_1tkuj2rqsa63f8ygkzezgt27trj50srht5e666jaz28j5ss8fasg5kl",
     label: "HUG",
     icon: "https://tokens.defiplaza.net/cdn-cgi/imagedelivery/QTzOBjs3mHq3EhZxDosDSw/f5cdcf72-c7a2-4032-1252-1be08edb0700/token",
-    pool_unit_address: "resource_tdx_2_1tk86qnc0xpslwn0fz29gaj7gjfdsndyc0fkagakduk84ml9rg2xxjj",
+    pool_unit_address: "resource_tdx_2_1t4pjqyp6wc94vtlw5fu099p6yf4vj55vgll5yxzhx9wqdgsd299ymn",
     supply_APR: 5,
     borrow_APR: 10,
   },
@@ -197,16 +197,20 @@ export const getAssetPrice = async (asset: AssetName): Promise<number> => {
 };
 
 export const supplyUnitsToAmount = async (asset: Record<AssetName, number>) => {
-  const address = Object.keys(asset)[0];
+  const address = getAssetAddress(Object.keys(asset)[0] as AssetName);
   const amount = Object.values(asset)[0];
 
-  const cluster_states: any = await fetch("api/assets/clusters", { method: "GET" });
+  console.log("Address: ", address);
+  console.log("Amount: ", amount);
 
-  if (!cluster_states.ok) {
-    console.error("Error fetching cluster states:", cluster_states.statusText);
+  const cluster_states_res: any = await fetch("api/assets/clusters", { method: "GET" });
+
+  if (!cluster_states_res.ok) {
+    console.error("Error fetching cluster states:", cluster_states_res.statusText);
     return -1;
   }
 
+  const cluster_states = await cluster_states_res.json();
   const cluster: any = cluster_states[address];
 
   if (!cluster) {
@@ -218,16 +222,17 @@ export const supplyUnitsToAmount = async (asset: Record<AssetName, number>) => {
 };
 
 export const borrowUnitsToAmount = async (asset: Record<AssetName, number>) => {
-  const address = Object.keys(asset)[0];
+  const address = getAssetAddress(Object.keys(asset)[0] as AssetName);
   const amount = Object.values(asset)[0];
 
-  const cluster_states: any = await fetch("api/assets/clusters", { method: "GET" });
+  const cluster_states_res: any = await fetch("api/assets/clusters", { method: "GET" });
 
-  if (!cluster_states.ok) {
-    console.error("Error fetching cluster states:", cluster_states.statusText);
+  if (!cluster_states_res.ok) {
+    console.error("Error fetching cluster states:", cluster_states_res.statusText);
     return -1;
   }
 
+  const cluster_states = await cluster_states_res.json();
   const cluster: any = cluster_states[address];
 
   if (!cluster) {
@@ -235,5 +240,5 @@ export const borrowUnitsToAmount = async (asset: Record<AssetName, number>) => {
     return -1;
   }
 
-  return amount / cluster.supply_ratio;
+  return amount / cluster.debt_ratio;
 };

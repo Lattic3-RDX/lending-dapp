@@ -1,10 +1,8 @@
 import { columns } from "./columns";
-import { Asset, assetConfigs } from "@/types/asset";
+import { Asset, assetConfigs, getWalletBalances } from "@/types/asset";
 import { AssetTable } from "./asset-table";
 
 async function getData(): Promise<Asset[]> {
-  // Fetch data from your API here.
-  // For now, use mock data based on our centralized config
   return Object.values(assetConfigs).map(config => ({
     address: config.address,
     label: config.label,
