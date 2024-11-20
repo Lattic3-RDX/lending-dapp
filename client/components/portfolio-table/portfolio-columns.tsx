@@ -75,7 +75,7 @@ function ActionCell({
         position_badge_local_id: getNFTBalance.items[0],
         asset: {
           address: row.original.pool_unit_address ?? "",
-          amount: row.original.amount
+          amount: row.original.select_native
         }
       });
 
@@ -89,7 +89,7 @@ function ActionCell({
       if (result) {
         toast({
           title: "Withdrawal Successful",
-          description: `Withdrew ${row.original.amount} ${row.original.label}`,
+          description: `Withdrew ${row.original.select_native} ${row.original.label}`,
         });
         await refreshPortfolioData();
       }
@@ -143,6 +143,7 @@ function ActionCell({
         return;
       }
 
+      console.log("repaying", row.original.select_native, row.original.label);
       const manifest = position_repay_rtm({
         component: marketComponent,
         account: accounts[0].address,
@@ -150,7 +151,7 @@ function ActionCell({
         position_badge_local_id: getNFTBalance.items[0],
         asset: {
           address: row.original.address,
-          amount: row.original.amount
+          amount: row.original.select_native
         }
       });
 
@@ -164,7 +165,7 @@ function ActionCell({
       if (result) {
         toast({
           title: "Repayment Successful",
-          description: `Repaid ${row.original.amount} ${row.original.label}`,
+          description: `Repaid ${row.original.select_native} ${row.original.label}`,
         });
         await refreshPortfolioData();
       }

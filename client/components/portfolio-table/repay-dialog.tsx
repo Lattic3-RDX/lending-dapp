@@ -53,6 +53,11 @@ export function RepayDialog({
     setTempAmount(value);
     const amount = parseFloat(value) || 0;
     
+    if (isNaN(amount)) {
+      setError("Please enter a valid number");
+      return;
+    }
+    
     // Calculate new health factor
     const repayValue = amount * assetPrice;
     const newBorrowDebt = totalBorrowDebt - repayValue;
@@ -79,14 +84,16 @@ export function RepayDialog({
   };
 
   const handleMaxClick = () => {
-    setTempAmount(asset.select_native.toString());
-    setError(null);
+    const maxAmount = Math.min(asset.select_native, asset.wallet_balance);
+    setTempAmount(maxAmount.toString());
+    handleAmountChange(maxAmount.toString());
   };
 
   const handleConfirm = () => {
     const amount = parseFloat(tempAmount);
     if (!isNaN(amount) && amount > 0 && !error) {
       onConfirm(amount);
+      onClose();
     }
   };
 
@@ -162,7 +169,7 @@ export function RepayDialog({
           <Button 
             className="w-full h-12 text-base"
             onClick={handleConfirm}
-            disabled={!!error || !tempAmount || parseFloat(tempAmount) <= 0}
+            disabled={!!error || !tempAmount}
           >
             Confirm Repayment
           </Button>
