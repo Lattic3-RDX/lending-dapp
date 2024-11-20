@@ -10,6 +10,10 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+export function findField(obj: any, field: string) {
+  return obj.filter((field: any) => field.field_name === field)[0].value;
+}
+
 /* ----------------- Constants ---------------- */
 // Util types
 type Reverse<T extends Record<PropertyKey, PropertyKey>> = {

@@ -1,6 +1,7 @@
 /* ------------------ Imports ----------------- */
-import config from "@/lib/config.json";
-const { marketComponent } = config;
+import { marketComponent } from "@/lib/config.json";
+import math from "@/lib/math";
+import { findField } from "@/lib/utils";
 import type { NextRequest } from "next/server";
 
 /* ------------------- Setup ------------------ */
@@ -121,19 +122,21 @@ export async function GET(request: NextRequest) {
     const cluster_data: any = await cluster_res.json();
     const cluster_state_raw = cluster_data.items[0].details.state.fields;
 
-    const resource = cluster_state_raw.filter((field: any) => field.field_name === "resource")[0].value;
+    const resource = findField(cluster_state_raw, "resource");
 
-    const supply = +cluster_state_raw.filter((field: any) => field.field_name === "supply")[0].value;
-    const supply_units = +cluster_state_raw.filter((field: any) => field.field_name === "supply_units")[0].value;
-    const virtual_supply = +cluster_state_raw.filter((field: any) => field.field_name === "virtual_supply")[0].value;
-    const supply_ratio = virtual_supply <= 0 ? 1 : supply_units / virtual_supply;
+    const supply = math.bignumber(findField(cluster_state_raw, "supply"));
+    const supply_units = math.bignumber(findField(cluster_state_raw, "supply_units"));
+    const virtual_supply = math.bignumber(findField(cluster_state_raw, "virtual_supply"));
+    const supply_ratio = math.smaller(virtual_supply, 0)
+      ? math.bignumber(1)
+      : math.divide(supply_units, virtual_supply);
 
-    const debt = +cluster_state_raw.filter((field: any) => field.field_name === "debt")[0].value;
-    const debt_units = +cluster_state_raw.filter((field: any) => field.field_name === "debt_units")[0].value;
-    const virtual_debt = +cluster_state_raw.filter((field: any) => field.field_name === "virtual_debt")[0].value;
-    const debt_ratio = virtual_debt <= 0 ? 1 : debt_units / virtual_debt;
+    const debt = math.bignumber(findField(cluster_state_raw, "debt"));
+    const debt_units = math.bignumber(findField(cluster_state_raw, "debt_units"));
+    const virtual_debt = math.bignumber(findField(cluster_state_raw, "virtual_debt"));
+    const debt_ratio = math.smaller(virtual_debt, 0) ? math.bignumber(1) : math.divide(debt_units, virtual_debt);
 
-    const liquidity = supply - debt;
+    const liquidity = math.subtract(supply, debt);
 
     const cluster_state = {
       cluster: cluster_address,
