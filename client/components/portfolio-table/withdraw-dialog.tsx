@@ -86,15 +86,15 @@ export function WithdrawDialog({
   const handleConfirm = async () => {
     const amount = bn(tempAmount);
     if (math.larger(amount, 0) && !error) {
-      setTransactionState('awaiting_signature');
+      setTransactionState("awaiting_signature");
       try {
         // Add 0.1% to amount
-        const amountWithSlippage = m_bn(math.multiply(amount, 1.001));
-        await onConfirm(amountWithSlippage);
+        // const amountWithSlippage = m_bn(math.multiply(amount, 1.001));
+        await onConfirm(amount);
         onClose();
       } catch (error) {
-        setTransactionState('error');
-        setTimeout(() => setTransactionState('idle'), 2000);
+        setTransactionState("error");
+        setTimeout(() => setTransactionState("idle"), 2000);
       }
     }
   };

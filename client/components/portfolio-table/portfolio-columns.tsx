@@ -4,7 +4,7 @@ import position_repay_rtm from "@/lib/manifests/position_repay";
 import position_withdraw_rtm from "@/lib/manifests/position_withdraw";
 import { bn, m_bn, math, num } from "@/lib/math";
 import { gatewayApi, rdt } from "@/lib/radix";
-import { Asset, AssetName, borrowUnitsToAmount, getAssetAPR, getAssetIcon } from "@/types/asset";
+import { Asset, AssetName, ammountToSupplyUnits, getAssetAPR, getAssetIcon } from "@/types/asset";
 import { ColumnDef } from "@tanstack/react-table";
 import { BigNumber } from "mathjs";
 import { useState } from "react";
@@ -60,11 +60,12 @@ function ActionCell({
         (fr: { resource_address: string }) => fr.resource_address === borrowerBadgeAddr,
       )?.vaults.items[0];
 
-      console.log("Native: ", amount);
-      const unitRecord: Record<AssetName, BigNumber> = {
-        [row.original.address]: amount,
+      console.log("row", row.original.address);
+      console.log("Native: ", amount.toString());
+      const supplyRecord: Record<AssetName, BigNumber> = {
+        [row.original.label]: amount,
       } as Record<AssetName, BigNumber>;
-      const debtUnits = await borrowUnitsToAmount(unitRecord);
+      const supplyUnits = await ammountToSupplyUnits(supplyRecord);
 
       if (!getNFTBalance?.items?.[0]) {
         toast({
@@ -82,7 +83,7 @@ function ActionCell({
         position_badge_local_id: getNFTBalance.items[0],
         asset: {
           address: row.original.pool_unit_address ?? "",
-          amount: math.round(debtUnits, 16).toString(),
+          amount: math.round(supplyUnits, 16).toString(),
         },
       });
 
