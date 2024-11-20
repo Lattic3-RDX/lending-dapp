@@ -4,6 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { bn, m_bn, math } from "@/lib/math";
 
 export const borrowColumns: ColumnDef<Asset>[] = [
   {
@@ -41,11 +42,23 @@ export const borrowColumns: ColumnDef<Asset>[] = [
     accessorKey: "available",
     header: "Available",
     size: 150,
-    cell: ({ row }) => {
+    cell: ({ row, table }) => {
       const isExpanded = row.getIsExpanded();
       if (isExpanded) return null;
-      const available = row.original.available;
-      return <span className="font-semibold">{available?.toFixed(2)}</span>;
+      
+      const originalData = table.options.data;
+      const asset = originalData.find(a => a.address === row.original.address);
+      const available = asset?.available;
+      
+      console.log('Rendering available for asset:', asset);
+      
+      return (
+        <div className="font-medium">
+          {available !== undefined && Number.isFinite(available) 
+            ? Number(available).toFixed(2) 
+            : "0.00"}
+        </div>
+      );
     },
   },
   {
