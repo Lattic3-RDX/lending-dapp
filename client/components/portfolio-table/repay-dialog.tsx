@@ -1,37 +1,33 @@
-import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Asset, getAssetIcon } from "@/types/asset";
-import { ArrowRight, X } from "lucide-react";
 import { TruncatedNumber } from "@/components/ui/truncated-number";
-import { getCachedAssetPrice } from "@/lib/price-cache";
+import { bn, m_bn, math, num } from "@/lib/math";
+import { Asset, getAssetIcon, getAssetPrice } from "@/types/asset";
+import { ArrowRight, X } from "lucide-react";
+import { BigNumber } from "mathjs";
+import React, { useEffect, useState } from "react";
 
 interface RepayDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (amount: number) => Promise<void>;
+  onConfirm: (amount: BigNumber) => Promise<void>;
   asset: Asset;
-  totalSupply: number;
-  totalBorrowDebt: number;
+  totalSupply: BigNumber;
+  totalBorrowDebt: BigNumber;
 }
 
-export function RepayDialog({ 
-  isOpen, 
-  onClose, 
-  onConfirm, 
-  asset,
-  totalSupply,
-  totalBorrowDebt 
-}: RepayDialogProps) {
+export function RepayDialog({ isOpen, onClose, onConfirm, asset, totalSupply, totalBorrowDebt }: RepayDialogProps) {
   const [tempAmount, setTempAmount] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [newHealthFactor, setNewHealthFactor] = useState<number>(
-    totalBorrowDebt <= 0 ? -1 : totalSupply / totalBorrowDebt
+  const [newHealthFactor, setNewHealthFactor] = useState<BigNumber>(
+    math.smallerEq(totalBorrowDebt, 0) ? bn(-1) : m_bn(math.divide(totalSupply, totalBorrowDebt)),
   );
-  const [assetPrice, setAssetPrice] = useState(0);
+  const [assetPrice, setAssetPrice] = useState(bn(0));
   const [isLoading, setIsLoading] = useState(false);
-  const [transactionState, setTransactionState] = useState<'idle' | 'awaiting_signature' | 'processing' | 'error'>('idle');
+  const [transactionState, setTransactionState] = useState<"idle" | "awaiting_signature" | "processing" | "error">(
+    "idle",
+  );
 
   const validateAmount = (value: string) => {
     const amount = parseFloat(value);
@@ -54,36 +50,36 @@ export function RepayDialog({
   // Update health factor when amount changes
   const handleAmountChange = async (value: string) => {
     setTempAmount(value);
-    const amount = parseFloat(value) || 0;
-    
-    if (isNaN(amount)) {
-      setError("Please enter a valid number");
+    const amount = bn(value) || bn(0);
+
+    // Calculate new health factor
+    const withdrawValue = math.multiply(amount, assetPrice);
+    const newSupplyValue = math.subtract(totalSupply, withdrawValue);
+    const newHF = math.smallerEq(totalBorrowDebt, 0) ? bn(-1) : m_bn(math.divide(newSupplyValue, totalBorrowDebt));
+    setNewHealthFactor(newHF);
+
+    if (!math.equal(newHF, -1) && math.smaller(newHF, bn(1))) {
+      setError("Withdrawal would put health ratio below minimum");
       return;
     }
-    
-    // Calculate new health factor
-    const repayValue = amount * assetPrice;
-    const newBorrowDebt = totalBorrowDebt - repayValue;
-    const newHF = newBorrowDebt <= 0 ? -1 : totalSupply / newBorrowDebt;
-    setNewHealthFactor(newHF);
-    
+
     validateAmount(value);
   };
 
   // Fetch asset price when dialog opens
   useEffect(() => {
-    getCachedAssetPrice(asset.label).then(setAssetPrice);
+    getAssetPrice(asset.label).then(setAssetPrice);
   }, [asset.label]);
 
-  const calculateNewHealthFactor = (repayAmount: number) => {
-    const repayValue = repayAmount * assetPrice;
-    const newDebtValue = totalBorrowDebt - repayValue;
-    
+  const calculateNewHealthFactor = (repayAmount: BigNumber): BigNumber => {
+    const repayValue = math.multiply(repayAmount, assetPrice);
+    const newDebtValue = math.subtract(totalBorrowDebt, repayValue);
+
     // If repaying all debt, health ratio is infinite
-    if (newDebtValue <= 0) return -1;
-    
+    if (math.smallerEq(newDebtValue, 0)) return bn(-1);
+
     // Calculate new health ratio
-    return totalSupply / newDebtValue;
+    return m_bn(math.divide(totalSupply, newDebtValue));
   };
 
   const handleMaxClick = () => {
@@ -93,15 +89,15 @@ export function RepayDialog({
   };
 
   const handleConfirm = async () => {
-    const amount = parseFloat(tempAmount);
-    if (!isNaN(amount) && amount > 0 && !error) {
-      setTransactionState('awaiting_signature');
+    const amount = bn(tempAmount);
+    if (math.larger(amount, 0) && !error) {
+      setTransactionState("awaiting_signature");
       try {
         await onConfirm(amount);
         onClose();
       } catch (error) {
-        setTransactionState('error');
-        setTimeout(() => setTransactionState('idle'), 2000); // Reset after 2s
+        setTransactionState("error");
+        setTimeout(() => setTransactionState("idle"), 2000);
       }
     }
   };
@@ -112,15 +108,11 @@ export function RepayDialog({
         <DialogHeader>
           <DialogTitle>Repay {asset.label}</DialogTitle>
         </DialogHeader>
-        
+
         {/* Asset Header */}
         <div className="flex items-center gap-4 mb-8">
           <div className="w-10 h-10 relative">
-            <img
-              src={getAssetIcon(asset.label)}
-              alt={`${asset.label} icon`}
-              className="w-10 h-10 rounded-full"
-            />
+            <img src={getAssetIcon(asset.label)} alt={`${asset.label} icon`} className="w-10 h-10 rounded-full" />
           </div>
           <span className="text-2xl font-semibold">{asset.label}</span>
         </div>
@@ -140,9 +132,9 @@ export function RepayDialog({
                   placeholder={asset.label}
                 />
                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={handleMaxClick}
                     className="h-8 px-3 text-sm font-medium hover:bg-transparent"
                   >
@@ -150,10 +142,12 @@ export function RepayDialog({
                   </Button>
                 </div>
               </div>
-              
+
               <div className="flex justify-between text-sm text-foreground px-1">
-                <span>≈ ${tempAmount ? <TruncatedNumber value={Number(tempAmount) * assetPrice} /> : "0.00"}</span>
-                <span>Current debt: <TruncatedNumber value={asset.select_native} /></span>
+                <span>≈ ${tempAmount ? <TruncatedNumber value={Number(tempAmount) * num(assetPrice)} /> : "0.00"}</span>
+                <span>
+                  Current debt: <TruncatedNumber value={asset.select_native} />
+                </span>
               </div>
 
               {error && <div className="text-red-500 text-sm">{error}</div>}
@@ -164,33 +158,49 @@ export function RepayDialog({
             <div className="flex justify-between text-base">
               <span>Health Factor</span>
               <div className="flex items-center gap-2">
-                <span className={totalBorrowDebt <= 0 ? "text-green-500" : (totalSupply / totalBorrowDebt < 1.5 ? "text-red-500" : "text-green-500")}>
-                  {totalBorrowDebt <= 0 ? '∞' : (totalSupply / totalBorrowDebt).toFixed(2)}
+                <span
+                  className={
+                    num(totalBorrowDebt) <= 0
+                      ? "text-green-500"
+                      : num(totalSupply) / num(totalBorrowDebt) < 1.5
+                        ? "text-red-500"
+                        : "text-green-500"
+                  }
+                >
+                  {num(totalBorrowDebt) <= 0 ? "∞" : (num(totalSupply) / num(totalBorrowDebt)).toFixed(2)}
                 </span>
                 <ArrowRight className="w-4 h-4" />
-                <span className={newHealthFactor === -1 ? "text-green-500" : (newHealthFactor < 1.5 ? "text-red-500" : "text-green-500")}>
-                  {newHealthFactor === -1 ? '∞' : newHealthFactor.toFixed(2)}
+                <span
+                  className={
+                    num(newHealthFactor) === -1
+                      ? "text-green-500"
+                      : num(newHealthFactor) < 1.5
+                        ? "text-red-500"
+                        : "text-green-500"
+                  }
+                >
+                  {num(newHealthFactor) === -1 ? "∞" : newHealthFactor.toFixed(2)}
                 </span>
               </div>
             </div>
           </div>
 
-          <Button 
+          <Button
             className="w-full h-12 text-base"
             onClick={handleConfirm}
-            disabled={!!error || !tempAmount || transactionState !== 'idle'}
+            disabled={!!error || !tempAmount || transactionState !== "idle"}
           >
-            {transactionState === 'error' ? (
+            {transactionState === "error" ? (
               <div className="flex items-center gap-2">
                 <X className="w-4 h-4 text-destructive" />
                 Transaction Failed
               </div>
-            ) : transactionState === 'awaiting_signature' ? (
+            ) : transactionState === "awaiting_signature" ? (
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 Waiting for signature...
               </div>
-            ) : transactionState === 'processing' ? (
+            ) : transactionState === "processing" ? (
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 Repaying...
@@ -203,4 +213,4 @@ export function RepayDialog({
       </DialogContent>
     </Dialog>
   );
-} 
+}

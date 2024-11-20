@@ -13,18 +13,21 @@ import { Wallet, Shield, Percent } from "lucide-react";
 const features = [
   {
     title: "Multi-Collateral Lending",
-    description: "Leverage multiple assets as collateral for your loans, maximizing capital efficiency and flexibility in your DeFi strategy.",
-    icon: Wallet
+    description:
+      "Leverage multiple assets as collateral for your loans, maximizing capital efficiency and flexibility in your DeFi strategy.",
+    icon: Wallet,
   },
   {
     title: "Secure Protocol",
-    description: "Built on Radix's secure asset-oriented architecture with formal verification, ensuring the safety of your assets.",
-    icon: Shield
+    description:
+      "Built on Radix's secure asset-oriented architecture with formal verification, ensuring the safety of your assets.",
+    icon: Shield,
   },
   {
     title: "Competitive Rates",
-    description: "Earn attractive yields on supplied assets and access competitive borrowing rates in the DeFi ecosystem.",
-    icon: Percent
+    description:
+      "Earn attractive yields on supplied assets and access competitive borrowing rates in the DeFi ecosystem.",
+    icon: Percent,
   },
 ];
 
@@ -59,8 +62,8 @@ export default function Home() {
           <div>
             <TypewriterEffectSmooth words={words} />
           </div>
-          
-          <motion.p 
+
+          <motion.p
             className="text-xl text-foreground"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -84,7 +87,7 @@ export default function Home() {
         </div>
 
         {/* Features Section with Focus Cards */}
-        <motion.div 
+        <motion.div
           className="w-full relative z-10"
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}

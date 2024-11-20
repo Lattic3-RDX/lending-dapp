@@ -50,7 +50,7 @@ export const columns: ColumnDef<Asset, unknown>[] = [
     cell: ({ row }) => {
       const isExpanded = row.getIsExpanded();
       if (isExpanded) return null;
-      
+
       const balance = row.getValue("wallet_balance");
       if (balance === -1) {
         return <span className="text-muted-foreground">Loading...</span>;
@@ -72,10 +72,7 @@ export const columns: ColumnDef<Asset, unknown>[] = [
       if (isExpanded) return null;
       return (
         <div>
-          {isSelected && row.original.select_native > 0 ? 
-            <TruncatedNumber value={row.original.select_native} /> : 
-            "-"
-          }
+          {isSelected && row.original.select_native > 0 ? <TruncatedNumber value={row.original.select_native} /> : "-"}
         </div>
       );
     },
@@ -87,10 +84,10 @@ export const columns: ColumnDef<Asset, unknown>[] = [
     cell: ({ row }) => {
       const isExpanded = row.getIsExpanded();
       if (isExpanded) return null;
-      
+
       const APR = row.getValue("APR");
       return `${Number(APR).toFixed(1)}%`;
-    }
+    },
   },
   {
     id: "actions",
@@ -98,11 +95,7 @@ export const columns: ColumnDef<Asset, unknown>[] = [
     cell: ({ row }) => {
       const isExpanded = row.getIsExpanded();
       return (
-        <Button 
-          variant="ghost" 
-          size="sm"
-          onClick={() => row.toggleExpanded()}
-        >
+        <Button variant="ghost" size="sm" onClick={() => row.toggleExpanded()}>
           {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </Button>
       );
@@ -116,5 +109,5 @@ export const columnSizes = {
   balanceOrAvailable: 150,
   selectedAmount: 150,
   APR: 150,
-  actions: 100
+  actions: 100,
 } as const;

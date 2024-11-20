@@ -10,8 +10,8 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function findField(obj: any, field: string) {
-  return obj.filter((field: any) => field.field_name === field)[0].value;
+export function findField(obj: any, name: string) {
+  return obj.filter((field: any) => field.field_name === name)[0].value;
 }
 
 /* ----------------- Constants ---------------- */

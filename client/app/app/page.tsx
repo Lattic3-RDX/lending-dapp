@@ -1,38 +1,43 @@
 "use client";
-import { useEffect, useState } from "react";
-import { RowSelectionState, Updater } from "@tanstack/react-table";
-import React from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+
+import { AssetActionCard } from "@/components/asset-action-card";
 import { AssetTable } from "@/components/asset-table/asset-table";
-import { columns } from "@/components/asset-table/columns";
-import SupplyDialog from "@/components/supply-dialog";
-import { useRadixContext } from "@/contexts/provider";
-import { gatewayApi, rdt } from "@/lib/radix";
-import {
-  getAssetAddrRecord,
-  Asset,
-  AssetName,
-  getAssetAPR,
-  getWalletBalance,
-  assetConfigs,
-  supplyUnitsToAmount,
-} from "@/types/asset";
-import { PortfolioTable } from "@/components/portfolio-table/portfolio-table";
-import { createPortfolioColumns } from "@/components/portfolio-table/portfolio-columns";
-import { useToast } from "@/components/ui/use-toast";
-import { ShootingStars } from "@/components/ui/shooting-stars";
 import { borrowColumns } from "@/components/asset-table/borrow-columns";
+import { columns } from "@/components/asset-table/columns";
 import BorrowDialog from "@/components/borrow-dialog";
+import { createPortfolioColumns } from "@/components/portfolio-table/portfolio-columns";
+import { PortfolioTable } from "@/components/portfolio-table/portfolio-table";
+import { StatisticsCard } from "@/components/statistics-card";
+import SupplyDialog from "@/components/supply-dialog";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { ShootingStars } from "@/components/ui/shooting-stars";
+import { StarsBackground } from "@/components/ui/stars-background";
+import { useToast } from "@/components/ui/use-toast";
+import { useRadixContext } from "@/contexts/provider";
 import config from "@/lib/config.json";
 import open_position_rtm from "@/lib/manifests/open_position";
-import position_supply_rtm from "@/lib/manifests/position_supply";
 import position_borrow_rtm from "@/lib/manifests/position_borrow";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { AssetActionCard } from "@/components/asset-action-card";
-import { StatisticsCard } from "@/components/statistics-card";
-import { StarsBackground } from "@/components/ui/stars-background";
-import { getCachedAssetPrice } from "@/lib/price-cache";
+import position_supply_rtm from "@/lib/manifests/position_supply";
+import { bn, m_bn, math, num } from "@/lib/math";
+import { gatewayApi, rdt } from "@/lib/radix";
+import {
+  Asset,
+  assetConfigs,
+  AssetName,
+  borrowUnitsToAmount,
+  getAssetAddrRecord,
+  getAssetAPR,
+  getAssetPrice,
+  getWalletBalance,
+  supplyUnitsToAmount,
+} from "@/types/asset";
+import { RowSelectionState, Updater } from "@tanstack/react-table";
+import { BigNumber } from "mathjs";
+import React, { useEffect, useState } from "react";
+``;
+
 interface NFTData {
   data: {
     programmatic_json: {
@@ -69,13 +74,13 @@ export default function App() {
     })),
   );
   const [portfolioData, setSupplyPortfolioData] = useState<Asset[]>([]);
-  const [totalSupply, setTotalSupply] = useState<number>(0);
+  const [totalSupply, setTotalSupply] = useState<BigNumber>(bn(0));
   const [totalSupplyAPR, setTotalSupplyAPR] = useState<number>(0);
   const [showSupplyPreview, setShowSupplyPreview] = useState(false);
   const [showBorrowPreview, setShowBorrowPreview] = useState(false);
   const [isBorrowDialogOpen, setIsBorrowDialogOpen] = useState(false);
   const [borrowPortfolioData, setBorrowPortfolioData] = useState<Asset[]>([]);
-  const [totalBorrowDebt, setTotalBorrowDebt] = useState<number>(0);
+  const [totalBorrowDebt, setTotalBorrowDebt] = useState<BigNumber>(bn(0));
   const [totalBorrowAPR, setTotalBorrowAPR] = useState<number>(0);
   const [borrowPowerUsed, setBorrowPowerUsed] = useState<number>(0);
   const [netWorth, setNetWorth] = useState<number>(0);
@@ -94,7 +99,7 @@ export default function App() {
 
     await Promise.all(
       assets.map(async (asset) => {
-        const price = await getCachedAssetPrice(asset.label);
+        const price = num(await getAssetPrice(asset.label as AssetName));
         const value = asset.select_native * price;
         totalValue += value;
         weightedAPR += value * getAssetAPR(asset.label, type);
@@ -153,7 +158,7 @@ export default function App() {
       const suppliedAssets =
         supplyField?.entries.map((entry) => ({
           address: entry.key.value,
-          supplied_amount: parseFloat(entry.value.value),
+          supplied_amount: bn(entry.value.value),
         })) || [];
 
       // Extract borrow positions
@@ -162,11 +167,11 @@ export default function App() {
       const borrowedAssets =
         borrowField?.entries.map((entry) => ({
           address: entry.key.value,
-          borrowed_amount: parseFloat(entry.value.value),
+          borrowed_amount: bn(entry.value.value),
         })) || [];
 
-      let totalSupplyValue = 0;
-      let totalDebtValue = 0;
+      let totalSupplyValue = bn(0);
+      let totalDebtValue = bn(0);
 
       // Convert to portfolio data for supply
       const supplyPortfolioData = await Promise.all(
@@ -179,22 +184,27 @@ export default function App() {
           const [label] = assetConfig;
           const assetName = label as AssetName;
 
-          console.log("Supplied amount: ", suppliedAsset.supplied_amount);
-          // Create a properly typed record with a single asset
-          const unitRecord: Record<AssetName, number> = {
-            [assetName]: suppliedAsset.supplied_amount
-          } as Record<AssetName, number>;
-          const convertedFromAmountUnits = await supplyUnitsToAmount(unitRecord);
-          console.log("Amount units: ", convertedFromAmountUnits);
-          const price = await getCachedAssetPrice(assetName);
-          totalSupplyValue += convertedFromAmountUnits * price;
+          console.log("Supplied amount: ", suppliedAsset.supplied_amount.toString());
 
-          console.log("Get wallet balance: ", await getWalletBalance(label as AssetName, accounts[0].address));
+          // Create a properly typed record with a single asset
+          const unitRecord: Record<AssetName, BigNumber> = {
+            [assetName]: suppliedAsset.supplied_amount,
+          } as Record<AssetName, BigNumber>;
+
+          const supplyUnits = await supplyUnitsToAmount(unitRecord);
+          console.log("Amount units: ", supplyUnits.toString());
+          const price = await getAssetPrice(assetName);
+          totalSupplyValue = m_bn(math.add(totalSupplyValue, m_bn(math.multiply(supplyUnits, price))));
+
+          console.log(
+            "Get wallet balance: ",
+            (await getWalletBalance(label as AssetName, accounts[0].address)).toString(),
+          );
           return {
             address: suppliedAsset.address,
             label: label as AssetName,
-            wallet_balance: await getWalletBalance(label as AssetName, accounts[0].address),
-            select_native: convertedFromAmountUnits,
+            wallet_balance: num(await getWalletBalance(label as AssetName, accounts[0].address)),
+            select_native: num(supplyUnits),
             APR: getAssetAPR(label as AssetName),
             pool_unit_address: assetConfigs[label as AssetName].pool_unit_address,
             type: "supply",
@@ -214,18 +224,19 @@ export default function App() {
 
           const assetName = label as AssetName;
           const amount = borrowedAsset.borrowed_amount;
-          const unitRecord: Record<AssetName, number> = {
-            [assetName]: borrowedAsset.borrowed_amount
-          } as Record<AssetName, number>;
-          const amountUnits = await supplyUnitsToAmount(unitRecord);
-          const price = await getCachedAssetPrice(assetName);
-          totalDebtValue += amountUnits * price;
+          const unitRecord: Record<AssetName, BigNumber> = {
+            [assetName]: borrowedAsset.borrowed_amount,
+          } as Record<AssetName, BigNumber>;
+
+          const debtUnits = await borrowUnitsToAmount(unitRecord);
+          const price = await getAssetPrice(assetName);
+          totalDebtValue = m_bn(math.add(totalDebtValue, m_bn(math.multiply(debtUnits, price))));
 
           return {
             address: borrowedAsset.address,
             label: label as AssetName,
-            wallet_balance: await getWalletBalance(label as AssetName, accounts[0].address),
-            select_native: amount,
+            wallet_balance: num(await getWalletBalance(label as AssetName, accounts[0].address)),
+            select_native: num(amount),
             APR: getAssetAPR(label as AssetName),
             pool_unit_address: assetConfigs[label as AssetName].pool_unit_address,
             type: "borrow",
@@ -236,18 +247,20 @@ export default function App() {
       );
 
       // Calculate health ratio
-      const healthRatio = totalDebtValue > 0 ? totalSupplyValue / totalDebtValue : -1;
-      console.log("Health Ratio: ", healthRatio);
-      const netWorthValue = totalSupplyValue - totalDebtValue;
-      console.log("Net Worth: ", netWorthValue);
+      const healthRatio: number = math.larger(totalSupplyValue, 0)
+        ? num(math.divide(totalSupplyValue, totalDebtValue).toString())
+        : -1;
+      console.log("Health Ratio: ", healthRatio.toString());
+      const netWorthValue: number = num(totalSupplyValue) - num(totalDebtValue);
+      console.log("Net Worth: ", netWorthValue.toString());
 
       // Calculate total APRs from the portfolio data
-      const calculatedSupplyAPR = await calculateTotalAPR(supplyPortfolioData, "supply");
-      const calculatedBorrowAPR = await calculateTotalAPR(borrowPortfolioData, "borrow");
-      const netAPRValue =
-        totalSupplyValue > 0 || totalDebtValue > 0
-          ? (calculatedSupplyAPR * totalSupplyValue - calculatedBorrowAPR * totalDebtValue) /
-          (totalSupplyValue > 0 ? totalSupplyValue : totalDebtValue)
+      const calculatedSupplyAPR: number = await calculateTotalAPR(supplyPortfolioData, "supply");
+      const calculatedBorrowAPR: number = await calculateTotalAPR(borrowPortfolioData, "borrow");
+      const netAPRValue: number =
+        math.larger(totalSupplyValue, 0) || math.larger(totalDebtValue, 0)
+          ? (calculatedSupplyAPR * num(totalSupplyValue) - calculatedBorrowAPR * num(totalDebtValue)) /
+            (num(totalSupplyValue) > 0 ? num(totalSupplyValue) : num(totalDebtValue))
           : 0;
 
       console.log("Supply APR: ", calculatedSupplyAPR);
@@ -267,7 +280,7 @@ export default function App() {
       setSupplyPortfolioData(supplyPortfolioData);
       setBorrowPortfolioData(borrowPortfolioData);
 
-      const borrowPowerPercentage = calculateBorrowPower(totalSupplyValue, totalDebtValue);
+      const borrowPowerPercentage = calculateBorrowPower(num(totalSupplyValue), num(totalDebtValue));
       setBorrowPowerUsed(borrowPowerPercentage);
     } catch (error) {
       console.error("Error refreshing portfolio data:", error);
@@ -290,7 +303,7 @@ export default function App() {
       const updatedData = await Promise.all(
         supplyData.map(async (asset) => ({
           ...asset,
-          wallet_balance: await getWalletBalance(asset.label as AssetName, accounts[0].address),
+          wallet_balance: num(await getWalletBalance(asset.label as AssetName, accounts[0].address)),
         })),
       );
       setSupplyData(updatedData);
@@ -602,8 +615,8 @@ export default function App() {
           onClose={() => setIsPreviewDialogOpen(false)}
           onConfirm={handleSupplyConfirm}
           selectedAssets={getSelectedSupplyAssets().filter((asset) => asset.select_native > 0)}
-          totalSupply={totalSupply}
-          totalBorrowDebt={totalBorrowDebt}
+          totalSupply={num(totalSupply)}
+          totalBorrowDebt={num(totalBorrowDebt)}
         />
 
         <BorrowDialog
@@ -611,8 +624,8 @@ export default function App() {
           onClose={() => setIsBorrowDialogOpen(false)}
           onConfirm={handleBorrowConfirm}
           selectedAssets={getSelectedBorrowAssets().filter((asset) => asset.select_native > 0)}
-          totalSupply={totalSupply}
-          totalBorrowDebt={totalBorrowDebt}
+          totalSupply={num(totalSupply)}
+          totalBorrowDebt={num(totalBorrowDebt)}
         />
       </div>
       <div className="pointer-events-none">

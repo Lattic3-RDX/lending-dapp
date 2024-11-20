@@ -65,7 +65,7 @@ export async function GET() {
 /// Filters price stream data by assets requested in `assets[]`
 export async function POST(req: NextRequest) {
   const url = req.nextUrl.clone();
-  const body: any = await req.json();
+  const body = await req.json();
 
   // Ensure requested assets are in an array
   if (!Array.isArray(body.assets)) {

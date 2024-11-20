@@ -1,27 +1,29 @@
-import { ColumnDef } from "@tanstack/react-table";
-import { Asset, borrowUnitsToAmount, AssetName, getAssetAPR, getAssetIcon } from "@/types/asset";
-import { Button } from "../ui/button";
-import { useState } from "react";
-import { WithdrawDialog } from "./withdraw-dialog";
-import { useToast } from "../ui/use-toast";
-import { RepayDialog } from "./repay-dialog";
-import position_withdraw_rtm from "@/lib/manifests/position_withdraw";
-import { gatewayApi, rdt } from "@/lib/radix";
 import { useRadixContext } from "@/contexts/provider";
 import config from "@/lib/config.json";
 import position_repay_rtm from "@/lib/manifests/position_repay";
+import position_withdraw_rtm from "@/lib/manifests/position_withdraw";
+import { bn, m_bn, math, num } from "@/lib/math";
+import { gatewayApi, rdt } from "@/lib/radix";
+import { Asset, AssetName, borrowUnitsToAmount, getAssetAPR, getAssetIcon } from "@/types/asset";
+import { ColumnDef } from "@tanstack/react-table";
+import { BigNumber } from "mathjs";
+import { useState } from "react";
+import { Button } from "../ui/button";
+import { useToast } from "../ui/use-toast";
+import { RepayDialog } from "./repay-dialog";
+import { WithdrawDialog } from "./withdraw-dialog";
 
 // Create a proper React component for the action cell
-function ActionCell({ 
-  row, 
+function ActionCell({
+  row,
   refreshPortfolioData,
   totalSupply,
-  totalBorrowDebt
-}: { 
-  row: any; 
+  totalBorrowDebt,
+}: {
+  row: any;
   refreshPortfolioData: () => Promise<void>;
-  totalSupply: number;
-  totalBorrowDebt: number;
+  totalSupply: BigNumber;
+  totalBorrowDebt: BigNumber;
 }) {
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
   const [showRepayDialog, setShowRepayDialog] = useState(false);
@@ -29,7 +31,7 @@ function ActionCell({
   const { accounts } = useRadixContext();
 
   // Move all the handler logic here
-  const handleWithdraw = async (amount: number) => {
+  const handleWithdraw = async (amount: BigNumber) => {
     try {
       if (!accounts || !gatewayApi) {
         toast({
@@ -55,14 +57,14 @@ function ActionCell({
       // Get NFT ID from account state
       const accountState = await gatewayApi.state.getEntityDetailsVaultAggregated(accounts[0].address);
       const getNFTBalance = accountState.non_fungible_resources.items.find(
-        (fr: { resource_address: string }) => fr.resource_address === borrowerBadgeAddr
+        (fr: { resource_address: string }) => fr.resource_address === borrowerBadgeAddr,
       )?.vaults.items[0];
 
       console.log("Native: ", row.original.amount);
-      const unitRecord: Record<AssetName, number> = {
-        [row.original.address]: amount
-      } as Record<AssetName, number>;
-      const convertedToAmountUnits = await borrowUnitsToAmount(unitRecord);
+      const unitRecord: Record<AssetName, BigNumber> = {
+        [row.original.address]: amount,
+      } as Record<AssetName, BigNumber>;
+      const debtUnits = await borrowUnitsToAmount(unitRecord);
 
       if (!getNFTBalance?.items?.[0]) {
         toast({
@@ -80,8 +82,8 @@ function ActionCell({
         position_badge_local_id: getNFTBalance.items[0],
         asset: {
           address: row.original.pool_unit_address ?? "",
-          amount: convertedToAmountUnits
-        }
+          amount: math.round(debtUnits, 16).toString(),
+        },
       });
 
       console.log("Manifest: ", manifest);
@@ -110,7 +112,7 @@ function ActionCell({
     }
   };
 
-  const handleRepay = async (amount: number) => {
+  const handleRepay = async (amount: BigNumber) => {
     try {
       if (!accounts || !gatewayApi) {
         toast({
@@ -136,7 +138,7 @@ function ActionCell({
       // Get NFT ID from account state
       const accountState = await gatewayApi.state.getEntityDetailsVaultAggregated(accounts[0].address);
       const getNFTBalance = accountState.non_fungible_resources.items.find(
-        (fr: { resource_address: string }) => fr.resource_address === borrowerBadgeAddr
+        (fr: { resource_address: string }) => fr.resource_address === borrowerBadgeAddr,
       )?.vaults.items[0];
 
       if (!getNFTBalance?.items?.[0]) {
@@ -156,8 +158,8 @@ function ActionCell({
         position_badge_local_id: getNFTBalance.items[0],
         asset: {
           address: row.original.address,
-          amount: amount
-        }
+          amount: math.round(amount, 16).toString(),
+        },
       });
 
       console.log("Repay manifest:", manifest);
@@ -188,7 +190,7 @@ function ActionCell({
 
   return (
     <div className="flex justify-end gap-2">
-      {row.original.type === 'supply' ? (
+      {row.original.type === "supply" ? (
         <Button size="sm" onClick={() => setShowWithdrawDialog(true)}>
           Withdraw
         </Button>
@@ -219,8 +221,8 @@ function ActionCell({
 
 export const createPortfolioColumns = (
   refreshPortfolioData: () => Promise<void>,
-  totalSupply: number,
-  totalBorrowDebt: number
+  totalSupply: BigNumber,
+  totalBorrowDebt: BigNumber,
 ): ColumnDef<Asset>[] => [
   {
     accessorKey: "label",
@@ -240,11 +242,11 @@ export const createPortfolioColumns = (
     accessorKey: "select_native",
     header: ({ table }) => {
       const firstRow = table.getRowModel().rows[0];
-      return firstRow?.original.type === 'supply' ? "Supplied" : "Debt";
+      return firstRow?.original.type === "supply" ? "Supplied" : "Debt";
     },
     cell: ({ row }) => {
       return Number(row.getValue("select_native")).toFixed(2);
-    }
+    },
   },
   {
     accessorKey: "APR",
@@ -252,22 +254,23 @@ export const createPortfolioColumns = (
     cell: ({ row }) => {
       return (
         <div>
-          {row.original.type === 'supply' 
+          {row.original.type === "supply"
             ? Number(row.getValue("APR")).toFixed(1)
-            : Number(getAssetAPR(row.getValue("label"), 'borrow')).toFixed(1)}%
+            : Number(getAssetAPR(row.getValue("label"), "borrow")).toFixed(1)}
+          %
         </div>
       );
-    }
+    },
   },
   {
     id: "actions",
     cell: ({ row }) => (
-      <ActionCell 
-        row={row} 
+      <ActionCell
+        row={row}
         refreshPortfolioData={refreshPortfolioData}
         totalSupply={totalSupply}
         totalBorrowDebt={totalBorrowDebt}
       />
-    )
+    ),
   },
 ];

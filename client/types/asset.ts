@@ -1,5 +1,7 @@
+import { bn, m_bn, math } from "@/lib/math";
 import { gatewayApi } from "@/lib/radix";
 import { FungibleResourcesCollectionAllOfToJSON } from "@radixdlt/babylon-gateway-api-sdk";
+import { BigNumber } from "mathjs";
 
 export type AssetName = "XRD" | "xwBTC" | "FLOOP" | "xUSDT" | "EARLY" | "HUG" | "DFP2" | "xETH" | "ASTRL" | "CAVIAR";
 
@@ -126,15 +128,15 @@ export const getAssetAddrRecord = (): Record<AssetName, string> => {
 };
 
 // Replace mockWalletBalances with a function to fetch real balances
-export const getWalletBalances = async (accountAddress: string): Promise<Record<AssetName, number>> => {
+export const getWalletBalances = async (accountAddress: string): Promise<Record<AssetName, BigNumber>> => {
   if (!gatewayApi) {
     console.error("Gateway API not initialized");
-    return {} as Record<AssetName, number>;
+    return {} as Record<AssetName, BigNumber>;
   }
 
   try {
     const response = await gatewayApi.state.getEntityDetailsVaultAggregated(accountAddress);
-    const balances: Partial<Record<AssetName, number>> = {};
+    const balances: Partial<Record<AssetName, BigNumber>> = {};
 
     const fungibleResources = response.fungible_resources.items || [];
     fungibleResources.forEach((resource) => {
@@ -146,41 +148,41 @@ export const getWalletBalances = async (accountAddress: string): Promise<Record<
       if (assetEntry) {
         const [assetName] = assetEntry;
         // Convert from string to number and handle decimal places
-        balances[assetName as AssetName] = Number(resource.vaults.items[0].amount);
+        balances[assetName as AssetName] = bn(resource.vaults.items[0].amount);
       }
     });
 
     // Fill in zero balances for assets not found in the response
     Object.keys(assetConfigs).forEach((assetName) => {
       if (!(assetName in balances)) {
-        balances[assetName as AssetName] = 0;
+        balances[assetName as AssetName] = bn(0);
       }
     });
-    return balances as Record<AssetName, number>;
+    return balances as Record<AssetName, BigNumber>;
   } catch (error) {
     console.error("Error fetching wallet balances:", error);
-    return {} as Record<AssetName, number>;
+    return {} as Record<AssetName, BigNumber>;
   }
 };
 
 // Update the getWalletBalance helper to use the new async function
-export const getWalletBalance = async (asset: AssetName, accountAddress: string): Promise<number> => {
+export const getWalletBalance = async (asset: AssetName, accountAddress: string): Promise<BigNumber> => {
   const balances = await getWalletBalances(accountAddress);
-  return balances[asset] || 0;
+  return balances[asset] || bn(0);
 };
 
-export const getAssetPrice = async (asset: AssetName): Promise<number> => {
+export const getAssetPrice = async (asset: AssetName): Promise<BigNumber> => {
   const res = await fetch("api/assets/prices", { method: "GET" });
   if (res.status !== 200) {
     console.error("Error fetching asset prices:", res.statusText);
-    return -1;
+    return bn(-1);
   }
 
   const { prices } = await res.json();
 
   if (!Array.isArray(prices)) {
     console.error("Unexpected price data format: prices is not an array");
-    return -1;
+    return bn(-1);
   }
 
   // Get the resource address for the asset
@@ -190,57 +192,57 @@ export const getAssetPrice = async (asset: AssetName): Promise<number> => {
 
   if (!priceEntry) {
     console.warn(`No price found for asset ${asset} (${assetAddress})`);
-    return 0;
+    return bn(0);
   }
 
-  return Number(priceEntry.price);
+  return bn(priceEntry.price);
 };
 
-export const supplyUnitsToAmount = async (asset: Record<AssetName, number>) => {
+export const supplyUnitsToAmount = async (asset: Record<AssetName, BigNumber>): Promise<BigNumber> => {
   const address = getAssetAddress(Object.keys(asset)[0] as AssetName);
   const amount = Object.values(asset)[0];
 
   console.log("Address: ", address);
-  console.log("Amount: ", amount);
+  console.log("Amount: ", amount.toString());
 
-  const cluster_states_res: any = await fetch("api/assets/clusters", { method: "GET" });
+  const cluster_states_res = await fetch("api/assets/clusters", { method: "GET" });
 
   if (!cluster_states_res.ok) {
     console.error("Error fetching cluster states:", cluster_states_res.statusText);
-    return -1;
+    return bn(-1);
   }
 
   const cluster_states = await cluster_states_res.json();
-  const cluster: any = cluster_states[address];
+  const cluster = cluster_states[address];
 
   if (!cluster) {
     console.error(`No cluster state found for asset ${address}`);
-    return -1;
+    return bn(-1);
   }
 
-  return amount / cluster.supply_ratio;
+  return m_bn(math.divide(amount, bn(cluster.supply_ratio)));
 };
 
-export const borrowUnitsToAmount = async (asset: Record<AssetName, number>) => {
-  const address = Object.keys(asset)[0];
+export const borrowUnitsToAmount = async (asset: Record<AssetName, BigNumber>): Promise<BigNumber> => {
+  const address = getAssetAddress(Object.keys(asset)[0] as AssetName);
   const amount = Object.values(asset)[0];
-  console.log("Address: ", address);
+  console.log("Address: ", address.toString());
 
-  const cluster_states_res: any = await fetch("api/assets/clusters", { method: "GET" });
+  const cluster_states_res = await fetch("api/assets/clusters", { method: "GET" });
 
   if (!cluster_states_res.ok) {
     console.error("Error fetching cluster states:", cluster_states_res.statusText);
-    return -1;
+    return bn(-1);
   }
 
   const cluster_states = await cluster_states_res.json();
-  const cluster: any = cluster_states[address];
+  const cluster = cluster_states[address];
   console.log("Cluster: ", cluster);
 
   if (!cluster) {
     console.error(`No cluster state found for asset ${address}`);
-    return -1;
+    return bn(-1);
   }
 
-  return amount / cluster.debt_ratio;
+  return m_bn(math.divide(amount, bn(cluster.debt_ratio)));
 };

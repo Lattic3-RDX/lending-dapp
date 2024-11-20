@@ -1,15 +1,15 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Asset, getAssetIcon } from "@/types/asset";
+import { Asset, getAssetIcon, getAssetPrice } from "@/types/asset";
 import { TruncatedNumber } from "@/components/ui/truncated-number";
-import { getCachedAssetPrice } from "@/lib/price-cache";
+import { num } from "@/lib/math";
 
 interface AssetCollapsibleContentProps {
   asset: Asset;
   onAmountChange: (amount: number) => void;
   onConfirm: (amount: number) => void;
-  mode: 'supply' | 'borrow';
+  mode: "supply" | "borrow";
 }
 
 export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm, mode }: AssetCollapsibleContentProps) {
@@ -24,7 +24,7 @@ export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm, mode
         setUsdValue(0);
         return;
       }
-      const price = await getCachedAssetPrice(asset.label);
+      const price = num(await getAssetPrice(asset.label));
       setUsdValue(amount * price);
     };
     calculateUsdValue();
@@ -33,21 +33,19 @@ export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm, mode
   const handleAmountChange = (value: string) => {
     setTempAmount(value);
     const numValue = Number(value);
-    
+
     if (!isNaN(numValue) && numValue >= 0) {
       onAmountChange(numValue);
     } else {
       onAmountChange(0);
     }
-    
+
     validateAmount(value);
   };
 
   const validateAmount = (value: string) => {
     const numValue = Number(value);
-    const maxAmount = mode === 'borrow'
-      ? (asset.available ?? 0)
-      : asset.wallet_balance;
+    const maxAmount = mode === "borrow" ? (asset.available ?? 0) : asset.wallet_balance;
 
     if (isNaN(numValue)) {
       setError("Please enter a valid number");
@@ -61,9 +59,7 @@ export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm, mode
   };
 
   const handleMaxClick = () => {
-    const maxAmount = mode === 'borrow'
-      ? (asset.available ?? 0)
-      : asset.wallet_balance;
+    const maxAmount = mode === "borrow" ? (asset.available ?? 0) : asset.wallet_balance;
     setTempAmount(maxAmount.toString());
     onAmountChange(maxAmount);
     validateAmount(maxAmount.toString());
@@ -72,11 +68,7 @@ export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm, mode
   return (
     <div className="w-full bg-accent/5 rounded-lg p-4 space-y-4">
       <div className="flex items-center gap-3 mb-2">
-        <img
-          src={getAssetIcon(asset.label)}
-          alt={`${asset.label} icon`}
-          className="w-8 h-8 rounded-full"
-        />
+        <img src={getAssetIcon(asset.label)} alt={`${asset.label} icon`} className="w-8 h-8 rounded-full" />
         <span className="text-lg font-semibold text-foreground">{asset.label}</span>
       </div>
 
@@ -99,11 +91,17 @@ export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm, mode
           </Button>
         </div>
         <div className="flex justify-between text-sm text-foreground px-1">
-          <span>≈ $<TruncatedNumber value={usdValue} /></span>
-          {mode === 'borrow' ? (
-            <span>Available: <TruncatedNumber value={asset.available ?? 0} /></span>
+          <span>
+            ≈ $<TruncatedNumber value={usdValue} />
+          </span>
+          {mode === "borrow" ? (
+            <span>
+              Available: <TruncatedNumber value={asset.available ?? 0} />
+            </span>
           ) : (
-            <span>Balance: <TruncatedNumber value={asset.wallet_balance} /></span>
+            <span>
+              Balance: <TruncatedNumber value={asset.wallet_balance} />
+            </span>
           )}
         </div>
         {error && <div className="text-destructive text-sm">{error}</div>}
@@ -111,12 +109,12 @@ export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm, mode
 
       <div className="space-y-3 py-2 border-t border-accent/10">
         <div className="flex justify-between text-base text-foreground">
-          <span>{mode === 'borrow' ? 'Borrow APR' : 'Supply APR'}</span>
-          <span className={mode === 'borrow' ? 'text-destructive' : 'text-success'}>
-            {mode === 'borrow' ? '10.00' : Number(asset.APR).toFixed(1)}%
+          <span>{mode === "borrow" ? "Borrow APR" : "Supply APR"}</span>
+          <span className={mode === "borrow" ? "text-destructive" : "text-success"}>
+            {mode === "borrow" ? "10.00" : Number(asset.APR).toFixed(1)}%
           </span>
         </div>
       </div>
     </div>
   );
-} 
+}

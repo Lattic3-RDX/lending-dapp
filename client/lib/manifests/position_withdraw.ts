@@ -1,19 +1,25 @@
 interface ManifestArgs {
-  component: string,
+  component: string;
 
-  account: string,
-  position_badge_address: string,  // resource_...
-  position_badge_local_id: string, // e.g. #1#
+  account: string;
+  position_badge_address: string; // resource_...
+  position_badge_local_id: string; // e.g. #1#
 
-  asset: Asset, // pool units
+  asset: Asset; // pool units
 }
 
 interface Asset {
-  address: string,
-  amount: number,
+  address: string;
+  amount: string;
 }
 
-export default function position_repay_rtm({ component, account, position_badge_address, position_badge_local_id, asset }: ManifestArgs) {
+export default function position_repay_rtm({
+  component,
+  account,
+  position_badge_address,
+  position_badge_local_id,
+  asset,
+}: ManifestArgs) {
   const rtm = `
 CALL_METHOD
   Address("${account}")
@@ -47,7 +53,7 @@ CALL_METHOD
   Address("${account}")
   "deposit_batch"
   Expression("ENTIRE_WORKTOP");
-`
+`;
 
-  return rtm
+  return rtm;
 }
