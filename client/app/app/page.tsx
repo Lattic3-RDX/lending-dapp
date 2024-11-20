@@ -16,7 +16,6 @@ import {
   getAssetAPR,
   getWalletBalance,
   assetConfigs,
-  getAssetPrice,
   supplyUnitsToAmount,
 } from "@/types/asset";
 import { PortfolioTable } from "@/components/portfolio-table/portfolio-table";
@@ -33,7 +32,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { AssetActionCard } from "@/components/asset-action-card";
 import { StatisticsCard } from "@/components/statistics-card";
 import { StarsBackground } from "@/components/ui/stars-background";
-
+import { getCachedAssetPrice } from "@/lib/price-cache";
 interface NFTData {
   data: {
     programmatic_json: {
@@ -95,7 +94,7 @@ export default function App() {
 
     await Promise.all(
       assets.map(async (asset) => {
-        const price = await getAssetPrice(asset.label);
+        const price = await getCachedAssetPrice(asset.label);
         const value = asset.select_native * price;
         totalValue += value;
         weightedAPR += value * getAssetAPR(asset.label, type);
@@ -187,7 +186,7 @@ export default function App() {
           } as Record<AssetName, number>;
           const convertedFromAmountUnits = await supplyUnitsToAmount(unitRecord);
           console.log("Amount units: ", convertedFromAmountUnits);
-          const price = await getAssetPrice(assetName);
+          const price = await getCachedAssetPrice(assetName);
           totalSupplyValue += convertedFromAmountUnits * price;
 
           console.log("Get wallet balance: ", await getWalletBalance(label as AssetName, accounts[0].address));
@@ -219,7 +218,7 @@ export default function App() {
             [assetName]: borrowedAsset.borrowed_amount
           } as Record<AssetName, number>;
           const amountUnits = await supplyUnitsToAmount(unitRecord);
-          const price = await getAssetPrice(assetName);
+          const price = await getCachedAssetPrice(assetName);
           totalDebtValue += amountUnits * price;
 
           return {

@@ -16,8 +16,8 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { getAssetIcon, AssetName, getAssetPrice, getAssetAPR } from '@/types/asset';
-
+import { getAssetIcon, AssetName, getAssetAPR } from '@/types/asset';
+import { getCachedAssetPrice } from '@/lib/price-cache';
 interface Asset {
   label: string;
   address: string;
@@ -92,7 +92,7 @@ const BorrowDialog: React.FC<BorrowDialogProps> = ({
     const calculateTotal = async () => {
       const total = await assetsToBorrow.reduce(async (sumPromise, asset) => {
         const sum = await sumPromise;
-        const price = await getAssetPrice(asset.label as AssetName);
+        const price = await getCachedAssetPrice(asset.label as AssetName);
         return sum + (asset.select_native * price);
       }, Promise.resolve(0));
       setTotalUsdValue(total);

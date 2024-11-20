@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Asset, getAssetIcon, getAssetPrice } from "@/types/asset";
+import { Asset, getAssetIcon } from "@/types/asset";
 import { TruncatedNumber } from "@/components/ui/truncated-number";
+import { getCachedAssetPrice } from "@/lib/price-cache";
 
 interface AssetCollapsibleContentProps {
   asset: Asset;
@@ -23,7 +24,7 @@ export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm, mode
         setUsdValue(0);
         return;
       }
-      const price = await getAssetPrice(asset.label);
+      const price = await getCachedAssetPrice(asset.label);
       setUsdValue(amount * price);
     };
     calculateUsdValue();

@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { AssetTable } from './asset-table/asset-table';
 import { columns } from './asset-table/columns';
 import { borrowColumns } from './asset-table/borrow-columns';
-import { Asset, AssetName, getAssetPrice } from '@/types/asset';
+import { Asset } from '@/types/asset';
 import { RowSelectionState } from '@tanstack/react-table';
 
 interface AssetActionCardProps {
