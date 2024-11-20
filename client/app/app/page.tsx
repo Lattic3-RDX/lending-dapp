@@ -67,7 +67,7 @@ export default function App() {
       address,
       label: label as AssetName,
       wallet_balance: -1,
-      available: 100.0,
+      available: 0,
       select_native: 0,
       APR: getAssetAPR(label as AssetName, "supply"),
       pool_unit_address: "",
@@ -112,7 +112,7 @@ export default function App() {
   const calculateBorrowPower = (totalSupplyValue: number, totalDebtValue: number): number => {
     if (totalDebtValue <= 0) return 0;
     const currentHealth = totalSupplyValue / totalDebtValue;
-    if (currentHealth <= 1.0) return 100;
+    if (currentHealth <= 1.5) return 100;
     const borrowPowerPercentage = (totalDebtValue / totalSupplyValue) * 100;
     console.log("Borrow Power Percentage: ", borrowPowerPercentage);
     return Math.max(0, Number(borrowPowerPercentage.toFixed(1)));
@@ -607,6 +607,8 @@ export default function App() {
           hasSelectedBorrowAssets={hasSelectedBorrowAssets}
           onPreviewSupply={handlePreviewSupply}
           onPreviewBorrow={handlePreviewBorrow}
+          totalSupply={totalSupply}
+          totalBorrowDebt={totalBorrowDebt}
         />
 
         {/* Add these dialogs here, right before the closing div */}

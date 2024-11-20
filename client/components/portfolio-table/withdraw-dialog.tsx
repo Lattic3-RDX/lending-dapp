@@ -190,7 +190,7 @@ export function WithdrawDialog({
               !tempAmount ||
               parseFloat(tempAmount) <= 0 ||
               transactionState !== "idle" ||
-              (num(newHealthFactor) !== -1 && num(newHealthFactor) < 1.0)
+              (num(newHealthFactor) !== -1 && num(newHealthFactor) < 1.5)
             }
           >
             {transactionState === "error" ? (
@@ -208,7 +208,7 @@ export function WithdrawDialog({
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 Withdrawing...
               </div>
-            ) : num(newHealthFactor) !== -1 && num(newHealthFactor) < 1.0 ? (
+            ) : num(newHealthFactor) !== -1 && num(newHealthFactor) < 1.5 ? (
               "Health ratio would be too low"
             ) : (
               "Confirm Withdrawal"
