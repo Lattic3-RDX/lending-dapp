@@ -42,7 +42,9 @@ export async function GET() {
     // Deconstruct price stream response into prices
     const market_data = await market_res.json();
     const market_state = market_data.items[0].details.state;
-    const asset_list = market_state.fields.filter((field: any) => field.field_name === "asset_list")[0];
+    const asset_list = market_state.fields
+      .filter((field: any) => field.field_name === "asset_list")[0]
+      .elements.map((entry: any) => entry.value);
 
     // Send response
     return new Response(JSON.stringify({ assets: asset_list }), {

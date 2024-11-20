@@ -17,6 +17,5 @@ type Reverse<T extends Record<PropertyKey, PropertyKey>> = {
 };
 
 // Radix Addresses
-export const componentAddress: string = config.componentAddr;
 export const definitionAddress: string = config.dAppDefinitionAddr;
 export const borrowerBadge_Resource: string = config.borrowerBadgeAddr;
