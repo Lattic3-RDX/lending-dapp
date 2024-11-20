@@ -5,9 +5,9 @@ CALL_METHOD
   Decimal("1");
 
 CALL_METHOD
-    Address("component_tdx_2_1cz9lgv6zpke438kz6fy92gteskgmy4g2xc7d95n0v7s0rn5zy6mplq")
+    Address("component_tdx_2_1crv97xtg2uh8ujedpc0pkv8v3yshh5kq7lc8y3t7eyljqqjjnzdf9n")
     "add_asset"
-    Address("resource_tdx_2_1t57e50rm28cyqwn26jn336qyhu8nkt8cknacq8rnsn5kul2l3zvjut");
+    Address("resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxtfd2jc");
 
 CALL_METHOD
     Address("account_tdx_2_12xfek2nncckfppcslye0vwusaq6qtt6j896w5tcmfh7wy78hjzqc96")

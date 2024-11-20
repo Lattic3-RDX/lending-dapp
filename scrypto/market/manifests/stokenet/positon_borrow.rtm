@@ -10,7 +10,7 @@ TAKE_NON_FUNGIBLES_FROM_WORKTOP
     Bucket("position_badge");
 
 CALL_METHOD
-  Address("component_tdx_2_1cz9lgv6zpke438kz6fy92gteskgmy4g2xc7d95n0v7s0rn5zy6mplq")
+  Address("component_tdx_2_1crv97xtg2uh8ujedpc0pkv8v3yshh5kq7lc8y3t7eyljqqjjnzdf9n")
   "position_borrow"
   Bucket("position_badge")
   Map<Address, PreciseDecimal>(

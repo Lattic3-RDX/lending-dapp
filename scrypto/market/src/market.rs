@@ -56,14 +56,14 @@ mod lattic3 {
 
     // Importing price stream blueprint
     extern_blueprint! {
-        "package_sim1pkwaf2l9zkmake5h924229n44wp5pgckmpn0lvtucwers56awywems",
+        "package_tdx_2_1ph029rt4c78r3zx0s7q22xnz5eqpu4fajlygqqz7sg95rq026zncwj",
         PriceStream {
             fn get_price(&self, asset: ResourceAddress) -> Option<PreciseDecimal>;
         }
     }
 
     extern_blueprint! {
-        "package_sim1pkys4qlttszxq29qw5ys9lvn8grmswd0n6nsxrdxce3er3l85eagjm",
+        "package_tdx_2_1p5t2g69a62qlf4mm8wte33d7lyrsxlw2fghjarj0xrnwklffr9szw4",
         Cluster {
             fn instantiate(resource: ResourceAddress, cluster_owner_rule: AccessRule, cluster_admin_rule: AccessRule) -> Global<Cluster>;
 

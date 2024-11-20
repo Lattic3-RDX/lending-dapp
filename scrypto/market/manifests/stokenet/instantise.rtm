@@ -14,8 +14,7 @@ CALL_FUNCTION
     "Lattic3"
     "instantiate"
     Address("account_tdx_2_12xfek2nncckfppcslye0vwusaq6qtt6j896w5tcmfh7wy78hjzqc96")
-    Bucket("bucket_owner_badge")
-    Array<Address>();
+    Bucket("bucket_owner_badge");
 
 CALL_METHOD
     Address("account_tdx_2_12xfek2nncckfppcslye0vwusaq6qtt6j896w5tcmfh7wy78hjzqc96")
