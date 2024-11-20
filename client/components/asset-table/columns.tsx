@@ -89,7 +89,7 @@ export const columns: ColumnDef<Asset, unknown>[] = [
       if (isExpanded) return null;
       
       const APR = row.getValue("APR");
-      return <TruncatedNumber value={Number(APR)} decimals={1} prefix="" />;
+      return `${Number(APR).toFixed(1)}%`;
     }
   },
   {

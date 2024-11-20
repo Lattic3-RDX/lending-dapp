@@ -1,5 +1,5 @@
 import { ColumnDef } from "@tanstack/react-table";
-import { Asset, getAssetAPR, getAssetIcon } from "@/types/asset";
+import { Asset, borrowUnitsToAmount, AssetName, getAssetAPR, getAssetIcon } from "@/types/asset";
 import { Button } from "../ui/button";
 import { useState } from "react";
 import { WithdrawDialog } from "./withdraw-dialog";
@@ -29,7 +29,7 @@ function ActionCell({
   const { accounts } = useRadixContext();
 
   // Move all the handler logic here
-  const handleWithdraw = async () => {
+  const handleWithdraw = async (amount: number) => {
     try {
       if (!accounts || !gatewayApi) {
         toast({
@@ -58,6 +58,12 @@ function ActionCell({
         (fr: { resource_address: string }) => fr.resource_address === borrowerBadgeAddr
       )?.vaults.items[0];
 
+      console.log("Native: ", row.original.amount);
+      const unitRecord: Record<AssetName, number> = {
+        [row.original.address]: amount
+      } as Record<AssetName, number>;
+      const convertedToAmountUnits = await borrowUnitsToAmount(unitRecord);
+
       if (!getNFTBalance?.items?.[0]) {
         toast({
           variant: "destructive",
@@ -66,7 +72,6 @@ function ActionCell({
         });
         return;
       }
-      console.log("Pool unit address: ", row.original.pool_unit_address);
 
       const manifest = position_withdraw_rtm({
         component: marketComponent,
@@ -75,7 +80,7 @@ function ActionCell({
         position_badge_local_id: getNFTBalance.items[0],
         asset: {
           address: row.original.pool_unit_address ?? "",
-          amount: row.original.select_native // TODO: the inverse of what was done for PortfolioSupply, need to pass pool units
+          amount: convertedToAmountUnits
         }
       });
 
@@ -85,11 +90,11 @@ function ActionCell({
         transactionManifest: manifest,
         version: 1,
       });
-
+      console.log("Withdraw result: ", result);
       if (result) {
         toast({
           title: "Withdrawal Successful",
-          description: `Withdrew ${row.original.select_native} ${row.original.label}`,
+          description: `Withdrew ${amount} ${row.original.label}`,
         });
         await refreshPortfolioData();
       }
@@ -105,7 +110,7 @@ function ActionCell({
     }
   };
 
-  const handleRepay = async () => {
+  const handleRepay = async (amount: number) => {
     try {
       if (!accounts || !gatewayApi) {
         toast({
@@ -143,7 +148,7 @@ function ActionCell({
         return;
       }
 
-      console.log("repaying", row.original.select_native, row.original.label);
+      console.log("repaying", amount, row.original.label);
       const manifest = position_repay_rtm({
         component: marketComponent,
         account: accounts[0].address,
@@ -151,7 +156,7 @@ function ActionCell({
         position_badge_local_id: getNFTBalance.items[0],
         asset: {
           address: row.original.address,
-          amount: row.original.select_native
+          amount: amount
         }
       });
 
@@ -165,7 +170,7 @@ function ActionCell({
       if (result) {
         toast({
           title: "Repayment Successful",
-          description: `Repaid ${row.original.select_native} ${row.original.label}`,
+          description: `Repaid ${amount} ${row.original.label}`,
         });
         await refreshPortfolioData();
       }

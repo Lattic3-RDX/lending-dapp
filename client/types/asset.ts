@@ -222,8 +222,9 @@ export const supplyUnitsToAmount = async (asset: Record<AssetName, number>) => {
 };
 
 export const borrowUnitsToAmount = async (asset: Record<AssetName, number>) => {
-  const address = getAssetAddress(Object.keys(asset)[0] as AssetName);
+  const address = Object.keys(asset)[0];
   const amount = Object.values(asset)[0];
+  console.log("Address: ", address);
 
   const cluster_states_res: any = await fetch("api/assets/clusters", { method: "GET" });
 
@@ -234,6 +235,7 @@ export const borrowUnitsToAmount = async (asset: Record<AssetName, number>) => {
 
   const cluster_states = await cluster_states_res.json();
   const cluster: any = cluster_states[address];
+  console.log("Cluster: ", cluster);
 
   if (!cluster) {
     console.error(`No cluster state found for asset ${address}`);
