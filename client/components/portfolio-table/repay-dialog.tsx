@@ -9,7 +9,7 @@ import { TruncatedNumber } from "@/components/ui/truncated-number";
 interface RepayDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (amount: number) => void;
+  onConfirm: (amount: number) => Promise<void>;
   asset: Asset;
   totalSupply: number;
   totalBorrowDebt: number;
@@ -29,6 +29,7 @@ export function RepayDialog({
     totalBorrowDebt <= 0 ? -1 : totalSupply / totalBorrowDebt
   );
   const [assetPrice, setAssetPrice] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
 
   const validateAmount = (value: string) => {
     const amount = parseFloat(value);
@@ -89,11 +90,16 @@ export function RepayDialog({
     handleAmountChange(maxAmount.toString());
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     const amount = parseFloat(tempAmount);
     if (!isNaN(amount) && amount > 0 && !error) {
-      onConfirm(amount);
-      onClose();
+      setIsLoading(true);
+      try {
+        await onConfirm(amount);
+        onClose();
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -169,9 +175,16 @@ export function RepayDialog({
           <Button 
             className="w-full h-12 text-base"
             onClick={handleConfirm}
-            disabled={!!error || !tempAmount}
+            disabled={!!error || !tempAmount || isLoading}
           >
-            Confirm Repayment
+            {isLoading ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Repaying...
+              </div>
+            ) : (
+              "Confirm Repayment"
+            )}
           </Button>
         </div>
       </DialogContent>

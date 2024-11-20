@@ -1,5 +1,5 @@
 "use client";
-import React from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
@@ -81,6 +81,7 @@ const SupplyDialog: React.FC<SupplyDialogProps> = ({
   totalBorrowDebt,
 }) => {
   const [totalUsdValue, setTotalUsdValue] = React.useState(0);
+  const [isLoading, setIsLoading] = useState(false);
 
   React.useEffect(() => {
     const calculateTotal = async () => {
@@ -103,6 +104,16 @@ const SupplyDialog: React.FC<SupplyDialogProps> = ({
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
+
+  const handleConfirm = async () => {
+    setIsLoading(true);
+    try {
+      await onConfirm();
+      onClose();
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -173,11 +184,18 @@ const SupplyDialog: React.FC<SupplyDialogProps> = ({
 
         <DialogFooter className="mt-6">
           <Button
-            onClick={onConfirm}
-            className="w-full bg-black text-white hover:bg-gray-800"
-            disabled={selectedAssets.length === 0}
+            onClick={handleConfirm}
+            className="w-full h-12 text-base"
+            disabled={isLoading}
           >
-            Confirm Supply
+            {isLoading ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Supplying...
+              </div>
+            ) : (
+              "Confirm Supply"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

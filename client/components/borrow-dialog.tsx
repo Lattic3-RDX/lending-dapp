@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
@@ -79,6 +79,8 @@ const BorrowDialog: React.FC<BorrowDialogProps> = ({
   totalSupply,
   totalBorrowDebt,
 }) => {
+  const [isLoading, setIsLoading] = useState(false);
+
   const assetsToBorrow = React.useMemo(
     () => selectedAssets.filter((asset) => asset.select_native > 0),
     [selectedAssets]
@@ -106,6 +108,16 @@ const BorrowDialog: React.FC<BorrowDialogProps> = ({
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
+
+  const handleConfirm = async () => {
+    setIsLoading(true);
+    try {
+      await onConfirm();
+      onClose();
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -174,13 +186,20 @@ const BorrowDialog: React.FC<BorrowDialogProps> = ({
           </Table>
         </div>
 
-        <DialogFooter className="mt-6">
-          <Button
-            onClick={onConfirm}
-            className="w-full bg-black text-white hover:bg-gray-800"
-            disabled={assetsToBorrow.length === 0}
+        <DialogFooter>
+          <Button 
+            className="w-full h-12 text-base" 
+            onClick={handleConfirm}
+            disabled={isLoading}
           >
-            Confirm Borrow
+            {isLoading ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Borrowing...
+              </div>
+            ) : (
+              "Confirm Borrow"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

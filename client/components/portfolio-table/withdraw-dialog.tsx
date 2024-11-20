@@ -9,7 +9,7 @@ import { TruncatedNumber } from "@/components/ui/truncated-number";
 interface WithdrawDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (amount: number) => void;
+  onConfirm: (amount: number) => Promise<void>;
   asset: Asset;
   totalSupply: number;
   totalBorrowDebt: number;
@@ -29,6 +29,7 @@ export function WithdrawDialog({
     totalBorrowDebt <= 0 ? -1 : totalSupply / totalBorrowDebt
   );
   const [assetPrice, setAssetPrice] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
 
   const validateAmount = (value: string) => {
     const amount = parseFloat(value);
@@ -73,10 +74,15 @@ export function WithdrawDialog({
     setError(null);
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     const amount = parseFloat(tempAmount);
     if (!isNaN(amount) && amount > 0 && !error) {
-      onConfirm(amount);
+      setIsLoading(true);
+      try {
+        await onConfirm(amount);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -152,9 +158,16 @@ export function WithdrawDialog({
           <Button 
             className="w-full h-12 text-base"
             onClick={handleConfirm}
-            disabled={!!error || !tempAmount || parseFloat(tempAmount) <= 0}
+            disabled={!!error || !tempAmount || parseFloat(tempAmount) <= 0 || isLoading}
           >
-            Confirm Withdrawal
+            {isLoading ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Withdrawing...
+              </div>
+            ) : (
+              "Confirm Withdrawal"
+            )}
           </Button>
         </div>
       </DialogContent>
