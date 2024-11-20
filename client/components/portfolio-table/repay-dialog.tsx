@@ -91,13 +91,15 @@ export function RepayDialog({ isOpen, onClose, onConfirm, asset, totalSupply, to
   const handleConfirm = async () => {
     const amount = bn(tempAmount);
     if (math.larger(amount, 0) && !error) {
-      setTransactionState("awaiting_signature");
+      setTransactionState('awaiting_signature');
       try {
-        await onConfirm(amount);
+        // Add 0.1% to amount
+        const amountWithSlippage = m_bn(math.multiply(amount, 1.001));
+        await onConfirm(amountWithSlippage);
         onClose();
       } catch (error) {
-        setTransactionState("error");
-        setTimeout(() => setTransactionState("idle"), 2000);
+        setTransactionState('error');
+        setTimeout(() => setTransactionState('idle'), 2000);
       }
     }
   };

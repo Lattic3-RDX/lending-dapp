@@ -60,7 +60,7 @@ function ActionCell({
         (fr: { resource_address: string }) => fr.resource_address === borrowerBadgeAddr,
       )?.vaults.items[0];
 
-      console.log("Native: ", row.original.amount);
+      console.log("Native: ", amount);
       const unitRecord: Record<AssetName, BigNumber> = {
         [row.original.address]: amount,
       } as Record<AssetName, BigNumber>;
