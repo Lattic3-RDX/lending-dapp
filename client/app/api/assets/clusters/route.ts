@@ -157,22 +157,10 @@ export async function GET(request: NextRequest) {
     cluster_states[resource] = cluster_state;
   }
 
-  return new Response(
-    JSON.stringify({
-      assets: assets,
-      data: cluster_states,
-    }),
-    {
-      headers: {
-        "Content-Type": "application/json",
-      },
-      status: 200,
+  return new Response(JSON.stringify(cluster_states), {
+    headers: {
+      "Content-Type": "application/json",
     },
-  );
-}
-
-/// Filters price stream data by assets requested in `assets[]`
-export async function POST(req: NextRequest) {
-  const url = req.nextUrl.clone();
-  const body: any = await req.json();
+    status: 200,
+  });
 }

@@ -170,7 +170,7 @@ export const getWalletBalance = async (asset: AssetName, accountAddress: string)
 };
 
 export const getAssetPrice = async (asset: AssetName): Promise<number> => {
-  let res = await fetch("api/assets/prices", { method: "GET" });
+  const res = await fetch("api/assets/prices", { method: "GET" });
   if (res.status !== 200) {
     console.error("Error fetching asset prices:", res.statusText);
     return -1;
@@ -192,7 +192,48 @@ export const getAssetPrice = async (asset: AssetName): Promise<number> => {
     console.warn(`No price found for asset ${asset} (${assetAddress})`);
     return 0;
   }
-  0;
 
   return Number(priceEntry.price);
+};
+
+export const supplyUnitsToAmount = async (asset: Record<AssetName, number>) => {
+  const address = Object.keys(asset)[0];
+  const amount = Object.values(asset)[0];
+
+  const cluster_states: any = await fetch("api/assets/clusters", { method: "GET" });
+
+  if (!cluster_states.ok) {
+    console.error("Error fetching cluster states:", cluster_states.statusText);
+    return -1;
+  }
+
+  const cluster: any = cluster_states[address];
+
+  if (!cluster) {
+    console.error(`No cluster state found for asset ${address}`);
+    return -1;
+  }
+
+  return amount / cluster.supply_ratio;
+};
+
+export const borrowUnitsToAmount = async (asset: Record<AssetName, number>) => {
+  const address = Object.keys(asset)[0];
+  const amount = Object.values(asset)[0];
+
+  const cluster_states: any = await fetch("api/assets/clusters", { method: "GET" });
+
+  if (!cluster_states.ok) {
+    console.error("Error fetching cluster states:", cluster_states.statusText);
+    return -1;
+  }
+
+  const cluster: any = cluster_states[address];
+
+  if (!cluster) {
+    console.error(`No cluster state found for asset ${address}`);
+    return -1;
+  }
+
+  return amount / cluster.supply_ratio;
 };
