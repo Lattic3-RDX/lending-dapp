@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import math from "mathjs";
 
 interface StatisticsCardProps {
   healthRatio: number;
@@ -17,6 +18,8 @@ export function StatisticsCard({ healthRatio, netWorth, netAPR, isLoading }: Sta
       maximumFractionDigits: 2,
     }).format(value);
   };
+
+  const formattedHealthRatio = healthRatio === -1 || healthRatio === Infinity ? '∞' : healthRatio.toFixed(2);
 
   if (isLoading) {
     return (
@@ -37,11 +40,11 @@ export function StatisticsCard({ healthRatio, netWorth, netAPR, isLoading }: Sta
               Health Ratio
             </div>
             <div className={`text-4xl font-bold transition-colors duration-300 ${
-              healthRatio < 1.5 && healthRatio !== -1 
+              healthRatio < 1.5 && healthRatio !== -1 && healthRatio !== Infinity
                 ? 'text-destructive' 
                 : 'text-emerald-500'
             } `}>
-              {healthRatio === -1 ? '∞' : healthRatio.toFixed(2)}
+              {formattedHealthRatio}
             </div>
           </div>
 
