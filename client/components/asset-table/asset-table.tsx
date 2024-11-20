@@ -46,6 +46,11 @@ export function AssetTable<TData extends Asset, TValue>({
   onAmountChange,
   mode,
 }: AssetTableProps<TData, TValue>) {
+  console.log('AssetTable render with data:', data);
+
+  // Create a memoized version of the data
+  const memoizedData = React.useMemo(() => data, [data]);
+
   const [tableData, setTableData] = React.useState(data);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [expandedRows, setExpandedRows] = React.useState<Record<string, boolean>>({});
@@ -108,7 +113,7 @@ export function AssetTable<TData extends Asset, TValue>({
   };
 
   const table = useReactTable({
-    data: tableData,
+    data: memoizedData,
     columns,
     getCoreRowModel: getCoreRowModel(),
     onColumnFiltersChange: setColumnFilters,
@@ -174,7 +179,10 @@ export function AssetTable<TData extends Asset, TValue>({
       
       handleRowSelectionChange(newSelection);
     },
+    getRowId: (row) => row.address,
   });
+
+  console.log('Table instance data:', table.getRowModel().rows);
 
   const sortedRows = React.useMemo(() => {
     return table.getRowModel().rows.sort((a, b) => {

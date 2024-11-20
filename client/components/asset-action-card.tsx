@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -45,52 +45,66 @@ export function AssetActionCard({
   totalSupply,
   totalBorrowDebt,
 }: AssetActionCardProps) {
-  const [isBorrowMode, setIsBorrowMode] = React.useState(false);
-  const [localSupplyData, setLocalSupplyData] = useState(supplyData);
+  const [isBorrowMode, setIsBorrowMode] = useState(false);
+  const [borrowData, setBorrowData] = useState(supplyData);
 
-  // Calculate available borrows when supply or debt changes
+  // Add ref to track latest data
+  const latestBorrowData = useRef(borrowData);
+  
+  useEffect(() => {
+    latestBorrowData.current = borrowData;
+  }, [borrowData]);
+
   useEffect(() => {
     const updateAvailableBorrows = async () => {
-      const updatedData = await Promise.all(
-        supplyData.map(async (asset) => {
-          const assetPrice = await getAssetPrice(asset.label);
-          console.log(`Asset ${asset.label} price:`, assetPrice.toString());
-          console.log("Total Supply:", totalSupply.toString());
-          
-          // If there's no debt, we can borrow up to totalSupply/1.5
-          if (math.smallerEq(totalBorrowDebt, 0)) {
-            // Calculate max borrow in USD (totalSupply/1.5)
-            const maxBorrowUSD = m_bn(math.divide(totalSupply, 1.5));
-            console.log("Max Borrow USD:", maxBorrowUSD.toString());
+      if (!isBorrowMode || math.equal(totalSupply, 0)) {
+        return;
+      }
+
+      try {
+        const updatedData = await Promise.all(
+          supplyData.map(async (asset) => {
+            const assetPrice = await getAssetPrice(asset.label);
             
-            // Convert back to token amount
-            const available = num(m_bn(math.divide(maxBorrowUSD, assetPrice)));
-            console.log(`Max borrow for ${asset.label} in tokens:`, available);
-            return { ...asset, available };
-          }
+            if (math.smallerEq(totalBorrowDebt, 0)) {
+              const maxBorrowUSD = m_bn(math.divide(totalSupply, 1.5));
+              const available = num(m_bn(math.divide(maxBorrowUSD, assetPrice)));
+              
+              return {
+                ...asset,
+                available
+              };
+            }
 
-          // If there is existing debt, calculate how much more we can borrow
-          // while maintaining health ratio >= 1.5
-          const maxAdditionalDebtUSD = m_bn(
-            math.subtract(
-              m_bn(math.divide(totalSupply, 1.5)),
-              totalBorrowDebt
-            )
-          );
+            const maxAdditionalDebtUSD = m_bn(
+              math.subtract(
+                m_bn(math.divide(totalSupply, 1.5)),
+                totalBorrowDebt
+              )
+            );
+            
+            const availableAmount = m_bn(math.divide(maxAdditionalDebtUSD, assetPrice));
+            const available = num(math.larger(availableAmount, 0) ? availableAmount : bn(0));
+            
+            return {
+              ...asset,
+              available
+            };
+          })
+        );
 
-          const availableAmount = m_bn(math.divide(maxAdditionalDebtUSD, assetPrice));
-          const available = num(math.larger(availableAmount, 0) ? availableAmount : bn(0));
-          console.log(`Available amount for ${asset.label}:`, available);
-          return { ...asset, available };
-        })
-      );
-
-      console.log("Updated data:", updatedData);
-      setLocalSupplyData(updatedData);
+        console.log('Setting borrow data:', updatedData);
+        setBorrowData(updatedData);
+        console.log('Borrow data after set:', latestBorrowData.current);
+      } catch (error) {
+        console.error('Error updating available amounts:', error);
+      }
     };
 
     updateAvailableBorrows();
-  }, [supplyData, totalSupply, totalBorrowDebt]);
+  }, [supplyData, totalSupply, totalBorrowDebt, isBorrowMode]);
+
+  console.log('Rendering AssetActionCard with data:', isBorrowMode ? borrowData : supplyData);
 
   return (
     <Card>
@@ -121,11 +135,11 @@ export function AssetActionCard({
       <CardContent>
         <AssetTable
           columns={isBorrowMode ? borrowColumns : columns}
-          data={isBorrowMode ? localSupplyData : supplyData}
+          data={isBorrowMode ? borrowData : supplyData}
           rowSelection={isBorrowMode ? borrowRowSelection : supplyRowSelection}
           onRowSelectionChange={isBorrowMode ? onBorrowRowSelectionChange : onSupplyRowSelectionChange}
-          onAmountChange={(address, amount) => onAmountChange(address, amount, isBorrowMode ? 'borrow' : 'supply')}
-          mode={isBorrowMode ? 'borrow' : 'supply'}
+          onAmountChange={(address, amount) => onAmountChange(address, amount, isBorrowMode ? "borrow" : "supply")}
+          mode={isBorrowMode ? "borrow" : "supply"}
         />
       </CardContent>
     </Card>

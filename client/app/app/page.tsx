@@ -307,7 +307,6 @@ export default function App() {
         })),
       );
       setSupplyData(updatedData);
-      setIsLoading(false);
     };
 
     updateWalletBalances();
