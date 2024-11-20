@@ -62,8 +62,9 @@ mod lattic3 {
         }
     }
 
+    // Importing cluster blueprint
     extern_blueprint! {
-        "package_tdx_2_1p5t2g69a62qlf4mm8wte33d7lyrsxlw2fghjarj0xrnwklffr9szw4",
+        "package_tdx_2_1pkrsg0p57ypv9aj4en9f3jva8x26vzc68fctwfg0lgp7kfzy076ks3",
         Cluster {
             fn instantiate(resource: ResourceAddress, cluster_owner_rule: AccessRule, cluster_admin_rule: AccessRule) -> Global<Cluster>;
 

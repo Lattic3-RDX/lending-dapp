@@ -1,8 +1,7 @@
 {
+  "marketComponent": "component_tdx_2_1cpeavky47ljpyk49e9qvcl7x8nfl0y25lu3pp4cda9p7dpvy4lz52e",
+  "priceStreamComponent": "component_tdx_2_1cp7xyve2c0a6mrptqw76dun6et3eq5490qpagrlsfu2a4f29aw5e8n",
+  "borrowerBadgeAddr": "resource_tdx_2_1ngx5n7x637mjzyfn63w3vhagve05sx765sw6s7efr7vlmg57amjwfc",
   "dAppDefinitionAddr": "account_tdx_2_12xfek2nncckfppcslye0vwusaq6qtt6j896w5tcmfh7wy78hjzqc96",
-  "borrowerBadgeAddr": "resource_tdx_2_1n2yyuzh943tpksmjqn0unf5a6v39atf933cs4ydjh7mnha6f5ezwwv",
-  "marketComponent": "component_tdx_2_1crv97xtg2uh8ujedpc0pkv8v3yshh5kq7lc8y3t7eyljqqjjnzdf9n",
-  "gatewayApi": "https://babylon-gateway.radixdlt.com",
-  "priceStreamPackage": "package_tdx_2_1ph029rt4c78r3zx0s7q22xnz5eqpu4fajlygqqz7sg95rq026zncwj",
-  "priceStreamComponent": "component_tdx_2_1cp7xyve2c0a6mrptqw76dun6et3eq5490qpagrlsfu2a4f29aw5e8n"
+  "gatewayApi": "https://babylon-gateway.radixdlt.com"
 }
