@@ -9,7 +9,15 @@ import { columns } from "@/components/asset-table/columns";
 import SupplyDialog from "@/components/supply-dialog";
 import { useRadixContext } from "@/contexts/provider";
 import { gatewayApi, rdt } from "@/lib/radix";
-import { getAssetAddrRecord, Asset, AssetName, getAssetAPR, getWalletBalance, assetConfigs, getAssetPrice } from "@/types/asset";
+import {
+  getAssetAddrRecord,
+  Asset,
+  AssetName,
+  getAssetAPR,
+  getWalletBalance,
+  assetConfigs,
+  getAssetPrice,
+} from "@/types/asset";
 import { PortfolioTable } from "@/components/portfolio-table/portfolio-table";
 import { createPortfolioColumns } from "@/components/portfolio-table/portfolio-columns";
 import { useToast } from "@/components/ui/use-toast";
@@ -45,10 +53,10 @@ interface NFTData {
         field_name: string;
         entries: Array<{
           key: {
-            value: string;  // resource address
+            value: string; // resource address
           };
           value: {
-            value: string;  // amount
+            value: string; // amount
           };
         }>;
       }>;
@@ -60,13 +68,13 @@ interface NFTData {
 function GridBackground() {
   return (
     <div className="fixed inset-0 -z-10">
-      <div 
+      <div
         className="absolute inset-0 bg-background"
         style={{
           backgroundImage: `linear-gradient(to right, var(--foreground) 1px, transparent 1px),
                            linear-gradient(to bottom, var(--foreground) 1px, transparent 1px)`,
-          backgroundSize: '40px 40px',
-          opacity: '0.05'
+          backgroundSize: "40px 40px",
+          opacity: "0.05",
         }}
       />
     </div>
@@ -84,11 +92,11 @@ export default function App() {
       address,
       label: label as AssetName,
       wallet_balance: -1,
-      available: 100.00,
+      available: 100.0,
       select_native: 0,
-      APR: getAssetAPR(label as AssetName, 'supply'),
-      pool_unit_address: '',
-    }))
+      APR: getAssetAPR(label as AssetName, "supply"),
+      pool_unit_address: "",
+    })),
   );
   const [portfolioData, setSupplyPortfolioData] = useState<Asset[]>([]);
   const [totalSupply, setTotalSupply] = useState<number>(0);
@@ -109,21 +117,21 @@ export default function App() {
   const hasSelectedSupplyAssets = Object.keys(supplyRowSelection).length > 0;
   const hasSelectedBorrowAssets = Object.keys(borrowRowSelection).length > 0;
 
-  const calculateTotalAPR = async (assets: Asset[], type: 'supply' | 'borrow') => {
+  const calculateTotalAPR = async (assets: Asset[], type: "supply" | "borrow") => {
     if (assets.length === 0) return 0;
-    
+
     let totalValue = 0;
     let weightedAPR = 0;
-    
+
     await Promise.all(
       assets.map(async (asset) => {
         const price = await getAssetPrice(asset.label);
         const value = asset.select_native * price;
         totalValue += value;
         weightedAPR += value * getAssetAPR(asset.label, type);
-      })
+      }),
     );
-    
+
     return totalValue > 0 ? weightedAPR / totalValue : 0;
   };
 
@@ -153,9 +161,9 @@ export default function App() {
       const accountState = await gatewayApi.state.getEntityDetailsVaultAggregated(accounts[0].address);
 
       const getNFTBalance = accountState.non_fungible_resources.items.find(
-        (fr: { resource_address: string }) => fr.resource_address === borrowerBadgeAddr
+        (fr: { resource_address: string }) => fr.resource_address === borrowerBadgeAddr,
       )?.vaults.items[0];
-      
+
       if (!getNFTBalance) {
         console.log("No NFT balance found, resetting state");
         setSupplyPortfolioData([]);
@@ -164,31 +172,29 @@ export default function App() {
         return;
       }
 
-      const metadata = await gatewayApi.state.getNonFungibleData(
+      const metadata = (await gatewayApi.state.getNonFungibleData(
         JSON.parse(JSON.stringify(borrowerBadgeAddr)),
-        JSON.parse(JSON.stringify(getNFTBalance)).items[0]
-      ) as NFTData;
+        JSON.parse(JSON.stringify(getNFTBalance)).items[0],
+      )) as NFTData;
       console.log("NFT metadata:", metadata);
 
       // Extract supply positions
-      const supplyField = metadata.data.programmatic_json.fields.find(
-        field => field.field_name === "supply"
-      );
+      const supplyField = metadata.data.programmatic_json.fields.find((field) => field.field_name === "supply");
 
-      const suppliedAssets = supplyField?.entries.map(entry => ({
-        address: entry.key.value,
-        supplied_amount: parseFloat(entry.value.value)
-      })) || [];
+      const suppliedAssets =
+        supplyField?.entries.map((entry) => ({
+          address: entry.key.value,
+          supplied_amount: parseFloat(entry.value.value),
+        })) || [];
 
       // Extract borrow positions
-      const borrowField = metadata.data.programmatic_json.fields.find(
-        field => field.field_name === "debt"
-      );
+      const borrowField = metadata.data.programmatic_json.fields.find((field) => field.field_name === "debt");
 
-      const borrowedAssets = borrowField?.entries.map(entry => ({
-        address: entry.key.value,
-        borrowed_amount: parseFloat(entry.value.value)
-      })) || [];
+      const borrowedAssets =
+        borrowField?.entries.map((entry) => ({
+          address: entry.key.value,
+          borrowed_amount: parseFloat(entry.value.value),
+        })) || [];
 
       let totalSupplyValue = 0;
       let totalDebtValue = 0;
@@ -197,7 +203,7 @@ export default function App() {
       const supplyPortfolioData = await Promise.all(
         suppliedAssets.map(async (suppliedAsset) => {
           const assetConfig = Object.entries(getAssetAddrRecord()).find(
-            ([_, address]) => address === suppliedAsset.address
+            ([_, address]) => address === suppliedAsset.address,
           );
 
           if (!assetConfig) return null;
@@ -214,16 +220,16 @@ export default function App() {
             select_native: amount,
             APR: getAssetAPR(label as AssetName),
             pool_unit_address: assetConfigs[label as AssetName].pool_unit_address,
-            type: 'supply'
+            type: "supply",
           } as Asset;
-        })
-      ).then(results => results.filter((asset): asset is Asset => asset !== null));
+        }),
+      ).then((results) => results.filter((asset): asset is Asset => asset !== null));
 
       // Convert to portfolio data for borrow
       const borrowPortfolioData: Asset[] = await Promise.all(
         borrowedAssets.map(async (borrowedAsset) => {
           const assetConfig = Object.entries(getAssetAddrRecord()).find(
-            ([_, address]) => address === borrowedAsset.address
+            ([_, address]) => address === borrowedAsset.address,
           );
 
           if (!assetConfig) return null;
@@ -240,12 +246,12 @@ export default function App() {
             select_native: amount,
             APR: getAssetAPR(label as AssetName),
             pool_unit_address: assetConfigs[label as AssetName].pool_unit_address,
-            type: 'borrow'
+            type: "borrow",
           };
-        })
-      ).then(results => results.filter((asset): asset is Asset & { type: 'borrow' } => 
-        asset !== null && asset.type === 'borrow'
-      ));
+        }),
+      ).then((results) =>
+        results.filter((asset): asset is Asset & { type: "borrow" } => asset !== null && asset.type === "borrow"),
+      );
 
       // Calculate health ratio
       const healthRatio = totalDebtValue > 0 ? totalSupplyValue / totalDebtValue : -1;
@@ -254,12 +260,13 @@ export default function App() {
       console.log("Net Worth: ", netWorthValue);
 
       // Calculate total APRs from the portfolio data
-      const calculatedSupplyAPR = await calculateTotalAPR(supplyPortfolioData, 'supply');
-      const calculatedBorrowAPR = await calculateTotalAPR(borrowPortfolioData, 'borrow');
-      const netAPRValue = (totalSupplyValue > 0 || totalDebtValue > 0) 
-        ? (calculatedSupplyAPR * totalSupplyValue - calculatedBorrowAPR * totalDebtValue) 
-          / (totalSupplyValue > 0 ? totalSupplyValue : totalDebtValue)
-        : 0;
+      const calculatedSupplyAPR = await calculateTotalAPR(supplyPortfolioData, "supply");
+      const calculatedBorrowAPR = await calculateTotalAPR(borrowPortfolioData, "borrow");
+      const netAPRValue =
+        totalSupplyValue > 0 || totalDebtValue > 0
+          ? (calculatedSupplyAPR * totalSupplyValue - calculatedBorrowAPR * totalDebtValue) /
+            (totalSupplyValue > 0 ? totalSupplyValue : totalDebtValue)
+          : 0;
 
       console.log("Supply APR: ", calculatedSupplyAPR);
       console.log("Borrow APR: ", calculatedBorrowAPR);
@@ -291,7 +298,7 @@ export default function App() {
     console.log("Account", accounts);
     console.log("RDT", rdt);
     console.log("GatewayApi", gatewayApi);
-    
+
     if (accounts && gatewayApi) {
       refreshPortfolioData();
     }
@@ -304,12 +311,12 @@ export default function App() {
         supplyData.map(async (asset) => ({
           ...asset,
           wallet_balance: await getWalletBalance(asset.label as AssetName, accounts[0].address),
-        }))
+        })),
       );
       setSupplyData(updatedData);
       setIsLoading(false);
     };
-    
+
     updateWalletBalances();
   }, [accounts]);
 
@@ -318,11 +325,11 @@ export default function App() {
   }
 
   const getSelectedSupplyAssets = () => {
-    return Object.keys(supplyRowSelection).map(index => supplyData[Number(index)]);
+    return Object.keys(supplyRowSelection).map((index) => supplyData[Number(index)]);
   };
 
   const getSelectedBorrowAssets = () => {
-    return Object.keys(borrowRowSelection).map(index => supplyData[Number(index)]);
+    return Object.keys(borrowRowSelection).map((index) => supplyData[Number(index)]);
   };
 
   const handleSupplyConfirm = async () => {
@@ -337,16 +344,16 @@ export default function App() {
       }
 
       const selectedAssets = getSelectedSupplyAssets();
-      const assetsToSupply = selectedAssets.map(asset => ({
+      const assetsToSupply = selectedAssets.map((asset) => ({
         address: asset.address,
-        amount: asset.select_native
+        amount: asset.select_native,
       }));
 
       // Check if user has an existing position
       const accountState = await gatewayApi.state.getEntityDetailsVaultAggregated(accounts[0].address);
       console.log("Account State:", accountState);
       const getNFTBalance = accountState.non_fungible_resources.items.find(
-        (fr: { resource_address: string }) => fr.resource_address === config.borrowerBadgeAddr
+        (fr: { resource_address: string }) => fr.resource_address === config.borrowerBadgeAddr,
       )?.vaults.items[0];
       console.log("NFT Balance:", getNFTBalance);
 
@@ -356,7 +363,7 @@ export default function App() {
         manifest = open_position_rtm({
           component: config.marketComponent,
           account: accounts[0].address,
-          assets: assetsToSupply
+          assets: assetsToSupply,
         });
       } else {
         // Existing position - add to it
@@ -365,12 +372,12 @@ export default function App() {
           account: accounts[0].address,
           position_badge_address: config.borrowerBadgeAddr,
           position_badge_local_id: getNFTBalance.items[0],
-          assets: assetsToSupply
+          assets: assetsToSupply,
         });
       }
 
       console.log("Supply manifest:", manifest);
-      
+
       const result = await rdt?.walletApi.sendTransaction({
         transactionManifest: manifest,
         version: 1,
@@ -409,15 +416,15 @@ export default function App() {
       }
 
       const selectedAssets = getSelectedBorrowAssets();
-      const assetsToBorrow = selectedAssets.map(asset => ({
+      const assetsToBorrow = selectedAssets.map((asset) => ({
         address: asset.address,
-        amount: asset.select_native
+        amount: asset.select_native,
       }));
 
       // Get NFT ID from account state
       const accountState = await gatewayApi.state.getEntityDetailsVaultAggregated(accounts[0].address);
       const getNFTBalance = accountState.non_fungible_resources.items.find(
-        (fr: { resource_address: string }) => fr.resource_address === config.borrowerBadgeAddr
+        (fr: { resource_address: string }) => fr.resource_address === config.borrowerBadgeAddr,
       )?.vaults.items[0];
 
       if (!getNFTBalance?.items?.[0]) {
@@ -434,7 +441,7 @@ export default function App() {
         account: accounts[0].address,
         position_badge_address: config.borrowerBadgeAddr,
         position_badge_local_id: getNFTBalance.items[0],
-        assets: assetsToBorrow
+        assets: assetsToBorrow,
       });
 
       console.log("Borrow manifest:", manifest);
@@ -465,9 +472,7 @@ export default function App() {
   };
 
   const validateSelectedSupplyAssets = () => {
-    const selectedAssets = Object.keys(supplyRowSelection).filter(
-      (key) => supplyRowSelection[key]
-    );
+    const selectedAssets = Object.keys(supplyRowSelection).filter((key) => supplyRowSelection[key]);
 
     const hasInvalidAmount = selectedAssets.some((key) => {
       const asset = supplyData[parseInt(key)];
@@ -478,9 +483,7 @@ export default function App() {
   };
 
   const validateSelectedBorrowAssets = () => {
-    const selectedAssets = Object.keys(borrowRowSelection).filter(
-      (key) => borrowRowSelection[key]
-    );
+    const selectedAssets = Object.keys(borrowRowSelection).filter((key) => borrowRowSelection[key]);
 
     const hasInvalidAmount = selectedAssets.some((key) => {
       const asset = supplyData[parseInt(key)];
@@ -502,18 +505,14 @@ export default function App() {
     setIsPreviewDialogOpen(true);
   };
 
-  const handleAmountChange = (address: string, amount: number, type: 'supply' | 'borrow') => {
-    setSupplyData(current =>
-      current.map(row =>
-        row.address === address
-          ? { ...row, select_native: amount }
-          : row
-      )
+  const handleAmountChange = (address: string, amount: number, type: "supply" | "borrow") => {
+    setSupplyData((current) =>
+      current.map((row) => (row.address === address ? { ...row, select_native: amount } : row)),
     );
-    
+
     // Show preview button when amount is set
     if (amount > 0) {
-      if (type === 'supply') {
+      if (type === "supply") {
         setShowSupplyPreview(true);
       } else {
         setShowBorrowPreview(true);
@@ -521,7 +520,9 @@ export default function App() {
     }
   };
 
-  const handleSupplyRowSelectionChange = (updaterOrValue: RowSelectionState | ((old: RowSelectionState) => RowSelectionState)) => {
+  const handleSupplyRowSelectionChange = (
+    updaterOrValue: RowSelectionState | ((old: RowSelectionState) => RowSelectionState),
+  ) => {
     setSupplyRowSelection(updaterOrValue);
   };
 
@@ -544,13 +545,8 @@ export default function App() {
       <GridBackground />
       <div className="container mx-auto py-10 space-y-8">
         {/* Statistics Card */}
-        <StatisticsCard 
-          healthRatio={health}
-          netWorth={netWorth}
-          netAPR={netAPR}
-          isLoading={isLoading}
-        />
-        
+        <StatisticsCard healthRatio={health} netWorth={netWorth} netAPR={netAPR} isLoading={isLoading} />
+
         {/* First row: Supply and Borrow cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Your Supply Card */}
@@ -563,18 +559,16 @@ export default function App() {
                     <CardDescription className="text-left text-foreground">Total Supply:</CardDescription>
                     <CardDescription className="text-right text-foreground">${totalSupply.toFixed(2)}</CardDescription>
                     <CardDescription className="text-left text-foreground">Total APR:</CardDescription>
-                    <CardDescription className="text-right text-foreground">{totalSupplyAPR.toFixed(1)}%</CardDescription>
+                    <CardDescription className="text-right text-foreground">
+                      {totalSupplyAPR.toFixed(1)}%
+                    </CardDescription>
                     <div className="col-span-2"></div>
                   </div>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              <PortfolioTable
-                columns={columns}
-                data={portfolioData}
-                onRefresh={refreshPortfolioData}
-              />
+              <PortfolioTable columns={columns} data={portfolioData} onRefresh={refreshPortfolioData} />
             </CardContent>
           </Card>
 
@@ -586,21 +580,23 @@ export default function App() {
                 <div className="flex justify-end">
                   <div className="grid grid-cols-[auto,1fr] gap-x-6 items-center min-h-[72px]">
                     <CardDescription className="text-left text-foreground">Total Debt:</CardDescription>
-                    <CardDescription className="text-right text-foreground">${totalBorrowDebt.toFixed(2)}</CardDescription>
+                    <CardDescription className="text-right text-foreground">
+                      ${totalBorrowDebt.toFixed(2)}
+                    </CardDescription>
                     <CardDescription className="text-left text-foreground">Total APR:</CardDescription>
-                    <CardDescription className="text-right text-foreground">{totalBorrowAPR.toFixed(1)}%</CardDescription>
+                    <CardDescription className="text-right text-foreground">
+                      {totalBorrowAPR.toFixed(1)}%
+                    </CardDescription>
                     <CardDescription className="text-left text-foreground">Borrow Power Used:</CardDescription>
-                    <CardDescription className="text-right text-foreground">{borrowPowerUsed.toFixed(1)}%</CardDescription>
+                    <CardDescription className="text-right text-foreground">
+                      {borrowPowerUsed.toFixed(1)}%
+                    </CardDescription>
                   </div>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              <PortfolioTable
-                columns={columns}
-                data={borrowPortfolioData}
-                onRefresh={refreshPortfolioData}
-              />
+              <PortfolioTable columns={columns} data={borrowPortfolioData} onRefresh={refreshPortfolioData} />
             </CardContent>
           </Card>
         </div>
@@ -626,7 +622,7 @@ export default function App() {
           isOpen={isPreviewDialogOpen}
           onClose={() => setIsPreviewDialogOpen(false)}
           onConfirm={handleSupplyConfirm}
-          selectedAssets={getSelectedSupplyAssets().filter(asset => asset.select_native > 0)}
+          selectedAssets={getSelectedSupplyAssets().filter((asset) => asset.select_native > 0)}
           totalSupply={totalSupply}
           totalBorrowDebt={totalBorrowDebt}
         />
@@ -635,7 +631,7 @@ export default function App() {
           isOpen={isBorrowDialogOpen}
           onClose={() => setIsBorrowDialogOpen(false)}
           onConfirm={handleBorrowConfirm}
-          selectedAssets={getSelectedBorrowAssets().filter(asset => asset.select_native > 0)}
+          selectedAssets={getSelectedBorrowAssets().filter((asset) => asset.select_native > 0)}
           totalSupply={totalSupply}
           totalBorrowDebt={totalBorrowDebt}
         />

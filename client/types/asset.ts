@@ -1,7 +1,7 @@
-import { gatewayApi } from '@/lib/radix';
-import { FungibleResourcesCollectionAllOfToJSON } from '@radixdlt/babylon-gateway-api-sdk';
+import { gatewayApi } from "@/lib/radix";
+import { FungibleResourcesCollectionAllOfToJSON } from "@radixdlt/babylon-gateway-api-sdk";
 
-export type AssetName = 'XRD' | 'xwBTC' | 'FLOOP' | 'xUSDT' | 'EARLY' | 'HUG' | 'DFP2' | 'xETH' | 'ASTRL' | 'CAVIAR';
+export type AssetName = "XRD" | "xwBTC" | "FLOOP" | "xUSDT" | "EARLY" | "HUG" | "DFP2" | "xETH" | "ASTRL" | "CAVIAR";
 
 export interface Asset {
   address: string;
@@ -10,7 +10,7 @@ export interface Asset {
   wallet_balance: number;
   select_native: number;
   APR: number;
-  type?: 'supply' | 'borrow';
+  type?: "supply" | "borrow";
   available?: number;
 }
 
@@ -30,7 +30,7 @@ export const assetConfigs: Record<AssetName, AssetConfig> = {
     icon: "https://assets.radixdlt.com/icons/icon-xrd-32x32.png",
     pool_unit_address: "resource_tdx_2_1tkvdgqm60teajxd44ma6k0xyt6xvxxcyzrmc25q406fx08eaek36e4",
     supply_APR: 5,
-    borrow_APR: 10
+    borrow_APR: 10,
   },
   xwBTC: {
     address: "resource_xwbtc",
@@ -38,7 +38,7 @@ export const assetConfigs: Record<AssetName, AssetConfig> = {
     icon: "https://assets.instabridge.io/tokens/icons/xwBTC.png",
     pool_unit_address: "resource_123",
     supply_APR: 5,
-    borrow_APR: 10
+    borrow_APR: 10,
   },
   FLOOP: {
     address: "resource_floop",
@@ -46,7 +46,7 @@ export const assetConfigs: Record<AssetName, AssetConfig> = {
     icon: "https://assets.caviarnine.com/tokens/floop_babylon.png",
     pool_unit_address: "resource_123",
     supply_APR: 5,
-    borrow_APR: 10
+    borrow_APR: 10,
   },
   xUSDT: {
     address: "resource_tdx_2_1t57e50rm28cyqwn26jn336qyhu8nkt8cknacq8rnsn5kul2l3zvjut",
@@ -54,7 +54,7 @@ export const assetConfigs: Record<AssetName, AssetConfig> = {
     icon: "https://assets.instabridge.io/tokens/icons/xUSDT.png",
     pool_unit_address: "resource_tdx_2_1t5rqzx5xpgdv3dq42gvynlf6t80dvfcdfxt3shl0gj2jvp4v9extcl",
     supply_APR: 5,
-    borrow_APR: 10
+    borrow_APR: 10,
   },
   EARLY: {
     address: "resource_early",
@@ -62,7 +62,7 @@ export const assetConfigs: Record<AssetName, AssetConfig> = {
     icon: "https://arweave.net/uXCQ9YVGkEijn7PS2wdkXqwkU_YrdgpNtQPH2Y1-Qcs",
     pool_unit_address: "resource_123",
     supply_APR: 5,
-    borrow_APR: 10
+    borrow_APR: 10,
   },
   HUG: {
     address: "resource_tdx_2_1tkuj2rqsa63f8ygkzezgt27trj50srht5e666jaz28j5ss8fasg5kl",
@@ -70,7 +70,7 @@ export const assetConfigs: Record<AssetName, AssetConfig> = {
     icon: "https://tokens.defiplaza.net/cdn-cgi/imagedelivery/QTzOBjs3mHq3EhZxDosDSw/f5cdcf72-c7a2-4032-1252-1be08edb0700/token",
     pool_unit_address: "resource_tdx_2_1tk86qnc0xpslwn0fz29gaj7gjfdsndyc0fkagakduk84ml9rg2xxjj",
     supply_APR: 5,
-    borrow_APR: 10
+    borrow_APR: 10,
   },
   DFP2: {
     address: "resource_dfp2",
@@ -78,7 +78,7 @@ export const assetConfigs: Record<AssetName, AssetConfig> = {
     icon: "https://radix.defiplaza.net/assets/img/babylon/defiplaza-icon.png",
     pool_unit_address: "resource_123",
     supply_APR: 5,
-    borrow_APR: 10
+    borrow_APR: 10,
   },
   xETH: {
     address: "resource_xeth",
@@ -86,7 +86,7 @@ export const assetConfigs: Record<AssetName, AssetConfig> = {
     icon: "https://assets.instabridge.io/tokens/icons/xETH.png",
     pool_unit_address: "resource_123",
     supply_APR: 5,
-    borrow_APR: 10
+    borrow_APR: 10,
   },
   ASTRL: {
     address: "resource_astrl",
@@ -94,7 +94,7 @@ export const assetConfigs: Record<AssetName, AssetConfig> = {
     icon: "https://astrolescent.com/assets/img/tokens/astrl.png",
     pool_unit_address: "resource_123",
     supply_APR: 5,
-    borrow_APR: 10
+    borrow_APR: 10,
   },
   CAVIAR: {
     address: "resource_caviar",
@@ -102,24 +102,27 @@ export const assetConfigs: Record<AssetName, AssetConfig> = {
     icon: "https://assets.caviarnine.com/tokens/caviar_babylon.png",
     pool_unit_address: "resource_123",
     supply_APR: 5,
-    borrow_APR: 10
+    borrow_APR: 10,
   },
 };
 
 // Helper functions
 export const getAssetConfig = (label: AssetName): AssetConfig | undefined => assetConfigs[label];
-export const getAssetIcon = (label: AssetName): string => 
-  assetConfigs[label]?.icon || 'https://assets.radixdlt.com/icons/icon-default-32x32.png';
-export const getAssetAddress = (label: AssetName): string => assetConfigs[label]?.address || '';
-export const getAssetAPR = (label: AssetName, type: 'supply' | 'borrow' = 'supply'): number => 
-  type === 'supply' ? assetConfigs[label]?.supply_APR || 0 : assetConfigs[label]?.borrow_APR || 0;
+export const getAssetIcon = (label: AssetName): string =>
+  assetConfigs[label]?.icon || "https://assets.radixdlt.com/icons/icon-default-32x32.png";
+export const getAssetAddress = (label: AssetName): string => assetConfigs[label]?.address || "";
+export const getAssetAPR = (label: AssetName, type: "supply" | "borrow" = "supply"): number =>
+  type === "supply" ? assetConfigs[label]?.supply_APR || 0 : assetConfigs[label]?.borrow_APR || 0;
 
 // Remove the separate assetAddrRecord and instead create a helper function
 export const getAssetAddrRecord = (): Record<AssetName, string> => {
-  return Object.entries(assetConfigs).reduce((acc, [label, config]) => ({
-    ...acc,
-    [label]: config.address
-  }), {} as Record<AssetName, string>);
+  return Object.entries(assetConfigs).reduce(
+    (acc, [label, config]) => ({
+      ...acc,
+      [label]: config.address,
+    }),
+    {} as Record<AssetName, string>,
+  );
 };
 
 // Replace mockWalletBalances with a function to fetch real balances
@@ -132,12 +135,12 @@ export const getWalletBalances = async (accountAddress: string): Promise<Record<
   try {
     const response = await gatewayApi.state.getEntityDetailsVaultAggregated(accountAddress);
     const balances: Partial<Record<AssetName, number>> = {};
-    
+
     const fungibleResources = response.fungible_resources.items || [];
-    fungibleResources.forEach(resource => {
+    fungibleResources.forEach((resource) => {
       // Find matching asset config by address
       const assetEntry = Object.entries(assetConfigs).find(
-        ([_, config]) => config.address === resource.resource_address
+        ([_, config]) => config.address === resource.resource_address,
       );
 
       if (assetEntry) {
@@ -148,12 +151,12 @@ export const getWalletBalances = async (accountAddress: string): Promise<Record<
     });
 
     // Fill in zero balances for assets not found in the response
-    Object.keys(assetConfigs).forEach(assetName => {
+    Object.keys(assetConfigs).forEach((assetName) => {
       if (!(assetName in balances)) {
         balances[assetName as AssetName] = 0;
       }
     });
-    return balances as Record<AssetName, number>; 
+    return balances as Record<AssetName, number>;
   } catch (error) {
     console.error("Error fetching wallet balances:", error);
     return {} as Record<AssetName, number>;
@@ -172,23 +175,24 @@ export const getAssetPrice = async (asset: AssetName): Promise<number> => {
     console.error("Error fetching asset prices:", res.statusText);
     return -1;
   }
-  
+
   const { prices } = await res.json();
-  
+
   if (!Array.isArray(prices)) {
     console.error("Unexpected price data format: prices is not an array");
     return -1;
   }
-  
+
   // Get the resource address for the asset
   const assetAddress = getAssetAddress(asset);
   // Find the price entry where asset matches our resource address
-  const priceEntry = prices.find(p => p.asset === assetAddress);
-  
+  const priceEntry = prices.find((p) => p.asset === assetAddress);
+
   if (!priceEntry) {
     console.warn(`No price found for asset ${asset} (${assetAddress})`);
     return 0;
-  }0
-  
+  }
+  0;
+
   return Number(priceEntry.price);
 };

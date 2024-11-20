@@ -1,15 +1,18 @@
 /* ------------------ Imports ----------------- */
 import config from "@/lib/config.json";
 const { priceStreamComponent } = config;
+import type { NextRequest } from "next/server";
 
 /* ------------------- Setup ------------------ */
 // Force caching
-// export const dynamic = "force-dynamic";
-// export const revalidate = 60;
+export const dynamic = "force-dynamic";
+export const revalidate = 20;
 
 /* ----------------- Endpoints ---------------- */
+/// Get price stream data for all assets
 export async function GET() {
-  const fetch_res = await fetch("https://babylon-stokenet-gateway.radixdlt.com/state/entity/details", {
+  // Fetch price stream data
+  const price_stream_res = await fetch("https://babylon-stokenet-gateway.radixdlt.com/state/entity/details", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -30,25 +33,24 @@ export async function GET() {
     }),
   });
 
-  if (fetch_res.status !== 200) {
+  // Ensure price stream entity details are ok
+  if (!price_stream_res.ok) {
     return new Response("Failed to fetch data", { status: 500 });
   }
 
   try {
-    const data = await fetch_res.json();
-    const state = data.items[0].details.state;
-    const prices = state.fields
+    // Deconstruct price stream response into prices
+    const price_stream_data = await price_stream_res.json();
+    const price_stream_state = price_stream_data.items[0].details.state;
+    const prices = price_stream_state.fields
       .filter((field: any) => field.field_name === "prices")[0]
       .entries.map((entry: any) => ({
         asset: entry.key.value,
         price: entry.value.value,
       }));
 
-    const res = {
-      prices: prices,
-    };
-
-    return new Response(JSON.stringify(res), {
+    // Send response
+    return new Response(JSON.stringify({ prices: prices }), {
       headers: {
         "Content-Type": "application/json",
       },
@@ -58,4 +60,39 @@ export async function GET() {
     console.error(error);
     return new Response("Failed to parse data", { status: 500 });
   }
+}
+
+/// Filters price stream data by assets requested in `assets[]`
+export async function POST(req: NextRequest) {
+  const url = req.nextUrl.clone();
+  const body: any = await req.json();
+
+  // Ensure requested assets are in an array
+  if (!Array.isArray(body.assets)) {
+    return new Response("Invalid request body", { status: 400 });
+  }
+
+  // Fetch price stream data
+  url.pathname = "api/assets/prices";
+  const prices_res = await fetch(url, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+  });
+
+  // Ensure price stream entity details are ok
+  if (!prices_res.ok) {
+    return new Response("Failed to fetch data", { status: 500 });
+  }
+
+  const { prices } = await prices_res.json();
+
+  // Filter prices by requested assets
+  const filteredPrices = prices.filter((price: any) => body.assets.includes(price.asset));
+
+  return new Response(JSON.stringify({ prices: filteredPrices }), {
+    headers: {
+      "Content-Type": "application/json",
+    },
+    status: 200,
+  });
 }
