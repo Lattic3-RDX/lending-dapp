@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, X } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -81,7 +81,7 @@ const SupplyDialog: React.FC<SupplyDialogProps> = ({
   totalBorrowDebt,
 }) => {
   const [totalUsdValue, setTotalUsdValue] = React.useState(0);
-  const [isLoading, setIsLoading] = useState(false);
+  const [transactionState, setTransactionState] = useState<'idle' | 'awaiting_signature' | 'processing' | 'error'>('idle');
 
   React.useEffect(() => {
     const calculateTotal = async () => {
@@ -106,12 +106,13 @@ const SupplyDialog: React.FC<SupplyDialogProps> = ({
   });
 
   const handleConfirm = async () => {
-    setIsLoading(true);
+    setTransactionState('awaiting_signature');
     try {
       await onConfirm();
       onClose();
-    } finally {
-      setIsLoading(false);
+    } catch (error) {
+      setTransactionState('error');
+      setTimeout(() => setTransactionState('idle'), 2000);
     }
   };
 
@@ -186,9 +187,19 @@ const SupplyDialog: React.FC<SupplyDialogProps> = ({
           <Button
             onClick={handleConfirm}
             className="w-full h-12 text-base"
-            disabled={isLoading}
+            disabled={transactionState !== 'idle'}
           >
-            {isLoading ? (
+            {transactionState === 'error' ? (
+              <div className="flex items-center gap-2">
+                <X className="w-4 h-4 text-destructive" />
+                Transaction Failed
+              </div>
+            ) : transactionState === 'awaiting_signature' ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Waiting for signature...
+              </div>
+            ) : transactionState === 'processing' ? (
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 Supplying...

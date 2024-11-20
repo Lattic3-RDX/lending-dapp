@@ -198,6 +198,8 @@ export default function App() {
 
       let totalSupplyValue = 0;
       let totalDebtValue = 0;
+      
+      // TODO: call getRequest /api/assets/clusters to get the ratio supply_ratio, divide the shit from the NFT by supply_ratio and multiply by the price
 
       // Convert to portfolio data for supply
       const supplyPortfolioData = await Promise.all(
@@ -224,6 +226,8 @@ export default function App() {
           } as Asset;
         }),
       ).then((results) => results.filter((asset): asset is Asset => asset !== null));
+
+      // TODO: call getRequest /api/assets/clusters to get the ratio borrow_ratio, divide the shit from the NFT by borrow_ratio and multiply by the price
 
       // Convert to portfolio data for borrow
       const borrowPortfolioData: Asset[] = await Promise.all(

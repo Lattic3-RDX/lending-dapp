@@ -75,7 +75,7 @@ function ActionCell({
         position_badge_local_id: getNFTBalance.items[0],
         asset: {
           address: row.original.pool_unit_address ?? "",
-          amount: row.original.select_native
+          amount: row.original.select_native // TODO: the inverse of what was done for PortfolioSupply, need to pass pool units
         }
       });
 

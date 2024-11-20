@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Asset, getAssetIcon, getAssetPrice } from "@/types/asset";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, X } from "lucide-react";
 import { TruncatedNumber } from "@/components/ui/truncated-number";
 
 interface WithdrawDialogProps {
@@ -29,7 +29,7 @@ export function WithdrawDialog({
     totalBorrowDebt <= 0 ? -1 : totalSupply / totalBorrowDebt
   );
   const [assetPrice, setAssetPrice] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
+  const [transactionState, setTransactionState] = useState<'idle' | 'awaiting_signature' | 'processing' | 'error'>('idle');
 
   const validateAmount = (value: string) => {
     const amount = parseFloat(value);
@@ -77,11 +77,13 @@ export function WithdrawDialog({
   const handleConfirm = async () => {
     const amount = parseFloat(tempAmount);
     if (!isNaN(amount) && amount > 0 && !error) {
-      setIsLoading(true);
+      setTransactionState('awaiting_signature');
       try {
         await onConfirm(amount);
-      } finally {
-        setIsLoading(false);
+        onClose();
+      } catch (error) {
+        setTransactionState('error');
+        setTimeout(() => setTransactionState('idle'), 2000);
       }
     }
   };
@@ -158,9 +160,19 @@ export function WithdrawDialog({
           <Button 
             className="w-full h-12 text-base"
             onClick={handleConfirm}
-            disabled={!!error || !tempAmount || parseFloat(tempAmount) <= 0 || isLoading}
+            disabled={!!error || !tempAmount || parseFloat(tempAmount) <= 0 || transactionState !== 'idle'}
           >
-            {isLoading ? (
+            {transactionState === 'error' ? (
+              <div className="flex items-center gap-2">
+                <X className="w-4 h-4 text-destructive" />
+                Transaction Failed
+              </div>
+            ) : transactionState === 'awaiting_signature' ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Waiting for signature...
+              </div>
+            ) : transactionState === 'processing' ? (
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 Withdrawing...
