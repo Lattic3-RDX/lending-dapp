@@ -230,6 +230,9 @@ mod lattic3_cluster {
             // TODO: Validate that the cluster is ready to withdraw
             self.tick_interest(true); // Update interest such that units are withdrawn at current rate
 
+            // Burn supply units
+            units.burn();
+
             let amount = self.get_value(ClusterLayer::Supply, unit_amount);
             let withdrawn = self.liquidity.take(trunc(amount));
 
