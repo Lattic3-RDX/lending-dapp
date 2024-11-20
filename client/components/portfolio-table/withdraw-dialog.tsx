@@ -67,6 +67,11 @@ export function WithdrawDialog({
     const newHF = totalBorrowDebt <= 0 ? -1 : newSupplyValue / totalBorrowDebt;
     setNewHealthFactor(newHF);
     
+    if (newHF !== -1 && newHF < 1.0) {
+      setError("Withdrawal would put health ratio below minimum");
+      return;
+    }
+    
     validateAmount(value);
   };
 
@@ -161,7 +166,11 @@ export function WithdrawDialog({
           <Button 
             className="w-full h-12 text-base"
             onClick={handleConfirm}
-            disabled={!!error || !tempAmount || parseFloat(tempAmount) <= 0 || transactionState !== 'idle'}
+            disabled={!!error || 
+              !tempAmount || 
+              parseFloat(tempAmount) <= 0 || 
+              transactionState !== 'idle' ||
+              (newHealthFactor !== -1 && newHealthFactor < 1.0)}
           >
             {transactionState === 'error' ? (
               <div className="flex items-center gap-2">
@@ -179,7 +188,9 @@ export function WithdrawDialog({
                 Withdrawing...
               </div>
             ) : (
-              "Confirm Withdrawal"
+              newHealthFactor !== -1 && newHealthFactor < 1.0 
+                ? "Health ratio would be too low"
+                : "Confirm Withdrawal"
             )}
           </Button>
         </div>
