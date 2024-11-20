@@ -113,16 +113,6 @@ export function RepayDialog({
           <div className="space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-lg font-semibold">Amount</span>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Health factor:</span>
-                <span className={totalBorrowDebt <= 0 ? "text-green-500" : (totalSupply / totalBorrowDebt < 1.5 ? "text-red-500" : "text-green-500")}>
-                  {totalBorrowDebt <= 0 ? '∞' : (totalSupply / totalBorrowDebt).toFixed(2)}
-                </span>
-                <ArrowRight className="w-4 h-4" />
-                <span className={newHealthFactor === -1 ? "text-green-500" : (newHealthFactor < 1.5 ? "text-red-500" : "text-green-500")}>
-                  {newHealthFactor === -1 ? '∞' : newHealthFactor.toFixed(2)}
-                </span>
-              </div>
             </div>
             <div className="space-y-2">
               <div className="relative">
