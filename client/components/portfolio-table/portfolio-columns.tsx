@@ -94,12 +94,19 @@ function ActionCell({
         version: 1,
       });
       console.log("Withdraw result: ", result);
-      if (result) {
+      if (result?.isOk()) {
         toast({
           title: "Withdrawal Successful",
           description: `Withdrew ${amount} ${row.original.label}`,
         });
         await refreshPortfolioData();
+      } else if (result) {
+        const errorResult = result as { error: { error: string } };
+        toast({
+          variant: "destructive",
+          title: "Supply Failed",
+          description: errorResult.error.error || "Transaction failed",
+        });
       }
     } catch (error) {
       console.error("Withdrawal error:", error);
@@ -169,13 +176,19 @@ function ActionCell({
         transactionManifest: manifest,
         version: 1,
       });
-
-      if (result) {
+      if (result?.isOk()) {
         toast({
           title: "Repayment Successful",
           description: `Repaid ${amount} ${row.original.label}`,
         });
         await refreshPortfolioData();
+      } else if (result) {
+        const errorResult = result as { error: { error: string } };
+        toast({
+          variant: "destructive",
+          title: "Supply Failed",
+          description: errorResult.error.error || "Transaction failed",
+        });
       }
     } catch (error) {
       console.error("Repay error:", error);

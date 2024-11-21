@@ -395,12 +395,19 @@ export default function App() {
       });
       console.log("Transaction result:", result);
 
-      if (result) {
+      if (result?.isOk()) {
         toast({
           title: "Supply Successful",
           description: `Supplied ${assetsToSupply.length} assets`,
         });
         await refreshPortfolioData();
+      } else if (result) {
+        const errorResult = result as { error: { error: string } };
+        toast({
+          variant: "destructive",
+          title: "Supply Failed",
+          description: errorResult.error.error || "Transaction failed",
+        });
       }
     } catch (error) {
       console.error("Supply error:", error);
@@ -461,14 +468,22 @@ export default function App() {
         transactionManifest: manifest,
         version: 1,
       });
-
-      if (result) {
+      
+      if (result?.isOk()) {
         toast({
           title: "Borrow Successful",
           description: `Borrowed ${assetsToBorrow.length} assets`,
         });
         await refreshPortfolioData();
+      } else if (result) {
+        const errorResult = result as { error: { error: string } };
+        toast({
+          variant: "destructive",
+          title: "Supply Failed",
+          description: errorResult.error.error || "Transaction failed",
+        });
       }
+      
     } catch (error) {
       console.error("Borrow error:", error);
       toast({
