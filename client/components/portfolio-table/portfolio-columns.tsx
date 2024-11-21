@@ -102,10 +102,14 @@ function ActionCell({
         await refreshPortfolioData();
       } else if (result) {
         const errorResult = result as { error: { error: string } };
+        let message = errorResult.error.error || "Transaction failed";
+        if (errorResult.error.error.includes("rejectedByUser")) {
+          message = "Transaction rejected by user";
+        }
         toast({
           variant: "destructive",
-          title: "Supply Failed",
-          description: errorResult.error.error || "Transaction failed",
+          title: "Withdrawal Failed",
+          description: message,
         });
       }
     } catch (error) {
@@ -176,6 +180,7 @@ function ActionCell({
         transactionManifest: manifest,
         version: 1,
       });
+      
       if (result?.isOk()) {
         toast({
           title: "Repayment Successful",
@@ -184,10 +189,14 @@ function ActionCell({
         await refreshPortfolioData();
       } else if (result) {
         const errorResult = result as { error: { error: string } };
+        let message = errorResult.error.error || "Transaction failed";
+        if (errorResult.error.error.includes("rejectedByUser")) {
+          message = "Transaction rejected by user";
+        }
         toast({
           variant: "destructive",
-          title: "Supply Failed",
-          description: errorResult.error.error || "Transaction failed",
+          title: "Repayment Failed",
+          description: message,
         });
       }
     } catch (error) {

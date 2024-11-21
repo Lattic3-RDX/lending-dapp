@@ -20,7 +20,7 @@ export default function position_borrow_rtm({ component, account, position_badge
   assets.forEach((asset) => {
     // Get hashmap entry for the asset
     asset_entry += `
-    Address("${asset.address}") => PreciseDecimal("${asset.amount}"),`
+    Address("${asset.address}") => Decimal("${asset.amount}"),`
   })
 
   const rtm = `
@@ -39,7 +39,7 @@ CALL_METHOD
   Address("${component}")
   "position_borrow"
   Bucket("position_badge")
-  Map<Address, PreciseDecimal>(${asset_entry}
+  Map<Address, Decimal>(${asset_entry}
   );
 
 CALL_METHOD

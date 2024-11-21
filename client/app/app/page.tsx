@@ -259,7 +259,7 @@ export default function App() {
       const netAPRValue: number =
         math.larger(totalSupplyValue, 0) || math.larger(totalDebtValue, 0)
           ? (calculatedSupplyAPR * num(totalSupplyValue) - calculatedBorrowAPR * num(totalDebtValue)) /
-            (num(totalSupplyValue) > 0 ? num(totalSupplyValue) : num(totalDebtValue))
+          (num(totalSupplyValue) > 0 ? num(totalSupplyValue) : num(totalDebtValue))
           : 0;
 
       console.log("Supply APR: ", calculatedSupplyAPR);
@@ -403,10 +403,14 @@ export default function App() {
         await refreshPortfolioData();
       } else if (result) {
         const errorResult = result as { error: { error: string } };
+        let message = errorResult.error.error || "Transaction failed";
+        if (errorResult.error.error.includes("rejectedByUser")) {
+          message = "Transaction rejected by user";
+        }
         toast({
           variant: "destructive",
           title: "Supply Failed",
-          description: errorResult.error.error || "Transaction failed",
+          description: message,
         });
       }
     } catch (error) {
@@ -468,7 +472,7 @@ export default function App() {
         transactionManifest: manifest,
         version: 1,
       });
-      
+
       if (result?.isOk()) {
         toast({
           title: "Borrow Successful",
@@ -477,13 +481,17 @@ export default function App() {
         await refreshPortfolioData();
       } else if (result) {
         const errorResult = result as { error: { error: string } };
+        let message = errorResult.error.error || "Transaction failed";
+        if (errorResult.error.error.includes("rejectedByUser")) {
+          message = "Transaction rejected by user";
+        }
         toast({
           variant: "destructive",
-          title: "Supply Failed",
-          description: errorResult.error.error || "Transaction failed",
+          title: "Borrow Failed",
+          description: message,
         });
       }
-      
+
     } catch (error) {
       console.error("Borrow error:", error);
       toast({
@@ -573,105 +581,113 @@ export default function App() {
   const columns = createPortfolioColumns(refreshPortfolioData, totalSupply, totalBorrowDebt);
 
   return (
-    <div>
-      <div className="container mx-auto py-10 space-y-8">
-        {/* Statistics Card */}
-        <StatisticsCard healthRatio={health} netWorth={netWorth} netAPR={netAPR} isLoading={isLoading} />
-
-        {/* First row: Supply and Borrow cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Your Supply Card */}
-          <Card>
-            <CardHeader>
-              <div className="grid grid-cols-2">
-                <CardTitle>Your Supply</CardTitle>
-                <div className="flex justify-end">
-                  <div className="grid grid-cols-[auto,1fr] gap-x-6 items-center min-h-[72px]">
-                    <CardDescription className="text-left text-foreground">Total Supply:</CardDescription>
-                    <CardDescription className="text-right text-foreground">${totalSupply.toFixed(2)}</CardDescription>
-                    <CardDescription className="text-left text-foreground">Total APR:</CardDescription>
-                    <CardDescription className="text-right text-foreground">
-                      {totalSupplyAPR.toFixed(1)}%
-                    </CardDescription>
-                    <div className="col-span-2"></div>
-                  </div>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <PortfolioTable columns={columns} data={portfolioData} onRefresh={refreshPortfolioData} />
-            </CardContent>
-          </Card>
-
-          {/* Your Borrows Card */}
-          <Card>
-            <CardHeader>
-              <div className="grid grid-cols-2">
-                <CardTitle>Your Borrows</CardTitle>
-                <div className="flex justify-end">
-                  <div className="grid grid-cols-[auto,1fr] gap-x-6 items-center min-h-[72px]">
-                    <CardDescription className="text-left text-foreground">Total Debt:</CardDescription>
-                    <CardDescription className="text-right text-foreground">
-                      ${totalBorrowDebt.toFixed(2)}
-                    </CardDescription>
-                    <CardDescription className="text-left text-foreground">Total APR:</CardDescription>
-                    <CardDescription className="text-right text-foreground">
-                      {totalBorrowAPR.toFixed(1)}%
-                    </CardDescription>
-                    <CardDescription className="text-left text-foreground">Borrow Power Used:</CardDescription>
-                    <CardDescription className="text-right text-foreground">
-                      {borrowPowerUsed.toFixed(1)}%
-                    </CardDescription>
-                  </div>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <PortfolioTable columns={columns} data={borrowPortfolioData} onRefresh={refreshPortfolioData} />
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Asset Action Card - Full Width */}
-        <AssetActionCard
-          supplyData={supplyData}
-          supplyRowSelection={supplyRowSelection}
-          borrowRowSelection={borrowRowSelection}
-          onSupplyRowSelectionChange={handleSupplyRowSelectionChange}
-          onBorrowRowSelectionChange={setBorrowRowSelection}
-          onAmountChange={handleAmountChange}
-          showSupplyPreview={showSupplyPreview}
-          showBorrowPreview={showBorrowPreview}
-          hasSelectedSupplyAssets={hasSelectedSupplyAssets}
-          hasSelectedBorrowAssets={hasSelectedBorrowAssets}
-          onPreviewSupply={handlePreviewSupply}
-          onPreviewBorrow={handlePreviewBorrow}
-          totalSupply={totalSupply}
-          totalBorrowDebt={totalBorrowDebt}
-        />
-
-        {/* Add these dialogs here, right before the closing div */}
-        <SupplyDialog
-          isOpen={isPreviewDialogOpen}
-          onClose={() => setIsPreviewDialogOpen(false)}
-          onConfirm={handleSupplyConfirm}
-          selectedAssets={getSelectedSupplyAssets().filter((asset) => asset.select_native > 0)}
-          totalSupply={num(totalSupply)}
-          totalBorrowDebt={num(totalBorrowDebt)}
-        />
-
-        <BorrowDialog
-          isOpen={isBorrowDialogOpen}
-          onClose={() => setIsBorrowDialogOpen(false)}
-          onConfirm={handleBorrowConfirm}
-          selectedAssets={getSelectedBorrowAssets().filter((asset) => asset.select_native > 0)}
-          totalSupply={num(totalSupply)}
-          totalBorrowDebt={num(totalBorrowDebt)}
-        />
-      </div>
-      <div className="pointer-events-none">
+    <div className="relative min-h-screen">
+      {/* Background Effects - Move to the very back */}
+      <div className="fixed inset-0 pointer-events-none -z-10">
+        <div className="h-full w-full bg-background dark:bg-foreground bg-grid-slate-200/20 dark:bg-grid-slate-50/[0.2]" />
+        {/* Radial gradient overlay */}
+        <div className="absolute pointer-events-none inset-0 flex items-center justify-center bg-background dark:bg-black [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]" />
         <ShootingStars />
+        <StarsBackground />
       </div>
+
+      <main className="flex min-h-screen flex-col items-center justify-center p-8">
+        <div className="container mx-auto py-10 space-y-8">
+          {/* Statistics Card */}
+          <StatisticsCard healthRatio={health} netWorth={netWorth} netAPR={netAPR} isLoading={isLoading} />
+
+          {/* First row: Supply and Borrow cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Your Supply Card */}
+            <Card>
+              <CardHeader>
+                <div className="grid grid-cols-2">
+                  <CardTitle>Your Supply</CardTitle>
+                  <div className="flex justify-end">
+                    <div className="grid grid-cols-[auto,1fr] gap-x-6 items-center min-h-[72px]">
+                      <CardDescription className="text-left text-foreground">Total Supply:</CardDescription>
+                      <CardDescription className="text-right text-foreground">${totalSupply.toFixed(2)}</CardDescription>
+                      <CardDescription className="text-left text-foreground">Total APR:</CardDescription>
+                      <CardDescription className="text-right text-foreground">
+                        {totalSupplyAPR.toFixed(1)}%
+                      </CardDescription>
+                      <div className="col-span-2"></div>
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <PortfolioTable columns={columns} data={portfolioData} onRefresh={refreshPortfolioData} />
+              </CardContent>
+            </Card>
+
+            {/* Your Borrows Card */}
+            <Card>
+              <CardHeader>
+                <div className="grid grid-cols-2">
+                  <CardTitle>Your Borrows</CardTitle>
+                  <div className="flex justify-end">
+                    <div className="grid grid-cols-[auto,1fr] gap-x-6 items-center min-h-[72px]">
+                      <CardDescription className="text-left text-foreground">Total Debt:</CardDescription>
+                      <CardDescription className="text-right text-foreground">
+                        ${totalBorrowDebt.toFixed(2)}
+                      </CardDescription>
+                      <CardDescription className="text-left text-foreground">Total APR:</CardDescription>
+                      <CardDescription className="text-right text-foreground">
+                        {totalBorrowAPR.toFixed(1)}%
+                      </CardDescription>
+                      <CardDescription className="text-left text-foreground">Borrow Power Used:</CardDescription>
+                      <CardDescription className="text-right text-foreground">
+                        {borrowPowerUsed.toFixed(1)}%
+                      </CardDescription>
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <PortfolioTable columns={columns} data={borrowPortfolioData} onRefresh={refreshPortfolioData} />
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Asset Action Card - Full Width */}
+          <AssetActionCard
+            supplyData={supplyData}
+            supplyRowSelection={supplyRowSelection}
+            borrowRowSelection={borrowRowSelection}
+            onSupplyRowSelectionChange={handleSupplyRowSelectionChange}
+            onBorrowRowSelectionChange={setBorrowRowSelection}
+            onAmountChange={handleAmountChange}
+            showSupplyPreview={showSupplyPreview}
+            showBorrowPreview={showBorrowPreview}
+            hasSelectedSupplyAssets={hasSelectedSupplyAssets}
+            hasSelectedBorrowAssets={hasSelectedBorrowAssets}
+            onPreviewSupply={handlePreviewSupply}
+            onPreviewBorrow={handlePreviewBorrow}
+            totalSupply={totalSupply}
+            totalBorrowDebt={totalBorrowDebt}
+          />
+
+          {/* Add these dialogs here, right before the closing div */}
+          <SupplyDialog
+            isOpen={isPreviewDialogOpen}
+            onClose={() => setIsPreviewDialogOpen(false)}
+            onConfirm={handleSupplyConfirm}
+            selectedAssets={getSelectedSupplyAssets().filter((asset) => asset.select_native > 0)}
+            totalSupply={num(totalSupply)}
+            totalBorrowDebt={num(totalBorrowDebt)}
+          />
+
+          <BorrowDialog
+            isOpen={isBorrowDialogOpen}
+            onClose={() => setIsBorrowDialogOpen(false)}
+            onConfirm={handleBorrowConfirm}
+            selectedAssets={getSelectedBorrowAssets().filter((asset) => asset.select_native > 0)}
+            totalSupply={num(totalSupply)}
+            totalBorrowDebt={num(totalBorrowDebt)}
+          />
+        </div>
+      </main>
     </div>
   );
 }
