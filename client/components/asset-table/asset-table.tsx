@@ -221,7 +221,20 @@ export function AssetTable<TData extends Asset, TValue>({
               sortedRows.map((row) => (
                 <Collapsible key={row.id} asChild open={expandedRows[row.id]}>
                   <>
-                    <TableRow data-state={row.getIsSelected() && "selected"}>
+                    <TableRow 
+                      data-state={row.getIsSelected() && "selected"}
+                      className="cursor-pointer hover:bg-accent/5"
+                      onClick={(e) => {
+                        // Prevent row click when clicking checkbox
+                        if ((e.target as HTMLElement).closest('[role="checkbox"]')) {
+                          return;
+                        }
+                        setExpandedRows(prev => ({
+                          ...prev,
+                          [row.id]: !prev[row.id]
+                        }));
+                      }}
+                    >
                       {row.getVisibleCells().map((cell) => (
                         <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                       ))}
