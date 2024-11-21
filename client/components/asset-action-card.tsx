@@ -1,16 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { AssetTable } from './asset-table/asset-table';
-import { columns } from './asset-table/columns';
-import { borrowColumns } from './asset-table/borrow-columns';
-import { Asset } from '@/types/asset';
-import { RowSelectionState } from '@tanstack/react-table';
+import React, { useState, useEffect, useRef } from "react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { AssetTable } from "./asset-table/asset-table";
+import { columns } from "./asset-table/columns";
+import { borrowColumns } from "./asset-table/borrow-columns";
+import { Asset } from "@/types/asset";
+import { RowSelectionState } from "@tanstack/react-table";
 import { bn, m_bn, math, num } from "@/lib/math";
 import { getAssetPrice } from "@/types/asset";
-import { BigNumber } from 'mathjs';
+import { BigNumber } from "mathjs";
 
 interface AssetActionCardProps {
   supplyData: Asset[];
@@ -18,7 +18,7 @@ interface AssetActionCardProps {
   borrowRowSelection: RowSelectionState;
   onSupplyRowSelectionChange: (value: RowSelectionState) => void;
   onBorrowRowSelectionChange: (value: RowSelectionState) => void;
-  onAmountChange: (address: string, amount: number, type: 'supply' | 'borrow') => void;
+  onAmountChange: (address: string, amount: number, type: "supply" | "borrow") => void;
   showSupplyPreview: boolean;
   showBorrowPreview: boolean;
   hasSelectedSupplyAssets: boolean;
@@ -50,7 +50,7 @@ export function AssetActionCard({
 
   // Add ref to track latest data
   const latestBorrowData = useRef(borrowData);
-  
+
   useEffect(() => {
     latestBorrowData.current = borrowData;
   }, [borrowData]);
@@ -65,46 +65,41 @@ export function AssetActionCard({
         const updatedData = await Promise.all(
           supplyData.map(async (asset) => {
             const assetPrice = await getAssetPrice(asset.label);
-            
+
             if (math.smallerEq(totalBorrowDebt, 0)) {
               const maxBorrowUSD = m_bn(math.divide(totalSupply, 1.5));
               const available = num(m_bn(math.divide(maxBorrowUSD, assetPrice)));
-              
+
               return {
                 ...asset,
-                available
+                available,
               };
             }
 
-            const maxAdditionalDebtUSD = m_bn(
-              math.subtract(
-                m_bn(math.divide(totalSupply, 1.5)),
-                totalBorrowDebt
-              )
-            );
-            
+            const maxAdditionalDebtUSD = m_bn(math.subtract(m_bn(math.divide(totalSupply, 1.5)), totalBorrowDebt));
+
             const availableAmount = m_bn(math.divide(maxAdditionalDebtUSD, assetPrice));
             const available = num(math.larger(availableAmount, 0) ? availableAmount : bn(0));
-            
+
             return {
               ...asset,
-              available
+              available,
             };
-          })
+          }),
         );
 
-        console.log('Setting borrow data:', updatedData);
+        console.log("Setting borrow data:", updatedData);
         setBorrowData(updatedData);
-        console.log('Borrow data after set:', latestBorrowData.current);
+        console.log("Borrow data after set:", latestBorrowData.current);
       } catch (error) {
-        console.error('Error updating available amounts:', error);
+        console.error("Error updating available amounts:", error);
       }
     };
 
     updateAvailableBorrows();
   }, [supplyData, totalSupply, totalBorrowDebt, isBorrowMode]);
 
-  console.log('Rendering AssetActionCard with data:', isBorrowMode ? borrowData : supplyData);
+  // console.log('Rendering AssetActionCard with data:', isBorrowMode ? borrowData : supplyData);
 
   return (
     <Card>
@@ -112,22 +107,18 @@ export function AssetActionCard({
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle>{isBorrowMode ? 'Available Borrows' : 'Supply Collateral'}</CardTitle>
+              <CardTitle>{isBorrowMode ? "Available Borrows" : "Supply Collateral"}</CardTitle>
             </div>
             {((showSupplyPreview && hasSelectedSupplyAssets && !isBorrowMode) ||
               (showBorrowPreview && hasSelectedBorrowAssets && isBorrowMode)) && (
               <Button onClick={isBorrowMode ? onPreviewBorrow : onPreviewSupply}>
-                Preview {isBorrowMode ? 'Borrow' : 'Supply'}
+                Preview {isBorrowMode ? "Borrow" : "Supply"}
               </Button>
             )}
           </div>
           <div className="flex items-center space-x-2">
             <Label htmlFor="mode-toggle">Supply</Label>
-            <Switch
-              id="mode-toggle"
-              checked={isBorrowMode}
-              onCheckedChange={setIsBorrowMode}
-            />
+            <Switch id="mode-toggle" checked={isBorrowMode} onCheckedChange={setIsBorrowMode} />
             <Label htmlFor="mode-toggle">Borrow</Label>
           </div>
         </div>

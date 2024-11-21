@@ -315,18 +315,32 @@ export default function App() {
     return <LoadingSpinner />;
   }
 
+  //! Temporarily fixed to treat index as a resource address; should be an int
   const getSelectedSupplyAssets = () => {
     return Object.entries(supplyRowSelection)
       .filter(([_, selected]) => selected)
-      .map(([index]) => supplyData[parseInt(index)])
-      .filter((asset): asset is Asset => 
-        asset !== undefined && 
-        typeof asset.select_native === 'number'
-      );
+      .map(([index]) => {
+        const n = parseInt(index);
+        if (isNaN(n)) {
+          console.log(supplyData.filter((asset) => asset.address === index)[0]);
+          return supplyData.filter((asset) => asset.address === index)[0];
+        } else {
+          return supplyData[n];
+        }
+      });
   };
 
+  //! Temporarily fixed to treat index as a resource address; should be an int
   const getSelectedBorrowAssets = () => {
-    return Object.keys(borrowRowSelection).map((index) => supplyData[Number(index)]);
+    return Object.keys(borrowRowSelection).map((index) => {
+      const n = parseInt(index);
+      if (isNaN(n)) {
+        console.log(supplyData.filter((asset) => asset.address === index)[0]);
+        return supplyData.filter((asset) => asset.address === index)[0];
+      } else {
+        return supplyData[n];
+      }
+    });
   };
 
   const handleSupplyConfirm = async () => {
@@ -469,10 +483,13 @@ export default function App() {
   };
 
   const validateSelectedSupplyAssets = () => {
-    const selectedAssets = Object.keys(supplyRowSelection).filter((key) => supplyRowSelection[key]);
+    //! Temporarily changed to treat key as resource address instead of int
+    // const selectedAssets = Object.keys(supplyRowSelection).filter((key) => supplyRowSelection[key]);
+    const selectedAssets = getSelectedSupplyAssets();
 
     const hasInvalidAmount = selectedAssets.some((key) => {
-      const asset = supplyData[parseInt(key)];
+      // const asset = supplyData[parseInt(key)];
+      const asset = key;
       return !asset || asset.select_native <= 0;
     });
 
@@ -480,10 +497,13 @@ export default function App() {
   };
 
   const validateSelectedBorrowAssets = () => {
-    const selectedAssets = Object.keys(borrowRowSelection).filter((key) => borrowRowSelection[key]);
+    //! Temporarily changed to treat key as resource address instead of int
+    // const selectedAssets = Object.keys(borrowRowSelection).filter((key) => borrowRowSelection[key]);
+    const selectedAssets = getSelectedBorrowAssets();
 
     const hasInvalidAmount = selectedAssets.some((key) => {
-      const asset = supplyData[parseInt(key)];
+      // const asset = supplyData[parseInt(key)];
+      const asset = key;
       return !asset || asset.select_native <= 0;
     });
 

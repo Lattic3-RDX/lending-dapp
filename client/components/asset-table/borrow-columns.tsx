@@ -37,7 +37,7 @@ export const borrowColumns: ColumnDef<Asset>[] = [
         <span className="font-semibold">{row.getValue("label")}</span>
       </div>
     ),
-  }, 
+  },
   {
     accessorKey: "available",
     header: "Available",
@@ -45,18 +45,16 @@ export const borrowColumns: ColumnDef<Asset>[] = [
     cell: ({ row, table }) => {
       const isExpanded = row.getIsExpanded();
       if (isExpanded) return null;
-      
+
       const originalData = table.options.data;
-      const asset = originalData.find(a => a.address === row.original.address);
+      const asset = originalData.find((a) => a.address === row.original.address);
       const available = asset?.available;
-      
-      console.log('Rendering available for asset:', asset);
-      
+
+      console.log("Rendering available for asset:", asset);
+
       return (
         <div className="font-medium">
-          {available !== undefined && Number.isFinite(available) 
-            ? Number(available).toFixed(2) 
-            : "0.00"}
+          {available !== undefined && Number.isFinite(available) ? Number(available).toFixed(2) : "0.00"}
         </div>
       );
     },
@@ -69,11 +67,7 @@ export const borrowColumns: ColumnDef<Asset>[] = [
       const isExpanded = row.getIsExpanded();
       const isSelected = row.getIsSelected();
       if (isExpanded) return null;
-      return (
-        <div>
-          {isSelected && row.original.select_native > 0 ? row.original.select_native : "-"}
-        </div>
-      );
+      return <div>{isSelected && row.original.select_native > 0 ? row.original.select_native : "-"}</div>;
     },
   },
   {
@@ -83,9 +77,9 @@ export const borrowColumns: ColumnDef<Asset>[] = [
     cell: ({ row }) => {
       const isExpanded = row.getIsExpanded();
       if (isExpanded) return null;
-      const APR = getAssetAPR(row.getValue("label"), 'borrow');
+      const APR = getAssetAPR(row.getValue("label"), "borrow");
       return `${Number(APR).toFixed(1)}%`;
-    }
+    },
   },
   {
     id: "actions",
@@ -93,14 +87,10 @@ export const borrowColumns: ColumnDef<Asset>[] = [
     cell: ({ row }) => {
       const isExpanded = row.getIsExpanded();
       return (
-        <Button 
-          variant="ghost" 
-          size="sm"
-          onClick={() => row.toggleExpanded()}
-        >
+        <Button variant="ghost" size="sm" onClick={() => row.toggleExpanded()}>
           {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </Button>
       );
     },
-  }
-]; 
+  },
+];
