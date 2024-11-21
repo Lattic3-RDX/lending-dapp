@@ -14,6 +14,11 @@ export function findField(obj: any, name: string) {
   return obj.filter((field: any) => field.field_name === name)[0].value;
 }
 
+export function shortenAddress(address: string): string {
+  if (!address) return '';
+  return `${address.slice(0, 4)}...${address.slice(-6)}`;
+}
+
 /* ----------------- Constants ---------------- */
 // Util types
 type Reverse<T extends Record<PropertyKey, PropertyKey>> = {

@@ -4,6 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Asset, getAssetIcon, getAssetPrice } from "@/types/asset";
 import { TruncatedNumber } from "@/components/ui/truncated-number";
 import { num } from "@/lib/math";
+import { shortenAddress } from "@/lib/utils";
+import { Copy } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 interface AssetCollapsibleContentProps {
   asset: Asset;
@@ -16,6 +19,7 @@ export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm, mode
   const [tempAmount, setTempAmount] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [usdValue, setUsdValue] = useState(0);
+  const { toast } = useToast();
 
   const isUnavailable = mode === "borrow" 
     ? (!asset.available || asset.available <= 0)
@@ -69,12 +73,31 @@ export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm, mode
     validateAmount(maxAmount.toString());
   };
 
+  const handleCopyAddress = () => {
+    navigator.clipboard.writeText(asset.address);
+    toast({
+      description: "Address copied to clipboard",
+      duration: 2000,
+    });
+  };
+
   return (
     <div className={`space-y-4 ${isUnavailable ? "opacity-50 pointer-events-none" : ""}`}>
       <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <img src={getAssetIcon(asset.label)} alt={asset.label} className="w-8 h-8" />
-          <span className="text-lg font-semibold">{asset.label}</span>
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <img src={getAssetIcon(asset.label)} alt={asset.label} className="w-8 h-8 rounded-full" />
+            <span className="text-lg font-semibold">{asset.label}</span>
+          </div>
+          <span className="text-sm text-foreground ml-10 flex items-center gap-2">
+            {shortenAddress(asset.address)}
+            <button
+              onClick={handleCopyAddress}
+              className="hover:text-accent transition-colors"
+            >
+              <Copy className="h-3 w-3" />
+            </button>
+          </span>
         </div>
         <div className="flex flex-col space-y-3">
           <div className="relative">
@@ -114,7 +137,7 @@ export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm, mode
         <div className="space-y-3 py-2 border-t border-accent/10">
           <div className="flex justify-between text-base text-foreground">
             <span>{mode === "borrow" ? "Borrow APR" : "Supply APR"}</span>
-            <span className={mode === "borrow" ? "text-destructive" : "text-success"}>
+            <span>
               {mode === "borrow" ? "10.00" : Number(asset.APR).toFixed(1)}%
             </span>
           </div>
