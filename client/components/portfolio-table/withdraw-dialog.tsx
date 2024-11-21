@@ -62,7 +62,7 @@ export function WithdrawDialog({
   // Update health factor when amount changes
   const handleAmountChange = async (value: string) => {
     setTempAmount(value);
-    const amount = bn(value) || bn(0);
+    const amount = bn(value != "" ? value : 0) || bn(0);
 
     // Calculate new health factor
     const withdrawValue = math.multiply(amount, assetPrice);
