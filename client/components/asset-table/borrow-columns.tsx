@@ -12,15 +12,20 @@ export const borrowColumns: ColumnDef<Asset>[] = [
     id: "select",
     header: "Select assets",
     size: 100,
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(checked) => {
-          row.toggleSelected(!!checked);
-        }}
-        aria-label="Select row"
-      />
-    ),
+    cell: ({ row }) => {
+      const isUnavailable = !row.original.available || row.original.available <= 0;
+      return (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(checked) => {
+            row.toggleSelected(!!checked);
+          }}
+          aria-label="Select row"
+          disabled={isUnavailable}
+          className={isUnavailable ? "opacity-50" : ""}
+        />
+      );
+    },
     enableSorting: false,
     enableHiding: false,
   },
@@ -28,16 +33,19 @@ export const borrowColumns: ColumnDef<Asset>[] = [
     accessorKey: "label",
     header: "Asset",
     size: 200,
-    cell: ({ row }) => (
-      <div className="flex items-center gap-3">
-        <img
-          src={getAssetIcon(row.getValue("label"))}
-          alt={`${row.getValue("label")} icon`}
-          className="w-6 h-6 rounded-full"
-        />
-        <span className="font-semibold">{row.getValue("label")}</span>
-      </div>
-    ),
+    cell: ({ row }) => {
+      const isUnavailable = !row.original.available || row.original.available <= 0;
+      return (
+        <div className={`flex items-center gap-3 ${isUnavailable ? "opacity-50" : ""}`}>
+          <img
+            src={getAssetIcon(row.getValue("label"))}
+            alt={`${row.getValue("label")} icon`}
+            className="w-6 h-6 rounded-full"
+          />
+          <span className="font-semibold">{row.getValue("label")}</span>
+        </div>
+      );
+    },
   },
   {
     accessorKey: "available",

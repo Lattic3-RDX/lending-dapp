@@ -54,8 +54,8 @@ export function RepayDialog({ isOpen, onClose, onConfirm, asset, totalSupply, to
 
     // Calculate new health factor
     const withdrawValue = math.multiply(amount, assetPrice);
-    const newSupplyValue = math.subtract(totalSupply, withdrawValue);
-    const newHF = math.smallerEq(totalBorrowDebt, 0) ? bn(-1) : m_bn(math.divide(newSupplyValue, totalBorrowDebt));
+    const newDebtValue = math.subtract(totalBorrowDebt, withdrawValue);
+    const newHF = math.smallerEq(totalBorrowDebt, 0) ? bn(-1) : m_bn(math.divide(totalSupply, newDebtValue));
     setNewHealthFactor(newHF);
 
     if (!math.equal(newHF, -1) && math.smaller(newHF, bn(1))) {
@@ -164,7 +164,7 @@ export function RepayDialog({ isOpen, onClose, onConfirm, asset, totalSupply, to
                   className={
                     num(totalBorrowDebt) <= 0
                       ? "text-green-500"
-                      : num(totalSupply) / num(totalBorrowDebt) < 1.5
+                      : num(totalBorrowDebt) / num(totalSupply) < 1.5
                         ? "text-red-500"
                         : "text-green-500"
                   }
