@@ -89,8 +89,8 @@ export function WithdrawDialog({
       setTransactionState("awaiting_signature");
       try {
         // Add 0.1% to amount
-        const amountWithSlippage = m_bn(math.multiply(amount, 1.001));
-        await onConfirm(amountWithSlippage);
+        // const amountWithSlippage = m_bn(math.multiply(amount, 1.001));
+        await onConfirm(amount);
         onClose();
       } catch (error) {
         setTransactionState("error");

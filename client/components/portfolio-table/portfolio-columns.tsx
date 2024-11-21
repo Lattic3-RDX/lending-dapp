@@ -62,6 +62,7 @@ function ActionCell({
 
       console.log("row", row.original.address);
       console.log("Native: ", amount.toString());
+
       const supplyRecord: Record<AssetName, BigNumber> = {
         [row.original.label]: amount,
       } as Record<AssetName, BigNumber>;
@@ -83,7 +84,7 @@ function ActionCell({
         position_badge_local_id: getNFTBalance.items[0],
         asset: {
           address: row.original.pool_unit_address ?? "",
-          amount: math.round(supplyUnits, 16).toString(),
+          amount: supplyUnits.toString(),
         },
       });
 
@@ -170,7 +171,7 @@ function ActionCell({
         position_badge_local_id: getNFTBalance.items[0],
         asset: {
           address: row.original.address,
-          amount: math.round(amount, 16).toString(),
+          amount: amount.toString(),
         },
       });
 
@@ -180,7 +181,7 @@ function ActionCell({
         transactionManifest: manifest,
         version: 1,
       });
-      
+
       if (result?.isOk()) {
         toast({
           title: "Repayment Successful",

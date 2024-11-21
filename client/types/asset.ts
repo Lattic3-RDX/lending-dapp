@@ -144,10 +144,10 @@ export const getAssetPrice = async (asset: AssetName): Promise<BigNumber> => {
 
 export const supplyUnitsToAmount = async (asset: Record<AssetName, BigNumber>): Promise<BigNumber> => {
   const address = getAssetAddress(Object.keys(asset)[0] as AssetName);
-  const amount = Object.values(asset)[0];
+  const supplyUnits = Object.values(asset)[0];
 
   console.log("Address: ", address);
-  console.log("Supply unit amount: ", amount.toString());
+  console.log("Supply unit amount: ", supplyUnits.toString());
 
   const cluster_states_res = await fetch("api/assets/clusters", { method: "GET" });
 
@@ -164,7 +164,10 @@ export const supplyUnitsToAmount = async (asset: Record<AssetName, BigNumber>): 
     return bn(-1);
   }
 
-  return m_bn(math.divide(amount, bn(cluster.supply_ratio)));
+  const amount = math.round(m_bn(math.divide(supplyUnits, bn(cluster.supply_ratio))), 17);
+  console.log("Amount: ", amount.toString());
+
+  return supplyUnits;
 };
 
 export const ammountToSupplyUnits = async (asset: Record<AssetName, BigNumber>): Promise<BigNumber> => {
@@ -189,15 +192,18 @@ export const ammountToSupplyUnits = async (asset: Record<AssetName, BigNumber>):
     return bn(-1);
   }
 
-  return m_bn(math.multiply(amount, bn(cluster.supply_ratio)));
+  const units = math.round(m_bn(math.multiply(amount, bn(cluster.supply_ratio))), 17);
+  console.log("Supply units: ", units.toString());
+
+  return units;
 };
 
 export const borrowUnitsToAmount = async (asset: Record<AssetName, BigNumber>): Promise<BigNumber> => {
   const address = getAssetAddress(Object.keys(asset)[0] as AssetName);
-  const amount = Object.values(asset)[0];
+  const borrowUnits = Object.values(asset)[0];
 
   console.log("Address: ", address.toString());
-  console.log("Borrow unit amount: ", amount.toString());
+  console.log("Borrow unit amount: ", borrowUnits.toString());
 
   const cluster_states_res = await fetch("api/assets/clusters", { method: "GET" });
 
@@ -215,5 +221,8 @@ export const borrowUnitsToAmount = async (asset: Record<AssetName, BigNumber>): 
     return bn(-1);
   }
 
-  return m_bn(math.divide(amount, bn(cluster.debt_ratio)));
+  const amount = math.round(m_bn(math.multiply(borrowUnits, bn(cluster.debt_ratio))), 17);
+  console.log("Amount: ", amount.toString());
+
+  return amount;
 };
