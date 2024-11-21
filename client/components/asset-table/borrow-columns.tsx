@@ -5,6 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { bn, m_bn, math } from "@/lib/math";
+import { TruncatedNumber } from "../ui/truncated-number";
 
 export const borrowColumns: ColumnDef<Asset>[] = [
   {
@@ -53,9 +54,9 @@ export const borrowColumns: ColumnDef<Asset>[] = [
       console.log("Rendering available for asset:", asset);
 
       return (
-        <div className="font-medium">
-          {available !== undefined && Number.isFinite(available) ? Number(available).toFixed(2) : "0.00"}
-        </div>
+        <span className={`font-semibold ${Number(available) <= 0 ? "opacity-50" : ""}`}>
+          <TruncatedNumber value={Number(available)} />
+        </span>
       );
     },
   },

@@ -3,7 +3,7 @@ import { gatewayApi } from "@/lib/radix";
 import { FungibleResourcesCollectionAllOfToJSON } from "@radixdlt/babylon-gateway-api-sdk";
 import { BigNumber } from "mathjs";
 
-export type AssetName = "XRD" | "xwBTC" | "FLOOP" | "xUSDT" | "EARLY" | "HUG" | "DFP2" | "xETH" | "ASTRL" | "CAVIAR";
+export type AssetName = "XRD" | "xUSDT" | "HUG";
 
 export interface Asset {
   address: string;
@@ -34,22 +34,6 @@ export const assetConfigs: Record<AssetName, AssetConfig> = {
     supply_APR: 5,
     borrow_APR: 10,
   },
-  xwBTC: {
-    address: "resource_xwbtc",
-    label: "xwBTC",
-    icon: "https://assets.instabridge.io/tokens/icons/xwBTC.png",
-    pool_unit_address: "resource_123",
-    supply_APR: 5,
-    borrow_APR: 10,
-  },
-  FLOOP: {
-    address: "resource_floop",
-    label: "FLOOP",
-    icon: "https://assets.caviarnine.com/tokens/floop_babylon.png",
-    pool_unit_address: "resource_123",
-    supply_APR: 5,
-    borrow_APR: 10,
-  },
   xUSDT: {
     address: "resource_tdx_2_1t57e50rm28cyqwn26jn336qyhu8nkt8cknacq8rnsn5kul2l3zvjut",
     label: "xUSDT",
@@ -58,51 +42,11 @@ export const assetConfigs: Record<AssetName, AssetConfig> = {
     supply_APR: 5,
     borrow_APR: 10,
   },
-  EARLY: {
-    address: "resource_early",
-    label: "EARLY",
-    icon: "https://arweave.net/uXCQ9YVGkEijn7PS2wdkXqwkU_YrdgpNtQPH2Y1-Qcs",
-    pool_unit_address: "resource_123",
-    supply_APR: 5,
-    borrow_APR: 10,
-  },
   HUG: {
     address: "resource_tdx_2_1tkuj2rqsa63f8ygkzezgt27trj50srht5e666jaz28j5ss8fasg5kl",
     label: "HUG",
     icon: "https://tokens.defiplaza.net/cdn-cgi/imagedelivery/QTzOBjs3mHq3EhZxDosDSw/f5cdcf72-c7a2-4032-1252-1be08edb0700/token",
     pool_unit_address: "resource_tdx_2_1tkr9xtlqfpk4zdnpweg22nykavn59xr2s9p6p63082mhlvms5udgs7",
-    supply_APR: 5,
-    borrow_APR: 10,
-  },
-  DFP2: {
-    address: "resource_dfp2",
-    label: "DFP2",
-    icon: "https://radix.defiplaza.net/assets/img/babylon/defiplaza-icon.png",
-    pool_unit_address: "resource_123",
-    supply_APR: 5,
-    borrow_APR: 10,
-  },
-  xETH: {
-    address: "resource_xeth",
-    label: "xETH",
-    icon: "https://assets.instabridge.io/tokens/icons/xETH.png",
-    pool_unit_address: "resource_123",
-    supply_APR: 5,
-    borrow_APR: 10,
-  },
-  ASTRL: {
-    address: "resource_astrl",
-    label: "ASTRL",
-    icon: "https://astrolescent.com/assets/img/tokens/astrl.png",
-    pool_unit_address: "resource_123",
-    supply_APR: 5,
-    borrow_APR: 10,
-  },
-  CAVIAR: {
-    address: "resource_caviar",
-    label: "CAVIAR",
-    icon: "https://assets.caviarnine.com/tokens/caviar_babylon.png",
-    pool_unit_address: "resource_123",
     supply_APR: 5,
     borrow_APR: 10,
   },
