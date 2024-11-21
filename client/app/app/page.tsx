@@ -36,7 +36,6 @@ import {
 import { RowSelectionState, Updater } from "@tanstack/react-table";
 import { BigNumber } from "mathjs";
 import React, { useEffect, useState } from "react";
-``;
 
 interface NFTData {
   data: {
@@ -317,7 +316,13 @@ export default function App() {
   }
 
   const getSelectedSupplyAssets = () => {
-    return Object.keys(supplyRowSelection).map((index) => supplyData[Number(index)]);
+    return Object.entries(supplyRowSelection)
+      .filter(([_, selected]) => selected)
+      .map(([index]) => supplyData[parseInt(index)])
+      .filter((asset): asset is Asset => 
+        asset !== undefined && 
+        typeof asset.select_native === 'number'
+      );
   };
 
   const getSelectedBorrowAssets = () => {
