@@ -6,12 +6,13 @@ import { ArrowRight, X } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ColumnDef, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { getAssetIcon, AssetName, getAssetPrice } from "@/types/asset";
-import { num } from "@/lib/math";
+import { num, bn, m_bn, round_dec, math } from "@/lib/math";
+import { BigNumber } from "mathjs";
 
 interface Asset {
   label: string;
   address: string;
-  select_native: number;
+  select_native: BigNumber;
   APR: number;
 }
 
@@ -20,8 +21,8 @@ interface SupplyDialogProps {
   onClose: () => void;
   onConfirm: () => void;
   selectedAssets: Asset[];
-  totalSupply: number;
-  totalBorrowDebt: number;
+  totalSupply: BigNumber;
+  totalBorrowDebt: BigNumber;
 }
 
 const columns: ColumnDef<Asset>[] = [
@@ -75,7 +76,7 @@ const SupplyDialog: React.FC<SupplyDialogProps> = ({
       const total = await selectedAssets.reduce(async (sumPromise, asset) => {
         const sum = await sumPromise;
         const price = num(await getAssetPrice(asset.label as AssetName));
-        return sum + asset.select_native * price;
+        return sum + asset.select_native.toNumber() * price;
       }, Promise.resolve(0));
       setTotalUsdValue(total);
     };
@@ -83,8 +84,10 @@ const SupplyDialog: React.FC<SupplyDialogProps> = ({
   }, [selectedAssets]);
 
   // Calculate current and new health factors
-  const currentHealthFactor = totalBorrowDebt <= 0 ? -1 : totalSupply / totalBorrowDebt;
-  const newHealthFactor = totalBorrowDebt <= 0 ? -1 : (totalSupply + totalUsdValue) / totalBorrowDebt;
+  const currentHealthFactor =
+    totalBorrowDebt.toNumber() <= 0 ? -1 : totalSupply.toNumber() / totalBorrowDebt.toNumber();
+  const newHealthFactor =
+    totalBorrowDebt.toNumber() <= 0 ? -1 : (totalSupply.toNumber() + totalUsdValue) / totalBorrowDebt.toNumber();
 
   const table = useReactTable({
     data: selectedAssets,

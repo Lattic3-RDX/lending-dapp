@@ -268,7 +268,8 @@ export const createPortfolioColumns = (
       const firstRow = table.getRowModel().rows[0];
       return firstRow?.original.type === "supply" ? "Supplied" : "Debt";
     },
-    cell: ({ row }) => {
+    cell: ({ row }: { row: any }) => {
+      console.log("Row select native:", row.getValue("select_native").toString());
       return Number(row.getValue("select_native")).toFixed(2);
     },
   },

@@ -1,22 +1,28 @@
 interface ManifestArgs {
-  component: string,
+  component: string;
 
-  account: string,
-  position_badge_address: string,  // resource_...
-  position_badge_local_id: string, // e.g. #1#
+  account: string;
+  position_badge_address: string; // resource_...
+  position_badge_local_id: string; // e.g. #1#
 
-  assets: Asset[], // tracked assets
+  assets: Asset[]; // tracked assets
 }
 
 interface Asset {
-  address: string,
-  amount: number,
+  address: string;
+  amount: string;
 }
 
-export default function position_supply_rtm({ component, account, position_badge_address, position_badge_local_id, assets }: ManifestArgs) {
+export default function position_supply_rtm({
+  component,
+  account,
+  position_badge_address,
+  position_badge_local_id,
+  assets,
+}: ManifestArgs) {
   // Bucket fetch transaction manifests
   let asset_buckets = "";
-  let bucket_vec = ""
+  let bucket_vec = "";
 
   assets.forEach((asset) => {
     // Fetch buckets for each asset
@@ -32,10 +38,10 @@ TAKE_FROM_WORKTOP
     Decimal("${asset.amount}")
     Bucket("bucket_${asset.address}");
 
-    `
+    `;
     // Append each bucket to the vec
-    bucket_vec += `Bucket("bucket_${asset.address}"), `
-  })
+    bucket_vec += `Bucket("bucket_${asset.address}"), `;
+  });
 
   const rtm = `
 CALL_METHOD
@@ -61,7 +67,7 @@ CALL_METHOD
   Address("${account}")
   "deposit_batch"
   Expression("ENTIRE_WORKTOP");
-`
+`;
 
-  return rtm
+  return rtm;
 }

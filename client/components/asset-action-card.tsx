@@ -18,7 +18,7 @@ interface AssetActionCardProps {
   borrowRowSelection: RowSelectionState;
   onSupplyRowSelectionChange: (value: RowSelectionState) => void;
   onBorrowRowSelectionChange: (value: RowSelectionState) => void;
-  onAmountChange: (address: string, amount: number, type: "supply" | "borrow") => void;
+  onAmountChange: (address: string, amount: BigNumber, type: "supply" | "borrow") => void;
   showSupplyPreview: boolean;
   showBorrowPreview: boolean;
   hasSelectedSupplyAssets: boolean;
@@ -68,7 +68,7 @@ export function AssetActionCard({
 
             if (math.smallerEq(totalBorrowDebt, 0)) {
               const maxBorrowUSD = m_bn(math.divide(totalSupply, 1.5));
-              const available = num(m_bn(math.divide(maxBorrowUSD, assetPrice)));
+              const available = m_bn(math.divide(maxBorrowUSD, assetPrice));
 
               return {
                 ...asset,
@@ -79,7 +79,7 @@ export function AssetActionCard({
             const maxAdditionalDebtUSD = m_bn(math.subtract(m_bn(math.divide(totalSupply, 1.5)), totalBorrowDebt));
 
             const availableAmount = m_bn(math.divide(maxAdditionalDebtUSD, assetPrice));
-            const available = num(math.larger(availableAmount, 0) ? availableAmount : bn(0));
+            const available = math.larger(availableAmount, 0) ? availableAmount : bn(0);
 
             return {
               ...asset,

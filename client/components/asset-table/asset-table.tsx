@@ -1,30 +1,32 @@
 "use client";
 
-import * as React from "react";
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Asset } from "@/types/asset";
 import {
   ColumnDef,
+  ColumnFiltersState,
   flexRender,
   getCoreRowModel,
-  useReactTable,
-  ColumnFiltersState,
   getFilteredRowModel,
   RowSelectionState,
-  Updater,
   TableState,
+  Updater,
+  useReactTable,
 } from "@tanstack/react-table";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
-import { AssetCollapsibleContent } from "./collapsible-content";
-import { Asset } from "@/types/asset";
 import { Search } from "lucide-react";
+import { BigNumber } from "mathjs";
+import * as React from "react";
+import { AssetCollapsibleContent } from "./collapsible-content";
+import { bn, m_bn, math, num } from "@/lib/math";
 
 interface AssetTableProps<TData extends Asset, TValue> {
   columns: ColumnDef<TData>[];
   data: TData[];
   rowSelection: RowSelectionState;
   onRowSelectionChange: (value: RowSelectionState) => void;
-  onAmountChange: (address: string, amount: number, mode: "supply" | "borrow") => void;
+  onAmountChange: (address: string, amount: BigNumber, mode: "supply" | "borrow") => void;
   mode: "supply" | "borrow";
 }
 
@@ -46,14 +48,14 @@ export function AssetTable<TData extends Asset, TValue>({
   const [expandedRows, setExpandedRows] = React.useState<Record<string, boolean>>({});
   const [selectionOrder, setSelectionOrder] = React.useState<string[]>([]);
 
-  const handleAmountChange = (address: string, amount: number) => {
+  const handleAmountChange = (address: string, amount: BigNumber) => {
     setTableData((current) =>
       current.map((row) => (row.address === address ? { ...row, select_native: amount } : row)),
     );
     onAmountChange(address, amount, mode);
   };
 
-  const handleConfirm = (asset: Asset, amount: number) => {
+  const handleConfirm = (asset: Asset, amount: BigNumber) => {
     setExpandedRows({});
   };
 
@@ -67,9 +69,9 @@ export function AssetTable<TData extends Asset, TValue>({
         const rowIndex = table.getRowModel().rows.findIndex((r) => r.original.address === row.address);
         const isSelected = newSelection[rowIndex];
         if (!isSelected) {
-          onAmountChange(row.address, 0, mode); // Notify parent of amount change
+          onAmountChange(row.address, bn(0), mode); // Notify parent of amount change
         }
-        return isSelected ? row : { ...row, select_native: 0 };
+        return isSelected ? row : { ...row, select_native: bn(0) };
       }),
     );
 
@@ -221,7 +223,7 @@ export function AssetTable<TData extends Asset, TValue>({
               sortedRows.map((row) => (
                 <Collapsible key={row.id} asChild open={expandedRows[row.id]}>
                   <>
-                    <TableRow 
+                    <TableRow
                       data-state={row.getIsSelected() && "selected"}
                       className="cursor-pointer hover:bg-accent/5"
                       onClick={(e) => {
@@ -229,9 +231,9 @@ export function AssetTable<TData extends Asset, TValue>({
                         if ((e.target as HTMLElement).closest('[role="checkbox"]')) {
                           return;
                         }
-                        setExpandedRows(prev => ({
+                        setExpandedRows((prev) => ({
                           ...prev,
-                          [row.id]: !prev[row.id]
+                          [row.id]: !prev[row.id],
                         }));
                       }}
                     >

@@ -5,12 +5,13 @@ import { ArrowRight } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ColumnDef, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { getAssetIcon, AssetName, getAssetAPR, getAssetPrice } from "@/types/asset";
-import { num } from "@/lib/math";
+import { num, bn, m_bn, round_dec, math } from "@/lib/math";
+import { BigNumber } from "mathjs";
 
 interface Asset {
   label: string;
   address: string;
-  select_native: number;
+  select_native: BigNumber;
   APR: number;
 }
 
@@ -19,8 +20,8 @@ interface BorrowDialogProps {
   onClose: () => void;
   onConfirm: () => void;
   selectedAssets: Asset[];
-  totalSupply: number;
-  totalBorrowDebt: number;
+  totalSupply: BigNumber;
+  totalBorrowDebt: BigNumber;
 }
 
 const columns: ColumnDef<Asset>[] = [
@@ -69,7 +70,7 @@ const BorrowDialog: React.FC<BorrowDialogProps> = ({
   const [isLoading, setIsLoading] = useState(false);
 
   const assetsToBorrow = React.useMemo(
-    () => selectedAssets.filter((asset) => asset.select_native > 0),
+    () => selectedAssets.filter((asset) => asset.select_native > bn(0)),
     [selectedAssets],
   );
 
@@ -80,15 +81,16 @@ const BorrowDialog: React.FC<BorrowDialogProps> = ({
       const total = await assetsToBorrow.reduce(async (sumPromise, asset) => {
         const sum = await sumPromise;
         const price = num(await getAssetPrice(asset.label as AssetName));
-        return sum + asset.select_native * price;
+        return sum + asset.select_native.toNumber() * price;
       }, Promise.resolve(0));
       setTotalUsdValue(total);
     };
     calculateTotal();
   }, [assetsToBorrow]);
 
-  const currentHealthFactor = totalBorrowDebt <= 0 ? -1 : totalSupply / totalBorrowDebt;
-  const newHealthFactor = totalSupply / (totalBorrowDebt + totalUsdValue);
+  const currentHealthFactor =
+    totalBorrowDebt.toNumber() <= 0 ? -1 : totalSupply.toNumber() / totalBorrowDebt.toNumber();
+  const newHealthFactor = totalSupply.toNumber() / (totalBorrowDebt.toNumber() + totalUsdValue);
 
   const table = useReactTable({
     data: assetsToBorrow,

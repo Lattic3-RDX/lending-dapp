@@ -11,4 +11,6 @@ const m_bn = (n: MathType): BigNumber => math.bignumber(n.toString());
 
 const num = (n: number | string | BigNumber): number => math.number(n);
 
-export { bn, m_bn, math, num };
+const round_dec = (n: BigNumber): BigNumber => math.round(n, 17);
+
+export { bn, m_bn, math, num, round_dec };

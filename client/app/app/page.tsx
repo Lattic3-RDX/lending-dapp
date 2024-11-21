@@ -20,7 +20,7 @@ import config from "@/lib/config.json";
 import open_position_rtm from "@/lib/manifests/open_position";
 import position_borrow_rtm from "@/lib/manifests/position_borrow";
 import position_supply_rtm from "@/lib/manifests/position_supply";
-import { bn, m_bn, math, num } from "@/lib/math";
+import { bn, m_bn, math, num, round_dec } from "@/lib/math";
 import { gatewayApi, rdt } from "@/lib/radix";
 import {
   Asset,
@@ -65,9 +65,9 @@ export default function App() {
     Object.entries(getAssetAddrRecord()).map(([label, address]) => ({
       address,
       label: label as AssetName,
-      wallet_balance: -1,
-      available: 0,
-      select_native: 0,
+      wallet_balance: bn(-1),
+      available: bn(0),
+      select_native: bn(0),
       APR: getAssetAPR(label as AssetName, "supply"),
       pool_unit_address: "",
     })),
@@ -99,7 +99,7 @@ export default function App() {
     await Promise.all(
       assets.map(async (asset) => {
         const price = num(await getAssetPrice(asset.label as AssetName));
-        const value = asset.select_native * price;
+        const value = num(asset.select_native) * price;
         totalValue += value;
         weightedAPR += value * getAssetAPR(asset.label, type);
       }),
@@ -202,8 +202,8 @@ export default function App() {
           return {
             address: suppliedAsset.address,
             label: label as AssetName,
-            wallet_balance: num(await getWalletBalance(label as AssetName, accounts[0].address)),
-            select_native: num(supplyUnits),
+            wallet_balance: await getWalletBalance(label as AssetName, accounts[0].address),
+            select_native: supplyUnits,
             APR: getAssetAPR(label as AssetName),
             pool_unit_address: assetConfigs[label as AssetName].pool_unit_address,
             type: "supply",
@@ -227,15 +227,15 @@ export default function App() {
             [assetName]: borrowedAsset.borrowed_amount,
           } as Record<AssetName, BigNumber>;
 
-          const debtUnits = await borrowUnitsToAmount(unitRecord);
+          const value = await borrowUnitsToAmount(unitRecord);
           const price = await getAssetPrice(assetName);
-          totalDebtValue = m_bn(math.add(totalDebtValue, m_bn(math.multiply(debtUnits, price))));
+          totalDebtValue = m_bn(math.add(totalDebtValue, math.multiply(value, price)));
 
           return {
             address: borrowedAsset.address,
             label: label as AssetName,
-            wallet_balance: num(await getWalletBalance(label as AssetName, accounts[0].address)),
-            select_native: num(amount),
+            wallet_balance: await getWalletBalance(label as AssetName, accounts[0].address),
+            select_native: amount,
             APR: getAssetAPR(label as AssetName),
             pool_unit_address: assetConfigs[label as AssetName].pool_unit_address,
             type: "borrow",
@@ -259,7 +259,7 @@ export default function App() {
       const netAPRValue: number =
         math.larger(totalSupplyValue, 0) || math.larger(totalDebtValue, 0)
           ? (calculatedSupplyAPR * num(totalSupplyValue) - calculatedBorrowAPR * num(totalDebtValue)) /
-          (num(totalSupplyValue) > 0 ? num(totalSupplyValue) : num(totalDebtValue))
+            (num(totalSupplyValue) > 0 ? num(totalSupplyValue) : num(totalDebtValue))
           : 0;
 
       console.log("Supply APR: ", calculatedSupplyAPR);
@@ -302,7 +302,7 @@ export default function App() {
       const updatedData = await Promise.all(
         supplyData.map(async (asset) => ({
           ...asset,
-          wallet_balance: num(await getWalletBalance(asset.label as AssetName, accounts[0].address)),
+          wallet_balance: await getWalletBalance(asset.label as AssetName, accounts[0].address),
         })),
       );
       setSupplyData(updatedData);
@@ -357,7 +357,7 @@ export default function App() {
       const selectedAssets = getSelectedSupplyAssets();
       const assetsToSupply = selectedAssets.map((asset) => ({
         address: asset.address,
-        amount: asset.select_native,
+        amount: round_dec(asset.select_native).toString(),
       }));
 
       // Check if user has an existing position
@@ -440,7 +440,7 @@ export default function App() {
       const selectedAssets = getSelectedBorrowAssets();
       const assetsToBorrow = selectedAssets.map((asset) => ({
         address: asset.address,
-        amount: asset.select_native,
+        amount: round_dec(asset.select_native).toString(),
       }));
 
       // Get NFT ID from account state
@@ -491,7 +491,6 @@ export default function App() {
           description: message,
         });
       }
-
     } catch (error) {
       console.error("Borrow error:", error);
       toast({
@@ -513,7 +512,7 @@ export default function App() {
     const hasInvalidAmount = selectedAssets.some((key) => {
       // const asset = supplyData[parseInt(key)];
       const asset = key;
-      return !asset || asset.select_native <= 0;
+      return !asset || math.smallerEq(asset.select_native, 0);
     });
 
     return !hasInvalidAmount;
@@ -527,7 +526,7 @@ export default function App() {
     const hasInvalidAmount = selectedAssets.some((key) => {
       // const asset = supplyData[parseInt(key)];
       const asset = key;
-      return !asset || asset.select_native <= 0;
+      return !asset || math.smallerEq(asset.select_native, 0);
     });
 
     return !hasInvalidAmount;
@@ -545,13 +544,13 @@ export default function App() {
     setIsPreviewDialogOpen(true);
   };
 
-  const handleAmountChange = (address: string, amount: number, type: "supply" | "borrow") => {
+  const handleAmountChange = (address: string, amount: BigNumber, type: "supply" | "borrow") => {
     setSupplyData((current) =>
       current.map((row) => (row.address === address ? { ...row, select_native: amount } : row)),
     );
 
     // Show preview button when amount is set
-    if (amount > 0) {
+    if (math.largerEq(amount, 0)) {
       if (type === "supply") {
         setShowSupplyPreview(true);
       } else {
@@ -606,7 +605,9 @@ export default function App() {
                   <div className="flex justify-end">
                     <div className="grid grid-cols-[auto,1fr] gap-x-6 items-center min-h-[72px]">
                       <CardDescription className="text-left text-foreground">Total Supply:</CardDescription>
-                      <CardDescription className="text-right text-foreground">${totalSupply.toFixed(2)}</CardDescription>
+                      <CardDescription className="text-right text-foreground">
+                        ${totalSupply.toFixed(2)}
+                      </CardDescription>
                       <CardDescription className="text-left text-foreground">Total APR:</CardDescription>
                       <CardDescription className="text-right text-foreground">
                         {totalSupplyAPR.toFixed(1)}%
@@ -673,18 +674,18 @@ export default function App() {
             isOpen={isPreviewDialogOpen}
             onClose={() => setIsPreviewDialogOpen(false)}
             onConfirm={handleSupplyConfirm}
-            selectedAssets={getSelectedSupplyAssets().filter((asset) => asset.select_native > 0)}
-            totalSupply={num(totalSupply)}
-            totalBorrowDebt={num(totalBorrowDebt)}
+            selectedAssets={getSelectedSupplyAssets().filter((asset) => math.larger(asset.select_native, 0))}
+            totalSupply={totalSupply}
+            totalBorrowDebt={totalBorrowDebt}
           />
 
           <BorrowDialog
             isOpen={isBorrowDialogOpen}
             onClose={() => setIsBorrowDialogOpen(false)}
             onConfirm={handleBorrowConfirm}
-            selectedAssets={getSelectedBorrowAssets().filter((asset) => asset.select_native > 0)}
-            totalSupply={num(totalSupply)}
-            totalBorrowDebt={num(totalBorrowDebt)}
+            selectedAssets={getSelectedBorrowAssets().filter((asset) => math.larger(asset.select_native, 0))}
+            totalSupply={totalSupply}
+            totalBorrowDebt={totalBorrowDebt}
           />
         </div>
       </main>

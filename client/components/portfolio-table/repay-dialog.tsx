@@ -30,17 +30,17 @@ export function RepayDialog({ isOpen, onClose, onConfirm, asset, totalSupply, to
   );
 
   const validateAmount = (value: string) => {
-    const amount = parseFloat(value);
-    if (!amount || amount <= 0) {
+    const amount = bn(value != "" ? value : 0);
+    if (!amount || math.smallerEq(amount, 0)) {
       setError("Amount must be greater than 0");
+      return false;
+    }
+    if (amount > asset.select_native) {
+      setError("Amount exceeds supplied balance");
       return false;
     }
     if (amount > asset.wallet_balance) {
       setError("Amount exceeds wallet balance");
-      return false;
-    }
-    if (amount > asset.select_native) {
-      setError("Amount exceeds borrowed amount");
       return false;
     }
     setError(null);
@@ -53,9 +53,9 @@ export function RepayDialog({ isOpen, onClose, onConfirm, asset, totalSupply, to
     const amount = bn(value != "" ? value : 0) || bn(0);
 
     // Calculate new health factor
-    const withdrawValue = math.multiply(amount, assetPrice);
-    const newDebtValue = math.subtract(totalBorrowDebt, withdrawValue);
-    const newHF = math.smallerEq(totalBorrowDebt, 0) ? bn(-1) : m_bn(math.divide(totalSupply, newDebtValue));
+    const repayValue = math.multiply(amount, assetPrice);
+    const newDebtValue = math.subtract(totalBorrowDebt, repayValue);
+    const newHF = math.smallerEq(newDebtValue, 0) ? bn(-1) : m_bn(math.divide(totalSupply, newDebtValue));
     setNewHealthFactor(newHF);
 
     if (!math.equal(newHF, -1) && math.smaller(newHF, bn(1))) {
@@ -83,7 +83,7 @@ export function RepayDialog({ isOpen, onClose, onConfirm, asset, totalSupply, to
   };
 
   const handleMaxClick = () => {
-    const maxAmount = Math.min(asset.select_native, asset.wallet_balance);
+    const maxAmount = math.min(asset.select_native, asset.wallet_balance);
     setTempAmount(maxAmount.toString());
     handleAmountChange(maxAmount.toString());
   };
@@ -94,8 +94,8 @@ export function RepayDialog({ isOpen, onClose, onConfirm, asset, totalSupply, to
       setTransactionState("awaiting_signature");
       try {
         // Add 0.1% to amount
-        const amountWithSlippage = m_bn(math.multiply(amount, 1.001));
-        await onConfirm(amountWithSlippage);
+        // const amountWithSlippage = m_bn(marepath.multiply(amount, 1.001));
+        await onConfirm(amount);
         onClose();
       } catch (error) {
         setTransactionState("error");
@@ -148,7 +148,7 @@ export function RepayDialog({ isOpen, onClose, onConfirm, asset, totalSupply, to
               <div className="flex justify-between text-sm text-foreground px-1">
                 <span>≈ ${tempAmount ? <TruncatedNumber value={Number(tempAmount) * num(assetPrice)} /> : "0.00"}</span>
                 <span>
-                  Current debt: <TruncatedNumber value={asset.select_native} />
+                  Current debt: <TruncatedNumber value={asset.select_native.toNumber()} />
                 </span>
               </div>
 
@@ -169,8 +169,8 @@ export function RepayDialog({ isOpen, onClose, onConfirm, asset, totalSupply, to
                         : "text-green-500"
                   }
                 >
-                  {num(totalBorrowDebt) <= 0 || num(totalSupply) / num(totalBorrowDebt) === Infinity 
-                    ? "∞" 
+                  {num(totalBorrowDebt) <= 0 || num(totalSupply) / num(totalBorrowDebt) === Infinity
+                    ? "∞"
                     : (num(totalSupply) / num(totalBorrowDebt)).toFixed(2)}
                 </span>
                 <ArrowRight className="w-4 h-4" />
@@ -183,9 +183,7 @@ export function RepayDialog({ isOpen, onClose, onConfirm, asset, totalSupply, to
                         : "text-green-500"
                   }
                 >
-                  {num(newHealthFactor) === -1 || num(newHealthFactor) === Infinity
-                    ? "∞" 
-                    : newHealthFactor.toFixed(2)}
+                  {num(newHealthFactor) === -1 || num(newHealthFactor) === Infinity ? "∞" : newHealthFactor.toFixed(2)}
                 </span>
               </div>
             </div>

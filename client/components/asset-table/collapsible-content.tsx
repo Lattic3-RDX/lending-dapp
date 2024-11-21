@@ -1,63 +1,66 @@
-import React, { useState, useMemo, useEffect } from "react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Asset, getAssetIcon, getAssetPrice } from "@/types/asset";
+import { Input } from "@/components/ui/input";
 import { TruncatedNumber } from "@/components/ui/truncated-number";
-import { num } from "@/lib/math";
-import { shortenAddress } from "@/lib/utils";
-import { Copy } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { bn, m_bn, math, num } from "@/lib/math";
+import { shortenAddress } from "@/lib/utils";
+import { Asset, getAssetIcon, getAssetPrice } from "@/types/asset";
+import { Copy } from "lucide-react";
+import { BigNumber } from "mathjs";
+import React, { useEffect, useMemo, useState } from "react";
 
 interface AssetCollapsibleContentProps {
   asset: Asset;
-  onAmountChange: (amount: number) => void;
-  onConfirm: (amount: number) => void;
+  onAmountChange: (amount: BigNumber) => void;
+  onConfirm: (amount: BigNumber) => void;
   mode: "supply" | "borrow";
 }
 
 export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm, mode }: AssetCollapsibleContentProps) {
   const [tempAmount, setTempAmount] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [usdValue, setUsdValue] = useState(0);
+  const [usdValue, setUsdValue] = useState(bn(0));
   const { toast } = useToast();
 
-  const isUnavailable = mode === "borrow" 
-    ? (!asset.available || asset.available <= 0)
-    : asset.wallet_balance <= 0;
+  const isUnavailable =
+    mode === "borrow"
+      ? !asset.available || math.smallerEq(asset.available, 0)
+      : math.smallerEq(asset.wallet_balance, 0);
 
   useEffect(() => {
     const calculateUsdValue = async () => {
-      const amount = parseFloat(tempAmount);
-      if (isNaN(amount)) {
-        setUsdValue(0);
+      const amount = bn(tempAmount == "" ? 0 : tempAmount);
+
+      if (amount.isNaN()) {
         return;
       }
-      const price = num(await getAssetPrice(asset.label));
-      setUsdValue(amount * price);
+
+      const price = await getAssetPrice(asset.label);
+      setUsdValue(m_bn(math.multiply(amount, price)));
     };
     calculateUsdValue();
   }, [tempAmount, asset.label]);
 
   const handleAmountChange = (value: string) => {
     setTempAmount(value);
-    const numValue = Number(value);
+    const numValue = bn(value == "" ? 0 : value);
 
-    if (!isNaN(numValue) && numValue >= 0) {
+    if (!numValue.isNaN() && numValue > bn(0)) {
       onAmountChange(numValue);
     } else {
-      onAmountChange(0);
+      onAmountChange(bn(0));
     }
 
     validateAmount(value);
   };
 
   const validateAmount = (value: string) => {
-    const numValue = Number(value);
+    const numValue = bn(value == "" ? 0 : value);
     const maxAmount = mode === "borrow" ? (asset.available ?? 0) : asset.wallet_balance;
 
-    if (isNaN(numValue)) {
+    if (numValue.isNaN()) {
       setError("Please enter a valid number");
-    } else if (numValue < 0) {
+    } else if (numValue < bn(0)) {
       setError("Amount must be greater than or equal to 0");
     } else if (numValue > maxAmount) {
       setError(`Amount cannot exceed ${maxAmount}`);
@@ -67,7 +70,7 @@ export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm, mode
   };
 
   const handleMaxClick = () => {
-    const maxAmount = mode === "borrow" ? (asset.available ?? 0) : asset.wallet_balance;
+    const maxAmount = mode === "borrow" ? (asset.available ?? bn(0)) : asset.wallet_balance;
     setTempAmount(maxAmount.toString());
     onAmountChange(maxAmount);
     validateAmount(maxAmount.toString());
@@ -91,10 +94,7 @@ export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm, mode
           </div>
           <span className="text-sm text-foreground ml-10 flex items-center gap-2">
             {shortenAddress(asset.address)}
-            <button
-              onClick={handleCopyAddress}
-              className="hover:text-accent transition-colors"
-            >
+            <button onClick={handleCopyAddress} className="hover:text-accent transition-colors">
               <Copy className="h-3 w-3" />
             </button>
           </span>
@@ -119,15 +119,15 @@ export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm, mode
           </div>
           <div className="flex justify-between text-sm text-foreground px-1">
             <span>
-              ≈ $<TruncatedNumber value={usdValue} />
+              ≈ $<TruncatedNumber value={usdValue.toNumber()} />
             </span>
             {mode === "borrow" ? (
               <span>
-                Available: <TruncatedNumber value={asset.available ?? 0} />
+                Available: <TruncatedNumber value={asset.available?.toNumber() ?? 0} />
               </span>
             ) : (
               <span>
-                Balance: <TruncatedNumber value={asset.wallet_balance} />
+                Balance: <TruncatedNumber value={asset.wallet_balance.toNumber()} />
               </span>
             )}
           </div>
@@ -137,9 +137,7 @@ export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm, mode
         <div className="space-y-3 py-2 border-t border-accent/10">
           <div className="flex justify-between text-base text-foreground">
             <span>{mode === "borrow" ? "Borrow APR" : "Supply APR"}</span>
-            <span>
-              {mode === "borrow" ? "10.00" : Number(asset.APR).toFixed(1)}%
-            </span>
+            <span>{mode === "borrow" ? "10.00" : Number(asset.APR).toFixed(1)}%</span>
           </div>
         </div>
       </div>

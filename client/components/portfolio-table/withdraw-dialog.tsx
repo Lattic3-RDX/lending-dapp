@@ -36,12 +36,13 @@ export function WithdrawDialog({
   );
 
   const validateAmount = (value: string) => {
-    const amount = bn(value);
+    const amount = bn(value != "" ? value : 0);
     if (!amount || math.smallerEq(amount, 0)) {
       setError("Amount must be greater than 0");
       return false;
     }
-    if (math.larger(amount, bn(asset.select_native))) {
+    console.log(amount.toString(), asset.select_native.toString());
+    if (math.larger(amount, asset.select_native)) {
       setError("Amount exceeds supplied balance");
       return false;
     }
@@ -90,6 +91,7 @@ export function WithdrawDialog({
       try {
         // Add 0.1% to amount
         // const amountWithSlippage = m_bn(math.multiply(amount, 1.001));
+
         await onConfirm(amount);
         onClose();
       } catch (error) {
@@ -143,7 +145,7 @@ export function WithdrawDialog({
               <div className="flex justify-between text-sm text-foreground px-1">
                 <span>≈ ${tempAmount ? <TruncatedNumber value={Number(tempAmount) * num(assetPrice)} /> : "0.00"}</span>
                 <span>
-                  Current supply: <TruncatedNumber value={asset.select_native} />
+                  Current supply: <TruncatedNumber value={asset.select_native.toNumber()} />
                 </span>
               </div>
 

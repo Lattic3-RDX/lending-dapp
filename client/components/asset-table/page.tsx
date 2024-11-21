@@ -1,17 +1,18 @@
 import { columns } from "./columns";
 import { Asset, assetConfigs, getWalletBalances } from "@/types/asset";
 import { AssetTable } from "./asset-table";
+import { bn } from "@/lib/math";
 
 async function getData(): Promise<Asset[]> {
-  return Object.values(assetConfigs).map(config => ({
+  return Object.values(assetConfigs).map((config) => ({
     address: config.address,
     label: config.label,
-    wallet_balance: 0.00,
-    select_native: 0.00,
+    wallet_balance: bn(0),
+    select_native: bn(0),
     supply_APR: config.supply_APR,
     borrow_APR: config.borrow_APR,
-    pool_unit_address: config.pool_unit_address ? config.pool_unit_address : '',
-    APR: config.supply_APR
+    pool_unit_address: config.pool_unit_address ? config.pool_unit_address : "",
+    APR: config.supply_APR,
   }));
 }
 
@@ -20,8 +21,8 @@ export default async function DemoPage() {
 
   return (
     <div className="container mx-auto py-10">
-      <AssetTable 
-        columns={columns} 
+      <AssetTable
+        columns={columns}
         data={data}
         rowSelection={{}}
         onRowSelectionChange={() => {}}

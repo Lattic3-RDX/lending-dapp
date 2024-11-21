@@ -1,4 +1,4 @@
-import { bn, m_bn, math } from "@/lib/math";
+import { bn, m_bn, math, round_dec } from "@/lib/math";
 import { gatewayApi } from "@/lib/radix";
 import { FungibleResourcesCollectionAllOfToJSON } from "@radixdlt/babylon-gateway-api-sdk";
 import { BigNumber } from "mathjs";
@@ -9,11 +9,11 @@ export interface Asset {
   address: string;
   label: AssetName;
   pool_unit_address: string;
-  wallet_balance: number;
-  select_native: number;
+  wallet_balance: BigNumber;
+  select_native: BigNumber;
   APR: number;
   type?: "supply" | "borrow";
-  available?: number;
+  available?: BigNumber;
 }
 
 export interface AssetConfig {
@@ -164,10 +164,10 @@ export const supplyUnitsToAmount = async (asset: Record<AssetName, BigNumber>): 
     return bn(-1);
   }
 
-  const amount = math.round(m_bn(math.divide(supplyUnits, bn(cluster.supply_ratio))), 17);
+  const amount = round_dec(m_bn(math.divide(supplyUnits, bn(cluster.supply_ratio))));
   console.log("Amount: ", amount.toString());
 
-  return supplyUnits;
+  return amount;
 };
 
 export const ammountToSupplyUnits = async (asset: Record<AssetName, BigNumber>): Promise<BigNumber> => {
@@ -192,7 +192,7 @@ export const ammountToSupplyUnits = async (asset: Record<AssetName, BigNumber>):
     return bn(-1);
   }
 
-  const units = math.round(m_bn(math.multiply(amount, bn(cluster.supply_ratio))), 17);
+  const units = round_dec(m_bn(math.multiply(amount, bn(cluster.supply_ratio))));
   console.log("Supply units: ", units.toString());
 
   return units;
@@ -221,7 +221,7 @@ export const borrowUnitsToAmount = async (asset: Record<AssetName, BigNumber>): 
     return bn(-1);
   }
 
-  const amount = math.round(m_bn(math.multiply(borrowUnits, bn(cluster.debt_ratio))), 17);
+  const amount = round_dec(m_bn(math.multiply(borrowUnits, bn(cluster.debt_ratio))));
   console.log("Amount: ", amount.toString());
 
   return amount;
