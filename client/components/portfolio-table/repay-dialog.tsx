@@ -164,24 +164,28 @@ export function RepayDialog({ isOpen, onClose, onConfirm, asset, totalSupply, to
                   className={
                     num(totalBorrowDebt) <= 0
                       ? "text-green-500"
-                      : num(totalBorrowDebt) / num(totalSupply) < 1.5
+                      : num(totalSupply) / num(totalBorrowDebt) < 1.5
                         ? "text-red-500"
                         : "text-green-500"
                   }
                 >
-                  {num(totalBorrowDebt) <= 0 ? "∞" : (num(totalSupply) / num(totalBorrowDebt)).toFixed(2)}
+                  {num(totalBorrowDebt) <= 0 || num(totalSupply) / num(totalBorrowDebt) === Infinity 
+                    ? "∞" 
+                    : (num(totalSupply) / num(totalBorrowDebt)).toFixed(2)}
                 </span>
                 <ArrowRight className="w-4 h-4" />
                 <span
                   className={
-                    num(newHealthFactor) === -1
+                    num(newHealthFactor) === -1 || num(newHealthFactor) === Infinity
                       ? "text-green-500"
                       : num(newHealthFactor) < 1.5
                         ? "text-red-500"
                         : "text-green-500"
                   }
                 >
-                  {num(newHealthFactor) === -1 ? "∞" : newHealthFactor.toFixed(2)}
+                  {num(newHealthFactor) === -1 || num(newHealthFactor) === Infinity
+                    ? "∞" 
+                    : newHealthFactor.toFixed(2)}
                 </span>
               </div>
             </div>
