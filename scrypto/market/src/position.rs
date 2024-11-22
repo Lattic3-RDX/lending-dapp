@@ -1,8 +1,5 @@
 /* ------------------ Imports ----------------- */
-use crate::{
-    market::lattic3::PriceStream,
-    utils::{ValueMap, ZERO_PRICE},
-};
+use crate::utils::ValueMap;
 use scrypto::prelude::*;
 
 /* ------------------- Badge ------------------ */
@@ -19,75 +16,76 @@ impl Position {
         Position { supply: ValueMap::new(), debt: ValueMap::new() }
     }
 
-    pub fn update_supply(&mut self, price_stream: Global<PriceStream>, supply: &ValueMap) {
-        for (&address, &amount) in supply {
-            if amount < dec!(0.0) {
+    pub fn update_supply(&mut self, supply: &ValueMap) {
+        for (&address, &units) in supply {
+            if units < dec!(0.0) {
                 let existing = *self
                     .supply
                     .get(&address)
-                    .expect(format!("Cannot get supply for {:?}, but amount < 0 ({:?})", address, amount).as_str());
+                    .expect(format!("Cannot get supply for {:?}, but amount < 0 ({:?})", address, units).as_str());
 
-                let new_amount = existing.checked_add(amount).unwrap();
+                let new_units = existing.checked_add(units).unwrap();
                 assert!(
-                    new_amount >= dec!(0.0),
+                    new_units >= dec!(0.0),
                     "Supply for {:?} will be negative. Changed by {:?}",
                     address,
-                    amount
+                    units
                 );
 
-                let value = price_stream
-                    .get_price(address)
-                    .expect(format!("Unable to get price of {:?}", address).as_str())
-                    .checked_mul(new_amount)
-                    .unwrap();
+                // / let value = price_stream
+                // /     .get_price(address)
+                // /     .expect(format!("Unable to get price of {:?}", address).as_str())
+                // /     .checked_mul(new_amount)
+                // /     .unwrap();
 
-                if new_amount == dec!(0.0) || value <= ZERO_PRICE.into() {
+                if new_units == dec!(0.0) {
                     self.supply.remove(&address);
                 } else {
-                    self.supply.insert(address, new_amount);
+                    self.supply.insert(address, new_units);
                 }
             } else {
                 if let Some(existing) = self.supply.get(&address) {
-                    self.supply.insert(address, existing.checked_add(amount).unwrap());
+                    self.supply.insert(address, existing.checked_add(units).unwrap());
                 } else {
-                    self.supply.insert(address, amount);
+                    self.supply.insert(address, units);
                 }
             }
         }
     }
 
-    pub fn update_debt(&mut self, price_stream: Global<PriceStream>, debt: &ValueMap) {
-        for (&address, &amount) in debt {
-            if amount < dec!(0.0) {
+    pub fn update_debt(&mut self, debt: &ValueMap) {
+        for (&address, &units) in debt {
+            if units < dec!(0.0) {
                 let existing = *self
                     .debt
                     .get(&address)
-                    .expect(format!("Cannot get debt for {:?}, but amount < 0 ({:?})", address, amount).as_str());
+                    .expect(format!("Cannot get debt for {:?}, but amount < 0 ({:?})", address, units).as_str());
 
-                let new_amount = existing.checked_add(amount).unwrap();
-                assert!(
-                    new_amount >= dec!(0.0),
-                    "Debt for {:?} will be negative. Changed by {:?}",
-                    address,
-                    amount
-                );
+                let new_units = existing.checked_add(units).unwrap();
+                assert!(new_units >= dec!(0.0), "Debt for {:?} will be negative. Changed by {:?}", address, units);
 
-                let value = price_stream
-                    .get_price(address)
-                    .expect(format!("Unable to get price of {:?}", address).as_str())
-                    .checked_mul(new_amount)
-                    .unwrap();
+                // // Convert existing units into amount, and get its sum
+                // / let ratio = units.checked_div(amount.checked_mul(dec!(-1)).unwrap()).unwrap();
+                // / let existing_amount = existing.checked_div(ratio).unwrap();
 
-                if new_amount == dec!(0.0) || value <= ZERO_PRICE.into() {
+                // / let new_amount = existing_amount.checked_sub(amount).unwrap();
+
+                // / let value = price_stream
+                // /     .get_price(address)
+                // /     .expect(format!("Unable to get price of {:?}", address).as_str())
+                // /     .checked_mul(new_amount)
+                // /     .unwrap();
+
+                if new_units == dec!(0.0) {
                     self.debt.remove(&address);
                 } else {
-                    self.debt.insert(address, new_amount);
+                    self.debt.insert(address, new_units);
                 }
             } else {
                 if let Some(existing) = self.debt.get(&address) {
-                    self.debt.insert(address, existing.checked_add(amount).unwrap());
+                    self.debt.insert(address, existing.checked_add(units).unwrap());
                 } else {
-                    self.debt.insert(address, amount);
+                    self.debt.insert(address, units);
                 }
             }
         }

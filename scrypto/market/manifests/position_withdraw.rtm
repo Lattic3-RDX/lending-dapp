@@ -35,6 +35,10 @@ CALL_METHOD
     Bucket("market_position_badge")
     Bucket("bucket_lt3XRD");
 
+ASSERT_WORKTOP_CONTAINS
+    Address("${xrd}")
+    Decimal("10");
+
 CALL_METHOD
     Address("${user_account}")
     "deposit_batch"

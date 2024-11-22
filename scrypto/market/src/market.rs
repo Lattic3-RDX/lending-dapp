@@ -56,7 +56,7 @@ mod lattic3 {
 
     // Importing price stream blueprint
     extern_blueprint! {
-        "package_tdx_2_1p4ual4cc8tnvm93atjlp9q5ua 3ae5l0xkgnd68mlqz6ehlr98qxr53",
+        "package_sim1pkwaf2l9zkmake5h924229n44wp5pgckmpn0lvtucwers56awywems",
         PriceStream {
             fn get_price(&self, asset: ResourceAddress) -> Option<Decimal>;
         }
@@ -64,7 +64,7 @@ mod lattic3 {
 
     // Importing cluster blueprint
     extern_blueprint! {
-        "package_tdx_2_1phqcqnh3kslt80h3cqrjatxdp56r3yednqq5qmg46gk6ym3zxvqc78",
+        "package_sim1pkys4qlttszxq29qw5ys9lvn8grmswd0n6nsxrdxce3er3l85eagjm",
         Cluster {
             fn instantiate(resource: ResourceAddress, cluster_owner_rule: AccessRule, cluster_admin_rule: AccessRule) -> Global<Cluster>;
 
@@ -244,7 +244,7 @@ mod lattic3 {
                 supply_units.push(pool_unit);
             }
 
-            position.update_supply(self.__price_stream().into(), &unit_map);
+            position.update_supply(&unit_map);
 
             // Mint and return position NFT
             self.position_id += 1;
@@ -304,7 +304,7 @@ mod lattic3 {
                 supply_units.push(pool_unit);
             }
 
-            position.update_supply(self.__price_stream().into(), &unit_map);
+            position.update_supply(&unit_map);
 
             // Update NFT data
             self.position_manager.update_non_fungible_data(&local_id, "supply", position.supply);
@@ -341,7 +341,7 @@ mod lattic3 {
                 debt_units.insert(address, debt_unit);
             }
 
-            position.update_debt(self.__price_stream().into(), &debt_units);
+            position.update_debt(&debt_units);
 
             // Ensure that operation won't put position health below 1.0
             let health = self.calculate_health_from_units(position.supply, position.debt.clone());
@@ -377,10 +377,7 @@ mod lattic3 {
                 .expect(format!("Cannot get address for pool unit {:?}", supply_unit_address).as_str());
 
             // Recalculate supply
-            position.update_supply(
-                self.__price_stream().into(),
-                &HashMap::from([(address, supply_unit_amount.checked_mul(dec!(-1)).unwrap())]),
-            );
+            position.update_supply(&HashMap::from([(address, supply_unit_amount.checked_mul(dec!(-1)).unwrap())]));
 
             // Ensure that operation won't put position health below 1.0
             let health = self.calculate_health_from_units(position.supply.clone(), position.debt.clone());
@@ -444,10 +441,7 @@ mod lattic3 {
             drop(asset); // ! Temporary fix until a better cluster management system is implemented
 
             // Recalculate debt
-            position.update_debt(
-                self.__price_stream().into(),
-                &HashMap::from([(address, repay_units.checked_mul(dec!(-1)).unwrap())]),
-            );
+            position.update_debt(&HashMap::from([(address, repay_units.checked_mul(dec!(-1)).unwrap())]));
 
             // Execute repayment
             self.assets
