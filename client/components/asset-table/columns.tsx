@@ -21,8 +21,8 @@ export const columns: ColumnDef<Asset, unknown>[] = [
           row.toggleSelected(!!checked);
         }}
         aria-label="Select row"
-        disabled={row.original.wallet_balance <= 0}
-        className={row.original.wallet_balance <= 0 ? "opacity-50" : ""}
+        disabled={row.original.wallet_balance.toNumber() <= 0}
+        className={row.original.wallet_balance.toNumber() <= 0 ? "opacity-50" : ""}
       />
     ),
     enableSorting: false,
@@ -33,7 +33,7 @@ export const columns: ColumnDef<Asset, unknown>[] = [
     header: "Asset",
     size: 200,
     cell: ({ row }) => (
-      <div className={`flex items-center gap-3 ${row.original.wallet_balance <= 0 ? "opacity-50" : ""}`}>
+      <div className={`flex items-center gap-3 ${row.original.wallet_balance.toNumber() <= 0 ? "opacity-50" : ""}`}>
         <img
           src={getAssetIcon(row.getValue("label"))}
           alt={`${row.getValue("label")} icon`}
@@ -72,7 +72,7 @@ export const columns: ColumnDef<Asset, unknown>[] = [
       if (isExpanded) return null;
       return (
         <div>
-          {isSelected && row.original.select_native > 0 ? <TruncatedNumber value={row.original.select_native} /> : "-"}
+          {isSelected && row.original.select_native.toNumber() > 0 ? <TruncatedNumber value={row.original.select_native.toNumber()} /> : "-"}
         </div>
       );
     },
