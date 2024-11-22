@@ -1,5 +1,8 @@
 /* ------------------ Imports ----------------- */
-use crate::utils::ValueMap;
+use crate::{
+    market::lattic3::PriceStream,
+    utils::{ValueMap, ZERO_PRICE},
+};
 use scrypto::prelude::*;
 
 /* ------------------- Badge ------------------ */
@@ -16,21 +19,32 @@ impl Position {
         Position { supply: ValueMap::new(), debt: ValueMap::new() }
     }
 
-    pub fn update_supply(&mut self, supply: &ValueMap) {
+    pub fn update_supply(&mut self, price_stream: Global<PriceStream>, supply: &ValueMap) {
         for (&address, &amount) in supply {
-            if amount < pdec!(0.0) {
+            if amount < dec!(0.0) {
                 let existing = *self
                     .supply
                     .get(&address)
                     .expect(format!("Cannot get supply for {:?}, but amount < 0 ({:?})", address, amount).as_str());
 
-                let new = existing.checked_add(amount).unwrap();
-                assert!(new >= pdec!(0.0), "Supply for {:?} will be negative. Changed by {:?}", address, amount);
+                let new_amount = existing.checked_add(amount).unwrap();
+                assert!(
+                    new_amount >= dec!(0.0),
+                    "Supply for {:?} will be negative. Changed by {:?}",
+                    address,
+                    amount
+                );
 
-                if new == pdec!(0.0) {
+                let value = price_stream
+                    .get_price(address)
+                    .expect(format!("Unable to get price of {:?}", address).as_str())
+                    .checked_mul(new_amount)
+                    .unwrap();
+
+                if new_amount == dec!(0.0) || value <= ZERO_PRICE.into() {
                     self.supply.remove(&address);
                 } else {
-                    self.supply.insert(address, new);
+                    self.supply.insert(address, new_amount);
                 }
             } else {
                 if let Some(existing) = self.supply.get(&address) {
@@ -42,21 +56,32 @@ impl Position {
         }
     }
 
-    pub fn update_debt(&mut self, debt: &ValueMap) {
+    pub fn update_debt(&mut self, price_stream: Global<PriceStream>, debt: &ValueMap) {
         for (&address, &amount) in debt {
-            if amount < pdec!(0.0) {
+            if amount < dec!(0.0) {
                 let existing = *self
                     .debt
                     .get(&address)
                     .expect(format!("Cannot get debt for {:?}, but amount < 0 ({:?})", address, amount).as_str());
 
-                let new = existing.checked_add(amount).unwrap();
-                assert!(new >= pdec!(0.0), "Debt for {:?} will be negative. Changed by {:?}", address, amount);
+                let new_amount = existing.checked_add(amount).unwrap();
+                assert!(
+                    new_amount >= dec!(0.0),
+                    "Debt for {:?} will be negative. Changed by {:?}",
+                    address,
+                    amount
+                );
 
-                if new == pdec!(0.0) {
+                let value = price_stream
+                    .get_price(address)
+                    .expect(format!("Unable to get price of {:?}", address).as_str())
+                    .checked_mul(new_amount)
+                    .unwrap();
+
+                if new_amount == dec!(0.0) || value <= ZERO_PRICE.into() {
                     self.debt.remove(&address);
                 } else {
-                    self.debt.insert(address, new);
+                    self.debt.insert(address, new_amount);
                 }
             } else {
                 if let Some(existing) = self.debt.get(&address) {

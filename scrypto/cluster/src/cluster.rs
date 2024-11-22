@@ -197,8 +197,8 @@ mod lattic3_cluster {
         pub fn supply(&mut self, supply: Bucket) -> Bucket {
             self.__validate_res_bucket(&supply);
 
-            let amount: PreciseDecimal = supply.amount().into();
-            info!("Supplying [{:?} : {:?}]", supply.resource_address(), supply.amount());
+            let amount = supply.amount();
+            info!("Supplying [{:?} : {:?}]", supply.resource_address(), amount);
 
             // TODO: Validate that the cluster is ready to accept supply
             self.tick_interest(true); // Update interest such that units are minted at current rate
@@ -207,7 +207,7 @@ mod lattic3_cluster {
 
             // Mint corresponding number of units
             let unit_amount = self.get_units(ClusterLayer::Supply, amount);
-            let units = self.supply_unit_manager.mint(trunc(unit_amount));
+            let units = self.supply_unit_manager.mint(unit_amount);
 
             // Update internal state
             self.supply = self.supply.checked_add(amount).unwrap();
@@ -224,7 +224,7 @@ mod lattic3_cluster {
         pub fn withdraw(&mut self, units: Bucket) -> Bucket {
             self.__validate_unit_bucket(&units);
 
-            let unit_amount: PreciseDecimal = units.amount().into();
+            let unit_amount = units.amount();
             info!("Withdrawing [{:?} : {:?}]", units.resource_address(), units.amount());
 
             // TODO: Validate that the cluster is ready to withdraw
@@ -234,7 +234,7 @@ mod lattic3_cluster {
             units.burn();
 
             let amount = self.get_value(ClusterLayer::Supply, unit_amount);
-            let withdrawn = self.liquidity.take(trunc(amount));
+            let withdrawn = self.liquidity.take(amount);
 
             // Update internal state
             self.supply = self.supply.checked_sub(amount).unwrap();
@@ -252,15 +252,15 @@ mod lattic3_cluster {
             withdrawn
         }
 
-        pub fn borrow(&mut self, amount: PreciseDecimal) -> (Bucket, PreciseDecimal) {
-            assert!(amount > pdec!(0), "Borrowed amount must be greater than zero");
+        pub fn borrow(&mut self, amount: Decimal) -> (Bucket, Decimal) {
+            assert!(amount > dec!(0), "Borrowed amount must be greater than zero");
 
             let unit_amount = self.get_units(ClusterLayer::Debt, amount);
 
             // TODO: Validate that the cluster is ready to accept borrow
             self.tick_interest(true); // Update interest such that units are minted at current rate
 
-            let borrowed = self.liquidity.take(trunc(amount));
+            let borrowed = self.liquidity.take(amount);
 
             // Update internal state
             self.debt = self.debt.checked_add(amount).unwrap();
@@ -276,7 +276,7 @@ mod lattic3_cluster {
             (borrowed, unit_amount)
         }
 
-        pub fn repay(&mut self, repayment: Bucket) -> PreciseDecimal {
+        pub fn repay(&mut self, repayment: Bucket) -> Decimal {
             self.__validate_res_bucket(&repayment);
 
             let amount = repayment.amount().into();
@@ -327,22 +327,22 @@ mod lattic3_cluster {
             }
         }
 
-        pub fn get_units(&self, layer: ClusterLayer, amount: PreciseDecimal) -> PreciseDecimal {
-            assert!(amount > pdec!(0), "Amount must be greater than zero");
+        pub fn get_units(&self, layer: ClusterLayer, amount: Decimal) -> Decimal {
+            assert!(amount > dec!(0), "Amount must be greater than zero");
 
             let ratio = self.get_ratio(layer);
             let amount = amount.checked_mul(ratio).unwrap();
 
-            amount
+            trunc(amount)
         }
 
-        pub fn get_value(&self, layer: ClusterLayer, unit_amount: PreciseDecimal) -> PreciseDecimal {
-            assert!(unit_amount > pdec!(0), "Unit amount must be greater than zero");
+        pub fn get_value(&self, layer: ClusterLayer, unit_amount: Decimal) -> Decimal {
+            assert!(unit_amount > dec!(0), "Unit amount must be greater than zero");
 
             let ratio = self.get_ratio(layer);
             let amount = unit_amount.checked_div(ratio).unwrap();
 
-            amount
+            trunc(amount)
         }
 
         pub fn get_cluster_state(&self) -> ClusterState {

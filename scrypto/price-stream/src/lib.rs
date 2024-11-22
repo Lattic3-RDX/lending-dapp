@@ -21,7 +21,7 @@ mod lattic3_price_stream {
         owner_badge_address: ResourceAddress,
         updater_manager: ResourceManager,
 
-        prices: HashMap<ResourceAddress, PreciseDecimal>,
+        prices: HashMap<ResourceAddress, Decimal>,
     }
 
     impl PriceStream {
@@ -76,7 +76,7 @@ mod lattic3_price_stream {
             };
 
             // ! -------- TESTING --------
-            component_data.prices.insert(XRD, pdec!(0.01579));
+            component_data.prices.insert(XRD, dec!(0.01579));
             // ! -/-/-/-/ TESTING -/-/-/-/
 
             //. Instantiate component
@@ -112,13 +112,13 @@ mod lattic3_price_stream {
             (component, owner_badge)
         }
 
-        pub fn update_asset(&mut self, asset: ResourceAddress, price: PreciseDecimal) {
+        pub fn update_asset(&mut self, asset: ResourceAddress, price: Decimal) {
             assert!(self.prices.get(&asset).is_some(), "Cannot update the price of an asset; asset not listed");
 
             *self.prices.get_mut(&asset).unwrap() = price;
         }
 
-        pub fn add_asset(&mut self, asset: ResourceAddress, price: PreciseDecimal) {
+        pub fn add_asset(&mut self, asset: ResourceAddress, price: Decimal) {
             assert!(self.prices.get(&asset).is_none(), "Asset already added");
 
             self.prices.insert(asset, price);
@@ -130,7 +130,7 @@ mod lattic3_price_stream {
             self.prices.remove(&asset);
         }
 
-        pub fn get_price(&self, asset: ResourceAddress) -> Option<PreciseDecimal> {
+        pub fn get_price(&self, asset: ResourceAddress) -> Option<Decimal> {
             if let Some(price) = self.prices.get(&asset) {
                 info!("[PriceStream:get_price] Price of {:?} is {:?}", asset, *price);
                 Some(*price)

@@ -5,9 +5,9 @@ CALL_METHOD
   Decimal("1");
 
 CALL_METHOD
-    Address("component_tdx_2_1cpeavky47ljpyk49e9qvcl7x8nfl0y25lu3pp4cda9p7dpvy4lz52e")
+    Address("component_tdx_2_1cr2cuqca4mqu3crg2kpn3rg34d029ddre9us2cufk9q6yr5qnlxjf6")
     "link_price_stream"
-    Address("component_tdx_2_1cp7xyve2c0a6mrptqw76dun6et3eq5490qpagrlsfu2a4f29aw5e8n");
+    Address("component_tdx_2_1cr2tc89rej7dp6ll27nnqlh62gj6z4fyvxamxg85wln5jmysnkdt9r");
 
 CALL_METHOD
     Address("account_tdx_2_12xfek2nncckfppcslye0vwusaq6qtt6j896w5tcmfh7wy78hjzqc96")

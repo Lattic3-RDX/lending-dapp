@@ -8,7 +8,7 @@ CALL_METHOD
     Address("component_tdx_2_1cp7xyve2c0a6mrptqw76dun6et3eq5490qpagrlsfu2a4f29aw5e8n")
     "add_asset"
     Address("resource_tdx_2_1tkuj2rqsa63f8ygkzezgt27trj50srht5e666jaz28j5ss8fasg5kl")
-    PreciseDecimal("0.00001586");
+    Decimal("0.00001586");
 
 CALL_METHOD
     Address("account_tdx_2_12xfek2nncckfppcslye0vwusaq6qtt6j896w5tcmfh7wy78hjzqc96")

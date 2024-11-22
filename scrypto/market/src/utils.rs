@@ -3,10 +3,12 @@ use scrypto::prelude::*;
 use scrypto_avltree::{AvlTree, NodeIterator, NodeIteratorMut};
 
 /* ------------------- Types ------------------ */
-pub type ValueMap = HashMap<ResourceAddress, PreciseDecimal>;
+pub type ValueMap = HashMap<ResourceAddress, Decimal>;
 pub type ValueTuple = (ResourceAddress, PreciseDecimal);
 
 /* ---------- Mathematical Operations --------- */
+pub const ZERO_PRICE: Decimal = dec!(0.001);
+
 pub fn trunc(precise: PreciseDecimal) -> Decimal {
     return precise.checked_truncate(RoundingMode::ToZero).unwrap();
 }

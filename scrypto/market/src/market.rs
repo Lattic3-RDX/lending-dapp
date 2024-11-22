@@ -4,7 +4,7 @@ use crate::asset::AssetEntry;
 use crate::cluster::{ClusterLayer, ClusterState, ClusterWrapper};
 use crate::events::*;
 use crate::position::Position;
-use crate::utils::{trunc, ValueMap};
+use crate::utils::ValueMap;
 use scrypto::prelude::*;
 
 /* ----------------- Blueprint ---------------- */
@@ -26,7 +26,7 @@ use scrypto::prelude::*;
     UntrackAssetEvent
 )]
 // Types registered to reduce fees; include those used for KV stores, structs, NFTs, etc.
-#[types(Decimal, ResourceAddress, ComponentAddress, GlobalAddress, AssetEntry, Position)]
+#[types(Decimal, ResourceAddress, ValueMap, ComponentAddress, GlobalAddress, AssetEntry, Position)]
 mod lattic3 {
     // Method roles
     enable_method_auth! {
@@ -56,30 +56,29 @@ mod lattic3 {
 
     // Importing price stream blueprint
     extern_blueprint! {
-        "package_tdx_2_1ph029rt4c78r3zx0s7q22xnz5eqpu4fajlygqqz7sg95rq026zncwj",
+        "package_tdx_2_1p4ual4cc8tnvm93atjlp9q5ua 3ae5l0xkgnd68mlqz6ehlr98qxr53",
         PriceStream {
-            fn get_price(&self, asset: ResourceAddress) -> Option<PreciseDecimal>;
+            fn get_price(&self, asset: ResourceAddress) -> Option<Decimal>;
         }
     }
 
     // Importing cluster blueprint
     extern_blueprint! {
-        "package_tdx_2_1pkrsg0p57ypv9aj4en9f3jva8x26vzc68fctwfg0lgp7kfzy076ks3",
+        "package_tdx_2_1phqcqnh3kslt80h3cqrjatxdp56r3yednqq5qmg46gk6ym3zxvqc78",
         Cluster {
             fn instantiate(resource: ResourceAddress, cluster_owner_rule: AccessRule, cluster_admin_rule: AccessRule) -> Global<Cluster>;
 
             fn supply(&mut self, supply: Bucket) -> Bucket;
             fn withdraw(&mut self, units: Bucket) -> Bucket;
-            fn borrow(&mut self, amount: PreciseDecimal) -> (Bucket, PreciseDecimal);
-            fn repay(&mut self, repayment: Bucket) -> PreciseDecimal;
+            fn borrow(&mut self, amount: Decimal) -> (Bucket, Decimal);
+            fn repay(&mut self, repayment: Bucket) -> Decimal;
 
             fn get_ratio(&self, layer: ClusterLayer) -> PreciseDecimal;
-            fn get_units(&self, layer: ClusterLayer, amount: PreciseDecimal) -> PreciseDecimal;
-            fn get_value(&self, layer: ClusterLayer, unit_amount: PreciseDecimal) -> PreciseDecimal;
+            fn get_units(&self, layer: ClusterLayer, amount: Decimal) -> Decimal;
+            fn get_value(&self, layer: ClusterLayer, unit_amount: Decimal) -> Decimal;
             fn get_cluster_state(&self) -> ClusterState;
 
             fn provide_liquidity(&mut self, provided: Bucket);
-
             fn tick_interest(&mut self, force: bool);
             fn set_interest_tick_interval(&mut self, interval: i64);
         }
@@ -215,7 +214,7 @@ mod lattic3 {
                 .globalize();
 
             // Call instantisation event
-            Runtime::emit_event(InstantiseEvent { component_address: component.address(), asset_list });
+            // Runtime::emit_event(InstantiseEvent { component_address: component.address(), asset_list });
 
             // Return
             (component, owner_badge)
@@ -241,11 +240,11 @@ mod lattic3 {
 
                 let pool_unit = asset.cluster_wrapper.cluster.supply(bucket);
 
-                unit_map.insert(address, pool_unit.amount().into());
+                unit_map.insert(address, pool_unit.amount());
                 supply_units.push(pool_unit);
             }
 
-            position.update_supply(&unit_map);
+            position.update_supply(self.__price_stream().into(), &unit_map);
 
             // Mint and return position NFT
             self.position_id += 1;
@@ -254,10 +253,10 @@ mod lattic3 {
                 .mint_non_fungible(&NonFungibleLocalId::Integer(self.position_id.into()), position);
 
             // Fire open position event
-            Runtime::emit_event(OpenPositionEvent {
-                position_id: NonFungibleLocalId::Integer(self.position_id.into()),
-                supply: unit_map,
-            });
+            // Runtime::emit_event(OpenPositionEvent {
+            //     position_id: NonFungibleLocalId::Integer(self.position_id.into()),
+            //     supply: unit_map,
+            // });
             info!("[open_position] Position event");
 
             // Return
@@ -291,7 +290,7 @@ mod lattic3 {
             info!("[position_supply] Position: {:#?}", position);
 
             // Supply resources to clusters
-            let supply_map = self.__buckets_to_value_map(&supply);
+            // let supply_map = self.__buckets_to_value_map(&supply);
             let mut supply_units: Vec<Bucket> = Vec::new();
             let mut unit_map: ValueMap = HashMap::new();
 
@@ -301,17 +300,17 @@ mod lattic3 {
 
                 let pool_unit = asset.cluster_wrapper.cluster.supply(bucket);
 
-                unit_map.insert(address, pool_unit.amount().into());
+                unit_map.insert(address, pool_unit.amount());
                 supply_units.push(pool_unit);
             }
 
-            position.update_supply(&unit_map);
+            position.update_supply(self.__price_stream().into(), &unit_map);
 
             // Update NFT data
             self.position_manager.update_non_fungible_data(&local_id, "supply", position.supply);
 
             // Fire position supply event
-            Runtime::emit_event(PositionSupplyEvent { position_id: local_id, supply: supply_map, supply_units: unit_map });
+            // Runtime::emit_event(PositionSupplyEvent { position_id: local_id, supply: supply_map, supply_units: unit_map });
 
             // Return
             (position_bucket, supply_units)
@@ -321,9 +320,9 @@ mod lattic3 {
             // Sanity checks
             assert!(self.__validate_position(&position_bucket), "Invalid position NFT");
 
-            for (address, amount) in &debt {
-                assert!(amount > &pdec!(0.0), "Borrow amount must be greater than 0");
-                assert!(self.__validate_fungible(*address), "Asset with address {:?} is invalid", address);
+            for (&address, &amount) in &debt {
+                assert!(amount > dec!(0.0), "Borrow amount must be greater than 0");
+                assert!(self.__validate_fungible(address), "Asset with address {:?} is invalid", address);
             }
 
             // Fetch NFT data
@@ -342,17 +341,17 @@ mod lattic3 {
                 debt_units.insert(address, debt_unit);
             }
 
-            position.update_debt(&debt_units);
+            position.update_debt(self.__price_stream().into(), &debt_units);
 
             // Ensure that operation won't put position health below 1.0
             let health = self.calculate_health_from_units(position.supply, position.debt.clone());
-            assert!(health >= pdec!(1.0), "Position health will be below 1.0. Reverting operation");
+            assert!(health >= dec!(1.0), "Position health will be below 1.0. Reverting operation");
 
             // Update NFT data
             self.position_manager.update_non_fungible_data(&local_id, "debt", position.debt);
 
             // Fire position borrow event
-            Runtime::emit_event(PositionBorrowEvent { position_id: local_id, debt, debt_units });
+            // Runtime::emit_event(PositionBorrowEvent { position_id: local_id, debt, debt_units });
 
             // Return borrowed resources
             (position_bucket, borrowed)
@@ -363,7 +362,7 @@ mod lattic3 {
             assert!(self.__validate_position(&position_bucket), "Invalid position NFT");
 
             let supply_unit_address = supply_units.resource_address();
-            let supply_unit_amount: PreciseDecimal = supply_units.amount().into();
+            let supply_unit_amount: Decimal = supply_units.amount();
             assert!(!supply_units.is_empty(), "Bucket for {:?} is empty", supply_unit_address);
 
             // Fetch NFT data
@@ -378,11 +377,14 @@ mod lattic3 {
                 .expect(format!("Cannot get address for pool unit {:?}", supply_unit_address).as_str());
 
             // Recalculate supply
-            position.update_supply(&HashMap::from([(address, supply_unit_amount.checked_mul(pdec!(-1)).unwrap())]));
+            position.update_supply(
+                self.__price_stream().into(),
+                &HashMap::from([(address, supply_unit_amount.checked_mul(dec!(-1)).unwrap())]),
+            );
 
             // Ensure that operation won't put position health below 1.0
             let health = self.calculate_health_from_units(position.supply.clone(), position.debt.clone());
-            assert!(health >= pdec!(1.0), "Position health will be below 1.0. Reverting operation");
+            assert!(health >= dec!(1.0), "Position health will be below 1.0. Reverting operation");
 
             // Withdraw from cluster
             let withdrawn = self
@@ -394,11 +396,11 @@ mod lattic3 {
                 .withdraw(supply_units);
 
             // Fire position withdraw event
-            Runtime::emit_event(PositionWithdrawEvent {
-                position_id: local_id.clone(),
-                supply_unit: (supply_unit_address, supply_unit_amount),
-                withdraw: (address, withdrawn.amount().into()),
-            });
+            // Runtime::emit_event(PositionWithdrawEvent {
+            //     position_id: local_id.clone(),
+            //     supply_unit: (supply_unit_address, supply_unit_amount),
+            //     withdraw: (address, withdrawn.amount().into()),
+            // });
 
             // Update NFT data or burn if empty
             if position.supply.is_empty() && position.debt.is_empty() {
@@ -421,7 +423,7 @@ mod lattic3 {
             info!("[position_repay] Position: {:#?}", position);
 
             let address = debt.resource_address();
-            let amount: PreciseDecimal = debt.amount().into();
+            let amount = debt.amount();
 
             // Ensure repayment is valid
             assert!(!debt.is_empty(), "Bucket for {:?} is empty", address);
@@ -442,7 +444,10 @@ mod lattic3 {
             drop(asset); // ! Temporary fix until a better cluster management system is implemented
 
             // Recalculate debt
-            position.update_debt(&HashMap::from([(address, repay_units.checked_mul(pdec!(-1)).unwrap())]));
+            position.update_debt(
+                self.__price_stream().into(),
+                &HashMap::from([(address, repay_units.checked_mul(dec!(-1)).unwrap())]),
+            );
 
             // Execute repayment
             self.assets
@@ -450,10 +455,10 @@ mod lattic3 {
                 .expect("Cannot get asset entry")
                 .cluster_wrapper
                 .cluster
-                .repay(debt.take(trunc(repay_amount)));
+                .repay(debt.take(repay_amount));
 
             // Fire position repay event
-            Runtime::emit_event(PositionRepayEvent { position_id: local_id.clone(), repay: (address, amount) });
+            // Runtime::emit_event(PositionRepayEvent { position_id: local_id.clone(), repay: (address, amount) });
 
             // Update NFT data or burn if empty
             if position.supply.is_empty() && position.debt.is_empty() {
@@ -467,7 +472,7 @@ mod lattic3 {
         }
 
         // Internal position methods
-        pub fn get_position_health(&mut self, position_proof: NonFungibleProof) -> PreciseDecimal {
+        pub fn get_position_health(&mut self, position_proof: NonFungibleProof) -> Decimal {
             // Sanity checks
             let position: Position = position_proof
                 .check_with_message(self.position_manager.address(), "Position check failed")
@@ -480,13 +485,13 @@ mod lattic3 {
             health
         }
 
-        pub fn calculate_health_from_units(&mut self, supply_units: ValueMap, debt_units: ValueMap) -> PreciseDecimal {
+        pub fn calculate_health_from_units(&mut self, supply_units: ValueMap, debt_units: ValueMap) -> Decimal {
             // Return 'infinity' if no debt taken out
             if debt_units.is_empty() {
-                info!("[calculate_position_health] Health: Infinity {:?}", PreciseDecimal::MAX);
+                info!("[calculate_position_health] Health: Infinity {:?}", Decimal::MAX);
 
-                Runtime::emit_event(PositionHealthEvent { health: PreciseDecimal::MAX });
-                return PreciseDecimal::MAX;
+                // Runtime::emit_event(PositionHealthEvent { health: Decimal::MAX });
+                return Decimal::MAX;
             }
 
             // Tick interest on all position assets and convert them from units to amounts
@@ -540,7 +545,7 @@ mod lattic3 {
 
             // Sanity check
             assert!(
-                debt_value > pdec!(0.0),
+                debt_value > dec!(0.0),
                 "Debt value must be greater than 0, I don't know how we got here. Debt: {:?}",
                 debt
             );
@@ -550,7 +555,7 @@ mod lattic3 {
             info!("[calculate_position_health] Health: {:?}", health);
 
             // Fire health event
-            Runtime::emit_event(PositionHealthEvent { health });
+            // Runtime::emit_event(PositionHealthEvent { health });
 
             health
         }
@@ -701,12 +706,12 @@ mod lattic3 {
 
         /// Calculates the USD values of all provided asset from the oracle
         // TODO: provide epoch to ensure data not out-of-date
-        fn __get_asset_values(&self, assets: &ValueMap) -> (PreciseDecimal, ValueMap) {
+        fn __get_asset_values(&self, assets: &ValueMap) -> (Decimal, ValueMap) {
             // Get prices
             let price_stream = self.__price_stream();
 
             let mut usd_values: ValueMap = HashMap::new();
-            let mut total = pdec!(0.0);
+            let mut total = dec!(0.0);
 
             for (&address, &amount) in assets {
                 assert!(self.__validate_fungible(address), "Asset in the ValueMap is not listed ");
@@ -714,7 +719,7 @@ mod lattic3 {
                 let price = price_stream
                     .get_price(address)
                     .expect(format!("Unable to get price of {:?}", address).as_str());
-                let value = price.checked_mul(amount).unwrap();
+                let value = amount.checked_mul(price).unwrap();
                 total = total.checked_add(value).unwrap();
                 usd_values.insert(address, value);
             }
@@ -732,7 +737,7 @@ mod lattic3 {
             let mut kv: ValueMap = HashMap::new();
 
             for bucket in buckets {
-                kv.insert(bucket.resource_address(), bucket.amount().into());
+                kv.insert(bucket.resource_address(), bucket.amount());
             }
 
             kv
