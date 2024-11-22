@@ -4,16 +4,15 @@ import { AssetActionCard } from "@/components/asset-action-card";
 import { AssetTable } from "@/components/asset-table/asset-table";
 import { borrowColumns } from "@/components/asset-table/borrow-columns";
 import { columns } from "@/components/asset-table/columns";
-import BorrowDialog from "@/components/borrow-dialog";
+import BorrowDialog from "@/components/asset-table/borrow-dialog";
 import { createPortfolioColumns } from "@/components/portfolio-table/portfolio-columns";
 import { PortfolioTable } from "@/components/portfolio-table/portfolio-table";
 import { StatisticsCard } from "@/components/statistics-card";
-import SupplyDialog from "@/components/supply-dialog";
+import SupplyDialog from "@/components/asset-table/supply-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { ShootingStars } from "@/components/ui/shooting-stars";
-import { StarsBackground } from "@/components/ui/stars-background";
+import { BackgroundEffects } from "@/components/background-effects";
 import { useToast } from "@/components/ui/use-toast";
 import { useRadixContext } from "@/contexts/provider";
 import config from "@/lib/config.json";
@@ -468,34 +467,6 @@ export default function App() {
 
       console.log("Borrow manifest:", manifest);
 
-      // const status = await gatewayApi.status.getCurrent();
-      // const currentEpoch = status.ledger_state.epoch;
-
-      // const transactionPreviewRequest = {
-      //   manifest,
-      //   start_epoch_inclusive: currentEpoch,
-      //   end_epoch_exclusive: currentEpoch + 1,
-      //   tip_percentage: 0,
-      //   nonce: Math.round(Math.random() * 10e8),
-      //   signer_public_keys: [],
-      //   flags: {
-      //     use_free_credit: true,
-      //     assume_all_signature_proofs: true,
-      //     skip_epoch_check: true,
-      //   },
-      // };
-
-      // console.log("transactionPreviewRequest", transactionPreviewRequest);
-
-      // // Fetch transaction preview from gateway api
-      // const response = await gatewayApi.transaction.innerClient.transactionPreview({
-      //   transactionPreviewRequest,
-      // });
-
-      // // Return transaction preview
-      // console.log("Res", response);
-      // return;
-
       const result = await rdt?.walletApi.sendTransaction({
         transactionManifest: manifest,
         version: 1,
@@ -609,15 +580,7 @@ export default function App() {
 
   return (
     <div className="relative min-h-screen">
-      {/* Background Effects - Move to the very back */}
-      <div className="fixed inset-0 pointer-events-none -z-10">
-        <div className="h-full w-full bg-background dark:bg-foreground bg-grid-slate-200/20 dark:bg-grid-slate-50/[0.2]" />
-        {/* Radial gradient overlay */}
-        <div className="absolute pointer-events-none inset-0 flex items-center justify-center bg-background dark:bg-black [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]" />
-        <ShootingStars />
-        <StarsBackground />
-      </div>
-
+      <BackgroundEffects />
       <main className="flex min-h-screen flex-col items-center justify-center p-8">
         <div className="container mx-auto py-10 space-y-8">
           {/* Statistics Card */}

@@ -209,27 +209,24 @@ export function AssetTable<TData extends Asset, TValue>({
       if (isSelectedA && !isSelectedB) return -1;
       if (!isSelectedA && isSelectedB) return 1;
 
-      // Second priority: Selection order for selected items
+      // If both are selected, sort by selection order
       if (isSelectedA && isSelectedB) {
-        const orderA = selectionOrder.indexOf(a.id);
-        const orderB = selectionOrder.indexOf(b.id);
-        return orderA - orderB;
+        const indexA = selectionOrder.indexOf(a.id);
+        const indexB = selectionOrder.indexOf(b.id);
+        return indexA - indexB; // Earlier selections go to top
       }
 
-      // Third priority: Wallet balance for unselected items
-      if (!isSelectedA && !isSelectedB) {
-        // Handle loading state (-1)
-        if (balanceA === -1) return 1;
-        if (balanceB === -1) return -1;
+      // Second priority: Balance availability
+      if (balanceA === -1) return 1;
+      if (balanceB === -1) return -1;
 
-        // Sort by balance (non-zero first)
-        if (balanceA > 0 && balanceB <= 0) return -1;
-        if (balanceA <= 0 && balanceB > 0) return 1;
-      }
+      // Sort by balance (non-zero first)
+      if (balanceA <= 0 && balanceB > 0) return 1;
+      if (balanceA > 0 && balanceB <= 0) return -1;
 
       return 0;
     });
-  }, [table.getRowModel().rows, selectionOrder, rowSelection]);
+  }, [table.getRowModel().rows, selectionOrder]);
 
   return (
     <div className="rounded-md border">
