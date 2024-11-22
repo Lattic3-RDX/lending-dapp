@@ -45,13 +45,9 @@ export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm, mode
     setTempAmount(value);
     const numValue = bn(value == "" ? 0 : value);
 
-    if (!numValue.isNaN() && numValue > bn(0)) {
-      onAmountChange(numValue);
-    } else {
-      onAmountChange(bn(0));
-    }
-
-    validateAmount(value);
+    setTempAmount(numValue.toString());
+    onAmountChange(numValue);
+    validateAmount(numValue.toString());
   };
 
   const validateAmount = (value: string) => {
