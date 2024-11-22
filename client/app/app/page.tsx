@@ -440,7 +440,7 @@ export default function App() {
       const selectedAssets = getSelectedBorrowAssets();
       const assetsToBorrow = selectedAssets.map((asset) => ({
         address: asset.address,
-        amount: round_dec(asset.select_native).toString(),
+        amount: asset.select_native.toString(),
       }));
 
       // Get NFT ID from account state
@@ -467,6 +467,34 @@ export default function App() {
       });
 
       console.log("Borrow manifest:", manifest);
+
+      // const status = await gatewayApi.status.getCurrent();
+      // const currentEpoch = status.ledger_state.epoch;
+
+      // const transactionPreviewRequest = {
+      //   manifest,
+      //   start_epoch_inclusive: currentEpoch,
+      //   end_epoch_exclusive: currentEpoch + 1,
+      //   tip_percentage: 0,
+      //   nonce: Math.round(Math.random() * 10e8),
+      //   signer_public_keys: [],
+      //   flags: {
+      //     use_free_credit: true,
+      //     assume_all_signature_proofs: true,
+      //     skip_epoch_check: true,
+      //   },
+      // };
+
+      // console.log("transactionPreviewRequest", transactionPreviewRequest);
+
+      // // Fetch transaction preview from gateway api
+      // const response = await gatewayApi.transaction.innerClient.transactionPreview({
+      //   transactionPreviewRequest,
+      // });
+
+      // // Return transaction preview
+      // console.log("Res", response);
+      // return;
 
       const result = await rdt?.walletApi.sendTransaction({
         transactionManifest: manifest,

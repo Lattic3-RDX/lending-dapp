@@ -5,7 +5,8 @@ interface ManifestArgs {
   position_badge_address: string; // resource_...
   position_badge_local_id: string; // e.g. #1#
 
-  asset: Asset; // pool units
+  asset: Asset; // supply units
+  required: Asset; // amount
 }
 
 interface Asset {
@@ -19,6 +20,7 @@ export default function position_repay_rtm({
   position_badge_address,
   position_badge_local_id,
   asset,
+  required,
 }: ManifestArgs) {
   const rtm = `
 CALL_METHOD
@@ -48,6 +50,10 @@ CALL_METHOD
   "position_withdraw"
   Bucket("position_badge")
   Bucket("bucket_1");
+
+ASSERT_WORKTOP_CONTAINS
+  Address("${required.address}")
+  Decimal("${required.amount}");
 
 CALL_METHOD
   Address("${account}")

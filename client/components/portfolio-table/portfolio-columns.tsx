@@ -4,7 +4,15 @@ import position_repay_rtm from "@/lib/manifests/position_repay";
 import position_withdraw_rtm from "@/lib/manifests/position_withdraw";
 import { bn, m_bn, math, num } from "@/lib/math";
 import { gatewayApi, rdt } from "@/lib/radix";
-import { Asset, AssetName, ammountToSupplyUnits, getAssetAPR, getAssetIcon } from "@/types/asset";
+import {
+  Asset,
+  AssetName,
+  ammountToSupplyUnits,
+  getAssetAPR,
+  getAssetIcon,
+  supplyUnitsToAmount,
+  getUnitBalance,
+} from "@/types/asset";
 import { ColumnDef } from "@tanstack/react-table";
 import { BigNumber } from "mathjs";
 import { useState } from "react";
@@ -60,13 +68,30 @@ function ActionCell({
         (fr: { resource_address: string }) => fr.resource_address === borrowerBadgeAddr,
       )?.vaults.items[0];
 
+      const supplyUnitBalance = await getUnitBalance(accounts[0].address, row.original.label as AssetName);
+
       console.log("row", row.original.address);
       console.log("Native: ", amount.toString());
+      console.log("Wallet balance:", supplyUnitBalance.toString());
 
+      // Errors if the user doesn't have any supply units, or if the promise returns -1, which means there was an error
+      if (math.smallerEq(supplyUnitBalance, 0)) {
+        toast({
+          variant: "destructive",
+          title: "Withdrawal Failed",
+          description: "supplyUnitBalanceError",
+        });
+        return;
+      }
+
+      // Calculate how many supply units will be passed to the tx
       const supplyRecord: Record<AssetName, BigNumber> = {
         [row.original.label]: amount,
       } as Record<AssetName, BigNumber>;
-      const supplyUnits = await ammountToSupplyUnits(supplyRecord);
+      let supplyUnits = await ammountToSupplyUnits(supplyRecord);
+      console.log("Supply units: ", supplyUnits.toString());
+      supplyUnits = m_bn(math.min(supplyUnits, supplyUnitBalance));
+      console.log("Supply units: ", supplyUnits.toString());
 
       if (!getNFTBalance?.items?.[0]) {
         toast({
@@ -85,6 +110,10 @@ function ActionCell({
         asset: {
           address: row.original.pool_unit_address ?? "",
           amount: supplyUnits.toString(),
+        },
+        required: {
+          address: row.original.address ?? "",
+          amount: amount.toString(),
         },
       });
 
@@ -162,8 +191,10 @@ function ActionCell({
         });
         return;
       }
+      console.log("repaying", amount.toString(), row.original.label, row.original.wallet_balance.toString());
+      const debtAmount = m_bn(math.min(amount, row.original.wallet_balance));
+      console.log("Debt amount:", debtAmount.toString());
 
-      console.log("repaying", amount, row.original.label);
       const manifest = position_repay_rtm({
         component: marketComponent,
         account: accounts[0].address,
@@ -171,7 +202,7 @@ function ActionCell({
         position_badge_local_id: getNFTBalance.items[0],
         asset: {
           address: row.original.address,
-          amount: amount.toString(),
+          amount: debtAmount.toString(),
         },
       });
 

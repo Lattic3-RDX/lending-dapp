@@ -71,8 +71,8 @@ export const getAssetAddrRecord = (): Record<AssetName, string> => {
   );
 };
 
-export const getUnitAddress = async (accountAddress: string, label: AssetName): Promise<BigNumber> => {
-  const unitAddress = assetConfigs[label]?.pool_unit_address
+export const getUnitBalance = async (accountAddress: string, label: AssetName): Promise<BigNumber> => {
+  const unitAddress = assetConfigs[label]?.pool_unit_address;
   if (!gatewayApi) {
     console.error("Gateway API not initialized");
     return bn(-1);

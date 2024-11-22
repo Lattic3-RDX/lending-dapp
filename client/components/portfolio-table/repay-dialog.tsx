@@ -93,9 +93,10 @@ export function RepayDialog({ isOpen, onClose, onConfirm, asset, totalSupply, to
     if (math.larger(amount, 0) && !error) {
       setTransactionState("awaiting_signature");
       try {
-        // Add 0.1% to amount
-        // const amountWithSlippage = m_bn(marepath.multiply(amount, 1.001));
-        await onConfirm(amount);
+        // Add 0.5% to amount
+        const amountWithSlippage = m_bn(math.multiply(amount, 1.0005));
+
+        await onConfirm(amountWithSlippage);
         onClose();
       } catch (error) {
         setTransactionState("error");
