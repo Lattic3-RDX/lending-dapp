@@ -169,24 +169,26 @@ export function AssetTable<TData extends Asset, TValue>({
     enableRowSelection: true,
     onRowSelectionChange: (updater) => {
       const newSelection = typeof updater === "function" ? updater(rowSelection) : updater;
-
-      // Get currently selected rows
-      const selectedRows = Object.entries(newSelection)
-        .filter(([_, isSelected]) => isSelected)
-        .map(([id]) => id);
-
-      // Compare with previous selection to find newly selected row
+      
+      // Get previously selected rows
       const previouslySelected = Object.entries(rowSelection)
         .filter(([_, isSelected]) => isSelected)
         .map(([id]) => id);
-
-      const newlySelected = selectedRows.find((id) => !previouslySelected.includes(id));
-
-      // If there's a newly selected row, expand it and collapse others
+      
+      // Get currently selected rows
+      const currentlySelected = Object.entries(newSelection)
+        .filter(([_, isSelected]) => isSelected)
+        .map(([id]) => id);
+      
+      // Find newly selected row
+      const newlySelected = currentlySelected.find(id => !previouslySelected.includes(id));
+      
+      // Update selection order
       if (newlySelected) {
-        setExpandedRows({ [newlySelected]: true });
-      } else if (selectedRows.length === 0) {
-        setExpandedRows({});
+        setSelectionOrder(prev => [...prev, newlySelected]);
+      } else {
+        // Remove deselected items from order
+        setSelectionOrder(prev => prev.filter(id => currentlySelected.includes(id)));
       }
 
       handleRowSelectionChange(newSelection);
@@ -207,24 +209,27 @@ export function AssetTable<TData extends Asset, TValue>({
       if (isSelectedA && !isSelectedB) return -1;
       if (!isSelectedA && isSelectedB) return 1;
 
-      // If both are selected, sort by selection order
+      // Second priority: Selection order for selected items
       if (isSelectedA && isSelectedB) {
-        const indexA = selectionOrder.indexOf(a.id);
-        const indexB = selectionOrder.indexOf(b.id);
-        return indexA - indexB; // Earlier selections go to top
+        const orderA = selectionOrder.indexOf(a.id);
+        const orderB = selectionOrder.indexOf(b.id);
+        return orderA - orderB;
       }
 
-      // Second priority: Balance availability
-      if (balanceA === -1) return 1;
-      if (balanceB === -1) return -1;
+      // Third priority: Wallet balance for unselected items
+      if (!isSelectedA && !isSelectedB) {
+        // Handle loading state (-1)
+        if (balanceA === -1) return 1;
+        if (balanceB === -1) return -1;
 
-      // Sort by balance (non-zero first)
-      if (balanceA <= 0 && balanceB > 0) return 1;
-      if (balanceA > 0 && balanceB <= 0) return -1;
+        // Sort by balance (non-zero first)
+        if (balanceA > 0 && balanceB <= 0) return -1;
+        if (balanceA <= 0 && balanceB > 0) return 1;
+      }
 
       return 0;
     });
-  }, [table.getRowModel().rows, selectionOrder]);
+  }, [table.getRowModel().rows, selectionOrder, rowSelection]);
 
   return (
     <div className="rounded-md border">
