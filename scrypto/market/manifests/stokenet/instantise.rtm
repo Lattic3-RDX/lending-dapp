@@ -10,7 +10,7 @@ TAKE_FROM_WORKTOP
     Bucket("bucket_owner_badge");
 
 CALL_FUNCTION
-    Address("package_tdx_2_1pkfmypfqkt689g6j3v0xx0gwla49k59yy6wlw7hnc64a4pn2kk5xjv")
+    Address("package_tdx_2_1p4j6v3d52yaswv53svzy8ce0wtvvu2tunmunmrvhg0mffk6hde0t37")
     "Lattic3"
     "instantiate"
     Address("account_tdx_2_12xfek2nncckfppcslye0vwusaq6qtt6j896w5tcmfh7wy78hjzqc96")

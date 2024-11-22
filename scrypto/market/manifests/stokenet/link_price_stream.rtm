@@ -5,7 +5,7 @@ CALL_METHOD
   Decimal("1");
 
 CALL_METHOD
-    Address("component_tdx_2_1cr2cuqca4mqu3crg2kpn3rg34d029ddre9us2cufk9q6yr5qnlxjf6")
+    Address("component_tdx_2_1crz8z5at4q2ptuftylcuke05kmsezwrtxsfj3mlpe66h4mjs466wwe")
     "link_price_stream"
     Address("component_tdx_2_1cr2tc89rej7dp6ll27nnqlh62gj6z4fyvxamxg85wln5jmysnkdt9r");
 
