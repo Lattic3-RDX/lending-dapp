@@ -14,9 +14,10 @@ interface AssetCollapsibleContentProps {
   onAmountChange: (amount: BigNumber) => void;
   onConfirm: (amount: BigNumber) => void;
   mode: "supply" | "borrow";
+  onSelect: () => void;
 }
 
-export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm, mode }: AssetCollapsibleContentProps) {
+export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm, mode, onSelect }: AssetCollapsibleContentProps) {
   const [tempAmount, setTempAmount] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [usdValue, setUsdValue] = useState(bn(0));
@@ -42,6 +43,9 @@ export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm, mode
   }, [tempAmount, asset.label]);
 
   const handleAmountChange = (value: string) => {
+    if (value !== '') {
+      onSelect();
+    }
     setTempAmount(value);
     const numValue = bn(value == "" ? 0 : value);
 

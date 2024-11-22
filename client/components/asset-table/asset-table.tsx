@@ -254,6 +254,7 @@ export function AssetTable<TData extends Asset, TValue>({
                               onAmountChange={(amount) => handleAmountChange(row.original.address, amount)}
                               onConfirm={(amount) => handleConfirm(row.original, amount)}
                               mode={mode}
+                              onSelect={() => row.toggleSelected(true)}
                             />
                           </div>
                         </TableCell>
