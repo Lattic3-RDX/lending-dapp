@@ -12,6 +12,7 @@ import { useRadixContext } from "@/contexts/provider";
 import position_repay_rtm from "@/lib/manifests/position_repay";
 import config from "@/lib/config.json";
 import { gatewayApi } from "@/lib/radix";
+import { SlippageSlider } from "@/components/slippage-slider";
 
 interface RepayDialogProps {
   isOpen: boolean;
@@ -36,6 +37,7 @@ export function RepayDialog({ isOpen, onClose, onConfirm, asset, totalSupply, to
   const { accounts } = useRadixContext();
   const [manifest, setManifest] = useState<string>("");
   const [nftInfo, setNftInfo] = useState<{ address: string; localId: string } | null>(null);
+  const [slippage, setSlippage] = useState(0.5); // Default 0.5%
 
   const validateAmount = (value: string) => {
     const amount = bn(value != "" ? value : 0);
@@ -101,8 +103,9 @@ export function RepayDialog({ isOpen, onClose, onConfirm, asset, totalSupply, to
     if (math.larger(amount, 0) && !error) {
       setTransactionState("awaiting_signature");
       try {
-        // Add 0.5% to amount
-        const amountWithSlippage = m_bn(math.multiply(amount, 1.0005));
+        // Add slippage to amount (convert percentage to decimal)
+        const slippageMultiplier = 1 + (slippage / 100);
+        const amountWithSlippage = m_bn(math.multiply(amount, slippageMultiplier));
 
         await onConfirm(amountWithSlippage);
         onClose();
@@ -236,6 +239,8 @@ export function RepayDialog({ isOpen, onClose, onConfirm, asset, totalSupply, to
               </div>
             </div>
           </div>
+
+          <SlippageSlider value={slippage} onChange={setSlippage} />
 
           <TransactionPreview manifest={manifest} />
 
