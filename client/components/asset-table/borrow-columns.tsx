@@ -96,7 +96,10 @@ export const borrowColumns: ColumnDef<Asset>[] = [
     cell: ({ row }) => {
       const isExpanded = row.getIsExpanded();
       return (
-        <Button variant="ghost" size="sm" onClick={() => row.toggleExpanded()}>
+        <Button variant="ghost" size="sm" onClick={(e) => {
+          e.stopPropagation();
+          row.toggleExpanded();
+        }}>
           {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </Button>
       );
