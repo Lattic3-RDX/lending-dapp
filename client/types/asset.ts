@@ -71,6 +71,29 @@ export const getAssetAddrRecord = (): Record<AssetName, string> => {
   );
 };
 
+export const getUnitAddress = async (accountAddress: string, label: AssetName): Promise<BigNumber> => {
+  const unitAddress = assetConfigs[label]?.pool_unit_address
+  if (!gatewayApi) {
+    console.error("Gateway API not initialized");
+    return bn(-1);
+  }
+  try {
+    const response = await gatewayApi.state.getEntityDetailsVaultAggregated(accountAddress);
+
+    const fungibleResources = response.fungible_resources.items || [];
+    fungibleResources.filter((resource) => resource.resource_address === unitAddress);
+
+    if (fungibleResources.length === 0) {
+      return bn(-1);
+    }
+
+    return bn(fungibleResources[0].vaults.items[0].amount);
+  } catch (error) {
+    console.error("Error fetching wallet balances:", error);
+    return bn(-1);
+  }
+};
+
 // Replace mockWalletBalances with a function to fetch real balances
 export const getWalletBalances = async (accountAddress: string): Promise<Record<AssetName, BigNumber>> => {
   if (!gatewayApi) {

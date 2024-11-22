@@ -225,11 +225,10 @@ export function AssetTable<TData extends Asset, TValue>({
                   <>
                     <TableRow
                       data-state={row.getIsSelected() && "selected"}
-                      className="hover:bg-accent/5"
+                      className="cursor-pointer hover:bg-accent/5"
                       onClick={(e) => {
-                        // Prevent row click when clicking checkbox or toggle button
-                        if ((e.target as HTMLElement).closest('[role="checkbox"]') || 
-                            (e.target as HTMLElement).closest('button')) {
+                        // Prevent row click when clicking checkbox
+                        if ((e.target as HTMLElement).closest('[role="checkbox"]')) {
                           return;
                         }
                         setExpandedRows((prev) => ({
@@ -254,7 +253,6 @@ export function AssetTable<TData extends Asset, TValue>({
                               onAmountChange={(amount) => handleAmountChange(row.original.address, amount)}
                               onConfirm={(amount) => handleConfirm(row.original, amount)}
                               mode={mode}
-                              onSelect={() => row.toggleSelected(true)}
                             />
                           </div>
                         </TableCell>

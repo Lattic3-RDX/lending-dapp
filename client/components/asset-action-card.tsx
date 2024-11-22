@@ -105,7 +105,7 @@ export function AssetActionCard({
     <Card>
       <CardHeader>
         <div className="space-y-4">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center h-9">
             <div>
               <CardTitle>{isBorrowMode ? "Available Borrows" : "Supply Collateral"}</CardTitle>
             </div>
