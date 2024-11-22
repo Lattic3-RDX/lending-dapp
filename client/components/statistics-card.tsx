@@ -1,6 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import math from "mathjs";
 
 interface StatisticsCardProps {
   healthRatio: number;

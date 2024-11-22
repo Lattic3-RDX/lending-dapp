@@ -13,7 +13,7 @@ export const borrowColumns: ColumnDef<Asset>[] = [
     header: "Select assets",
     size: 100,
     cell: ({ row }) => {
-      const isUnavailable = !row.original.available || row.original.available <= 0;
+      const isUnavailable = !row.original.available || row.original.available.toNumber() <= 0;
       return (
         <Checkbox
           checked={row.getIsSelected()}
@@ -34,7 +34,7 @@ export const borrowColumns: ColumnDef<Asset>[] = [
     header: "Asset",
     size: 200,
     cell: ({ row }) => {
-      const isUnavailable = !row.original.available || row.original.available <= 0;
+      const isUnavailable = !row.original.available || row.original.available.toNumber() <= 0;
       return (
         <div className={`flex items-center gap-3 ${isUnavailable ? "opacity-50" : ""}`}>
           <img
@@ -76,7 +76,7 @@ export const borrowColumns: ColumnDef<Asset>[] = [
       const isExpanded = row.getIsExpanded();
       const isSelected = row.getIsSelected();
       if (isExpanded) return null;
-      return <div>{isSelected && row.original.select_native > 0 ? row.original.select_native : "-"}</div>;
+      return <div>{isSelected && row.original.select_native.toNumber() > 0 ? row.original.select_native.toNumber() : "-"}</div>;
     },
   },
   {
