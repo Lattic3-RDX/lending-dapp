@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
@@ -7,6 +7,11 @@ import { ColumnDef, flexRender, getCoreRowModel, useReactTable } from "@tanstack
 import { getAssetIcon, AssetName, getAssetAPR, getAssetPrice } from "@/types/asset";
 import { num, bn, m_bn, round_dec, math } from "@/lib/math";
 import { BigNumber } from "mathjs";
+import { TransactionPreview } from "@/components/transaction-preview";
+import { useRadixContext } from "@/contexts/provider";
+import position_borrow_rtm from "@/lib/manifests/position_borrow";
+import config from "@/lib/config.json";
+import { gatewayApi } from "@/lib/radix";
 
 interface Asset {
   label: string;
@@ -108,6 +113,49 @@ const BorrowDialog: React.FC<BorrowDialogProps> = ({
     }
   };
 
+  const { accounts } = useRadixContext();
+  const [manifest, setManifest] = useState<string>("");
+  const [nftInfo, setNftInfo] = useState<{ address: string; localId: string } | null>(null);
+
+  useEffect(() => {
+    const fetchNFTInfo = async () => {
+      if (!accounts || !isOpen) return;
+      
+      const accountState = await gatewayApi?.state.getEntityDetailsVaultAggregated(accounts[0].address);
+      const getNFTBalance = accountState?.non_fungible_resources.items.find(
+        (fr: { resource_address: string }) => fr.resource_address === config.borrowerBadgeAddr,
+      )?.vaults.items[0];
+
+      if (getNFTBalance?.items?.[0]) {
+        setNftInfo({
+          address: config.borrowerBadgeAddr,
+          localId: getNFTBalance.items[0]
+        });
+      }
+    };
+
+    fetchNFTInfo();
+  }, [accounts, isOpen]);
+
+  useEffect(() => {
+    if (!accounts || !isOpen || !nftInfo) return;
+
+    const assetsToBorrow = selectedAssets.map((asset) => ({
+      address: asset.address,
+      amount: round_dec(asset.select_native).toString(),
+    }));
+
+    const previewManifest = position_borrow_rtm({
+      component: config.marketComponent,
+      account: accounts[0].address,
+      position_badge_address: nftInfo.address,
+      position_badge_local_id: nftInfo.localId,
+      assets: assetsToBorrow,
+    });
+
+    setManifest(previewManifest);
+  }, [accounts, selectedAssets, isOpen, nftInfo]);
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px] p-6">
@@ -171,6 +219,8 @@ const BorrowDialog: React.FC<BorrowDialogProps> = ({
             </TableBody>
           </Table>
         </div>
+
+        <TransactionPreview manifest={manifest} />
 
         <DialogFooter>
           <Button className="w-full h-12 text-base" onClick={handleConfirm} disabled={isLoading}>

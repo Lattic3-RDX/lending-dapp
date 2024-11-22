@@ -2,11 +2,16 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { TruncatedNumber } from "@/components/ui/truncated-number";
-import { bn, m_bn, math, num } from "@/lib/math";
+import { bn, m_bn, math, num, round_dec } from "@/lib/math";
 import { Asset, getAssetIcon, getAssetPrice } from "@/types/asset";
 import { ArrowRight, X } from "lucide-react";
 import { BigNumber } from "mathjs";
 import React, { useEffect, useState } from "react";
+import { TransactionPreview } from "@/components/transaction-preview";
+import { useRadixContext } from "@/contexts/provider";
+import position_withdraw_rtm from "@/lib/manifests/position_withdraw";
+import config from "@/lib/config.json";
+import { gatewayApi } from "@/lib/radix";
 
 interface WithdrawDialogProps {
   isOpen: boolean;
@@ -34,6 +39,9 @@ export function WithdrawDialog({
   const [transactionState, setTransactionState] = useState<"idle" | "awaiting_signature" | "processing" | "error">(
     "idle",
   );
+  const { accounts } = useRadixContext();
+  const [manifest, setManifest] = useState<string>("");
+  const [nftInfo, setNftInfo] = useState<{ address: string; localId: string } | null>(null);
 
   const validateAmount = (value: string) => {
     const amount = bn(value != "" ? value : 0);
@@ -100,6 +108,51 @@ export function WithdrawDialog({
       }
     }
   };
+
+  // Add NFT info fetching effect
+  useEffect(() => {
+    const fetchNFTInfo = async () => {
+      if (!accounts || !isOpen) return;
+      
+      const accountState = await gatewayApi?.state.getEntityDetailsVaultAggregated(accounts[0].address);
+      const getNFTBalance = accountState?.non_fungible_resources.items.find(
+        (fr: { resource_address: string }) => fr.resource_address === config.borrowerBadgeAddr,
+      )?.vaults.items[0];
+
+      if (getNFTBalance?.items?.[0]) {
+        setNftInfo({
+          address: config.borrowerBadgeAddr,
+          localId: getNFTBalance.items[0]
+        });
+      }
+    };
+
+    fetchNFTInfo();
+  }, [accounts, isOpen]);
+
+  // Add manifest generation effect
+  useEffect(() => {
+    if (!accounts || !isOpen || !nftInfo || !tempAmount) return;
+
+    const amount = round_dec(bn(tempAmount)).toString();
+    
+    const previewManifest = position_withdraw_rtm({
+      component: config.marketComponent,
+      account: accounts[0].address,
+      position_badge_address: nftInfo.address,
+      position_badge_local_id: nftInfo.localId,
+      asset: {
+        address: asset.address,
+        amount: amount,
+      },
+      required: {
+        address: asset.address,
+        amount: amount,  // Same amount since we're withdrawing what we put in
+      }
+    });
+
+    setManifest(previewManifest);
+  }, [accounts, asset, tempAmount, isOpen, nftInfo]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -183,6 +236,8 @@ export function WithdrawDialog({
               </div>
             </div>
           </div>
+
+          <TransactionPreview manifest={manifest} />
 
           <Button
             className="w-full h-12 text-base"

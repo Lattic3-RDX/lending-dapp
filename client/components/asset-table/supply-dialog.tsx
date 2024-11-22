@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, X } from "lucide-react";
@@ -8,6 +8,11 @@ import { ColumnDef, flexRender, getCoreRowModel, useReactTable } from "@tanstack
 import { getAssetIcon, AssetName, getAssetPrice } from "@/types/asset";
 import { num, bn, m_bn, round_dec, math } from "@/lib/math";
 import { BigNumber } from "mathjs";
+import { TransactionPreview } from "@/components/transaction-preview";
+import open_position_rtm from "@/lib/manifests/open_position";
+import position_supply_rtm from "@/lib/manifests/position_supply";
+import { useRadixContext } from "@/contexts/provider";
+import config from "@/lib/config.json";
 
 interface Asset {
   label: string;
@@ -66,10 +71,30 @@ const SupplyDialog: React.FC<SupplyDialogProps> = ({
   totalSupply,
   totalBorrowDebt,
 }) => {
+  const { accounts } = useRadixContext();
+  const [manifest, setManifest] = useState<string>("");
   const [totalUsdValue, setTotalUsdValue] = React.useState(0);
   const [transactionState, setTransactionState] = useState<"idle" | "awaiting_signature" | "processing" | "error">(
     "idle",
   );
+
+  useEffect(() => {
+    if (!accounts || !isOpen) return;
+
+    const assetsToSupply = selectedAssets.map((asset) => ({
+      address: asset.address,
+      amount: round_dec(asset.select_native).toString(),
+    }));
+
+    // Generate manifest for preview
+    const previewManifest = open_position_rtm({
+      component: config.marketComponent,
+      account: accounts[0].address,
+      assets: assetsToSupply,
+    });
+
+    setManifest(previewManifest);
+  }, [accounts, selectedAssets, isOpen]);
 
   React.useEffect(() => {
     const calculateTotal = async () => {
@@ -169,6 +194,8 @@ const SupplyDialog: React.FC<SupplyDialogProps> = ({
             </TableBody>
           </Table>
         </div>
+
+        <TransactionPreview manifest={manifest} />
 
         <DialogFooter className="mt-6">
           <Button onClick={handleConfirm} className="w-full h-12 text-base" disabled={transactionState !== "idle"}>
