@@ -204,7 +204,7 @@ function ActionCell({
       const debtAmount = m_bn(math.min(m_bn(math.multiply(amount, slippageMultiplier)), row.original.wallet_balance));
       console.log("Debt amount:", debtAmount.toString());
 
-      const requested = debtAmount == row.original.wallet_balance ? "None" : amount;
+      const debtRequested = math.largerEq(debtAmount, row.original.select_native) ? "None" : round_dec(amount);
 
       const manifest = position_repay_rtm({
         component: marketComponent,
@@ -215,7 +215,7 @@ function ActionCell({
           address: row.original.address,
           amount: round_dec(debtAmount).toString(),
         },
-        requested: requested.toString(),
+        requested: debtRequested.toString(),
       });
 
       console.log("Repay manifest:", manifest);

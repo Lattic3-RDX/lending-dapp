@@ -151,14 +151,18 @@ export function RepayDialog({ isOpen, onClose, onConfirm, asset, totalSupply, to
       if (!accounts || !isOpen || !nftInfo || !tempAmount) return;
 
       const selectAmount = round_dec(bn(tempAmount));
-      const debtBalance = await getWalletBalance(asset.label, accounts[0].address);
 
-      const debtRecord: Record<AssetName, BigNumber> = {
-        [asset.label]: selectAmount,
-      } as Record<AssetName, BigNumber>;
+      // const debtRecord: Record<AssetName, BigNumber> = {
+      //   [asset.label]: selectAmount,
+      // } as Record<AssetName, BigNumber>;
 
-      const debtAmount = m_bn(math.min(m_bn(math.multiply(selectAmount, 1 + slippage / 100)), debtBalance));
-      const debtRequested = debtAmount == debtBalance ? "None" : selectAmount;
+      const debtAmount = m_bn(math.min(m_bn(math.multiply(selectAmount, 1 + slippage / 100)), asset.wallet_balance));
+      console.log("Debt amount:", debtAmount.toString());
+      console.log("wallet balance:", asset.wallet_balance.toString());
+      console.log("select native:", asset.select_native.toString());
+
+      // If the repayment * slippage is larger than the amount owed, do not limit the transaction
+      const debtRequested = math.largerEq(debtAmount, asset.select_native) ? "None" : round_dec(selectAmount);
 
       const previewManifest = position_repay_rtm({
         component: config.marketComponent,
@@ -166,7 +170,7 @@ export function RepayDialog({ isOpen, onClose, onConfirm, asset, totalSupply, to
         position_badge_address: nftInfo.address,
         position_badge_local_id: nftInfo.localId,
         asset: {
-          address: asset.pool_unit_address,
+          address: asset.address,
           amount: round_dec(debtAmount).toString(),
         },
         requested: debtRequested.toString(),
