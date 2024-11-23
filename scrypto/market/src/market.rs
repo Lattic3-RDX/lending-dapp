@@ -56,7 +56,8 @@ mod lattic3 {
 
     // Importing price stream blueprint
     extern_blueprint! {
-        "package_tdx_2_1p4ual4cc8tnvm93atjlp9q5ua3ae5l0xkgnd68mlqz6ehlr98qxr53",
+        // "package_sim1pkwaf2l9zkmake5h924229n44wp5pgckmpn0lvtucwers56awywems", // Resim
+        "package_tdx_2_1p4ual4cc8tnvm93atjlp9q5ua3ae5l0xkgnd68mlqz6ehlr98qxr53", // Stokenet
         PriceStream {
             fn get_price(&self, asset: ResourceAddress) -> Option<Decimal>;
         }
@@ -64,7 +65,8 @@ mod lattic3 {
 
     // Importing cluster blueprint
     extern_blueprint! {
-        "package_tdx_2_1p5txanumqvgq6gd7mp2y8t3uhhf4dznczdjpgfyydsulgukye0yc9s",
+        // "package_sim1pkys4qlttszxq29qw5ys9lvn8grmswd0n6nsxrdxce3er3l85eagjm", // Resim
+        "package_tdx_2_1p5py400gyuq4n0l4u00uga763zre5u4teh9rp6m49frdruua4z2fhz", // Stokenet
         Cluster {
             fn instantiate(resource: ResourceAddress, cluster_owner_rule: AccessRule, cluster_admin_rule: AccessRule) -> Global<Cluster>;
 
@@ -75,7 +77,7 @@ mod lattic3 {
 
             fn get_ratio(&self, layer: ClusterLayer) -> PreciseDecimal;
             fn get_units(&self, layer: ClusterLayer, amount: Decimal) -> Decimal;
-            fn get_value(&self, layer: ClusterLayer, unit_amount: Decimal) -> Decimal;
+            fn get_amount(&self, layer: ClusterLayer, unit_amount: Decimal) -> Decimal;
             fn get_cluster_state(&self) -> ClusterState;
 
             fn provide_liquidity(&mut self, provided: Bucket);
@@ -379,10 +381,6 @@ mod lattic3 {
             // Recalculate supply
             position.update_supply(&HashMap::from([(address, supply_unit_amount.checked_mul(dec!(-1)).unwrap())]));
 
-            // Ensure that operation won't put position health below 1.0
-            let health = self.calculate_health_from_units(position.supply.clone(), position.debt.clone());
-            assert!(health >= dec!(1.0), "Position health will be below 1.0. Reverting operation");
-
             // Withdraw from cluster
             let withdrawn = self
                 .assets
@@ -392,12 +390,9 @@ mod lattic3 {
                 .cluster
                 .withdraw(supply_units);
 
-            // Fire position withdraw event
-            // Runtime::emit_event(PositionWithdrawEvent {
-            //     position_id: local_id.clone(),
-            //     supply_unit: (supply_unit_address, supply_unit_amount),
-            //     withdraw: (address, withdrawn.amount().into()),
-            // });
+            // Ensure that operation won't put position health below 1.0
+            let health = self.calculate_health_from_units(position.supply.clone(), position.debt.clone());
+            assert!(health >= dec!(1.0), "Position health will be below 1.0. Reverting operation");
 
             // Update NFT data or burn if empty
             if position.supply.is_empty() && position.debt.is_empty() {
@@ -406,6 +401,13 @@ mod lattic3 {
             }
 
             self.position_manager.update_non_fungible_data(&local_id, "supply", position.supply);
+
+            // Fire position withdraw event
+            // Runtime::emit_event(PositionWithdrawEvent {
+            //     position_id: local_id.clone(),
+            //     supply_unit: (supply_unit_address, supply_unit_amount),
+            //     withdraw: (address, withdrawn.amount().into()),
+            // });
 
             (position_bucket, withdrawn)
         }
@@ -428,28 +430,37 @@ mod lattic3 {
 
             // Convert debt to debt units
             let asset = self.assets.get(&address).expect("Cannot get asset entry");
-            let debt_units = asset.cluster_wrapper.cluster.get_units(ClusterLayer::Debt, amount);
-
-            let repay_units = debt_units.min(*position.debt.get(&address).unwrap()); // Calculate amount of debt units to be repaid
-            let repay_amount = asset.cluster_wrapper.cluster.get_value(ClusterLayer::Debt, repay_units); // Convert debt units to debt amount
+            let repay_amount = asset
+                .cluster_wrapper
+                .cluster
+                .get_amount(ClusterLayer::Debt, *position.debt.get(&address).unwrap())
+                .min(amount);
 
             info!(
-                "asset: {:?} | amount: {:?} | units: {:?} | repay_units: {:?} | repay_amount: {:?}",
-                address, amount, debt_units, repay_units, repay_amount
+                "Repay amount: {:?} | Debt units: {:?} | Repayment amount: {:?}",
+                repay_amount,
+                position.debt.get(&address).unwrap(),
+                amount
             );
 
             drop(asset); // ! Temporary fix until a better cluster management system is implemented
 
-            // Recalculate debt
-            position.update_debt(&HashMap::from([(address, repay_units.checked_mul(dec!(-1)).unwrap())]));
-
             // Execute repayment
-            self.assets
+            let repay_units = self
+                .assets
                 .get_mut(&address)
                 .expect("Cannot get asset entry")
                 .cluster_wrapper
                 .cluster
                 .repay(debt.take(repay_amount));
+
+            info!(
+                "asset: {:?} | amount: {:?} | repay_units: {:?} | repay_amount: {:?}",
+                address, amount, repay_units, repay_amount
+            );
+
+            // Recalculate debt
+            position.update_debt(&HashMap::from([(address, repay_units.checked_mul(dec!(-1)).unwrap())]));
 
             // Fire position repay event
             // Runtime::emit_event(PositionRepayEvent { position_id: local_id.clone(), repay: (address, amount) });
@@ -504,7 +515,7 @@ mod lattic3 {
                         .unwrap()
                         .cluster_wrapper
                         .cluster
-                        .get_value(ClusterLayer::Supply, unit_amount);
+                        .get_amount(ClusterLayer::Supply, unit_amount);
                     info!("Supply {:?}; units: {:?} -> amount: {:?}", address, unit_amount, amount);
                     (address, amount)
                 })
@@ -523,7 +534,7 @@ mod lattic3 {
                         .unwrap()
                         .cluster_wrapper
                         .cluster
-                        .get_value(ClusterLayer::Debt, unit_amount);
+                        .get_amount(ClusterLayer::Debt, unit_amount);
                     info!("Debt {:?}; units: {:?} -> amount: {:?}", address, unit_amount, amount);
                     (address, amount)
                 })

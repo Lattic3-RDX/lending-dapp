@@ -5,17 +5,17 @@ CALL_METHOD
   Decimal("1");
 
 CALL_METHOD
-    Address("component_tdx_2_1crz8z5at4q2ptuftylcuke05kmsezwrtxsfj3mlpe66h4mjs466wwe")
+    Address("component_tdx_2_1cpcgztzezgtr74ynzc4gzpk0kq45xxyvzwg25qm2jc4ujhl6a99vpk")
     "add_asset"
     Address("resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxtfd2jc");
 
 CALL_METHOD
-    Address("component_tdx_2_1crz8z5at4q2ptuftylcuke05kmsezwrtxsfj3mlpe66h4mjs466wwe")
+    Address("component_tdx_2_1cpcgztzezgtr74ynzc4gzpk0kq45xxyvzwg25qm2jc4ujhl6a99vpk")
     "add_asset"
     Address("resource_tdx_2_1tkuj2rqsa63f8ygkzezgt27trj50srht5e666jaz28j5ss8fasg5kl");
 
 CALL_METHOD
-    Address("component_tdx_2_1crz8z5at4q2ptuftylcuke05kmsezwrtxsfj3mlpe66h4mjs466wwe")
+    Address("component_tdx_2_1cpcgztzezgtr74ynzc4gzpk0kq45xxyvzwg25qm2jc4ujhl6a99vpk")
     "add_asset"
     Address("resource_tdx_2_1t57e50rm28cyqwn26jn336qyhu8nkt8cknacq8rnsn5kul2l3zvjut");
 

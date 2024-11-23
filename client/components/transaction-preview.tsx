@@ -14,14 +14,21 @@ export function TransactionPreview({ manifest }: TransactionPreviewProps) {
   useEffect(() => {
     const previewTransaction = async () => {
       if (!manifest) return;
-      
+
       setStatus("loading");
       setError(null);
-      
+
       try {
         const preview = await getPreview(manifest);
         console.log("Preview result:", preview);
-        setStatus("success");
+        const receipt: any = preview.receipt;
+
+        if (receipt.status === "Succeeded") {
+          setStatus("success");
+        } else {
+          setError("Preview failed");
+          setStatus("error");
+        }
       } catch (err) {
         console.error("Preview error:", err);
         setError(err instanceof Error ? err.message : "Preview failed");
@@ -42,12 +49,8 @@ export function TransactionPreview({ manifest }: TransactionPreviewProps) {
           <span className="text-muted-foreground truncate">Transaction preview in progress...</span>
         </>
       )}
-      {status === "success" && (
-        <span className="text-green-500">Preview successful</span>
-      )}
-      {status === "error" && (
-        <span className="text-destructive truncate">Preview failed: {error}</span>
-      )}
+      {status === "success" && <span className="text-green-500">Preview successful</span>}
+      {status === "error" && <span className="text-destructive truncate">Preview failed: {error}</span>}
     </div>
   );
-} 
+}
