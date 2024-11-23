@@ -1,7 +1,7 @@
 {
-  "marketComponent": "component_tdx_2_1cpcgztzezgtr74ynzc4gzpk0kq45xxyvzwg25qm2jc4ujhl6a99vpk",
+  "marketComponent": "component_tdx_2_1cpasckxa9xx20kqwera0fqwr6n0d92gs43ga3yy3srxhca4gqzxg30",
   "priceStreamComponent": "component_tdx_2_1cr2tc89rej7dp6ll27nnqlh62gj6z4fyvxamxg85wln5jmysnkdt9r",
-  "borrowerBadgeAddr": "resource_tdx_2_1ntar8vfv22gx7h3xzvpe098f8ng9rpj80z699mx8c6vxuk77m9jrlz",
+  "borrowerBadgeAddr": "resource_tdx_2_1nfnap2tmp9e7zf5t0gmv0pynj7wpmrdlr7zjxmejh0ax0xd28zawtg",
   "dAppDefinitionAddr": "account_tdx_2_12xfek2nncckfppcslye0vwusaq6qtt6j896w5tcmfh7wy78hjzqc96",
   "gatewayApi": "https://babylon-gateway.radixdlt.com"
 }
