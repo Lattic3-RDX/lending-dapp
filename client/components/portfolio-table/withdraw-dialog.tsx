@@ -148,23 +148,25 @@ export function WithdrawDialog({
     const preview = async () => {
       if (!accounts || !isOpen || !nftInfo || !tempAmount) return;
 
-      const selectAmount = round_dec(bn(tempAmount));
+      const selectAmount = bn(tempAmount);
       const supplyUnitBalance = await getUnitBalance(accounts[0].address, asset.label);
+      console.log("Supply unit balance:", supplyUnitBalance.toString());
 
       const supplyRecord: Record<AssetName, BigNumber> = {
         [asset.label]: selectAmount,
       } as Record<AssetName, BigNumber>;
 
+      const rawSupplyUnits = await ammountToSupplyUnits(supplyRecord);
+      console.log("Raw supply units:", rawSupplyUnits.toString());
       let supplyUnits = m_bn(math.multiply(await ammountToSupplyUnits(supplyRecord), 1 + slippage / 100));
+      console.log("With slippage:", 1 + slippage / 100, supplyUnits.toString());
       supplyUnits = m_bn(math.min(supplyUnits, supplyUnitBalance));
-      const amount = m_bn(
-        math.min(
-          selectAmount,
-          await supplyUnitsToAmount({
-            [asset.label]: supplyUnits,
-          } as Record<AssetName, BigNumber>),
-        ),
-      );
+      console.log("Supply units:", supplyUnits.toString(), math.equal(supplyUnits, supplyUnitBalance));
+      const supplyRequested = math.equal(supplyUnits, supplyUnitBalance)
+        ? "None"
+        : round_dec(
+            await supplyUnitsToAmount({ [asset.label]: supplyUnits } as Record<AssetName, BigNumber>),
+          ).toString();
 
       const previewManifest = position_withdraw_rtm({
         component: config.marketComponent,
@@ -175,7 +177,7 @@ export function WithdrawDialog({
           address: asset.pool_unit_address,
           amount: round_dec(supplyUnits).toString(),
         },
-        requested: amount.toString(),
+        requested: supplyRequested.toString(),
       });
 
       setManifest(previewManifest);

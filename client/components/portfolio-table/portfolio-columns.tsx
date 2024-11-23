@@ -93,18 +93,17 @@ function ActionCell({
       supplyUnits = m_bn(math.min(supplyUnits, supplyUnitBalance));
 
       // If amount is supplyUnitBalance, do not set requested. Else,
-      const withdrawAmount =
-        supplyUnits == supplyUnitBalance
-          ? "None"
-          : m_bn(
-              math.multiply(
-                math.min(
-                  amount,
-                  await supplyUnitsToAmount({ [row.original.label]: supplyUnits } as Record<AssetName, BigNumber>),
-                ),
-                math.subtract(2, slippageMultiplier),
+      const withdrawAmount = math.equal(supplyUnits, supplyUnitBalance)
+        ? "None"
+        : m_bn(
+            math.multiply(
+              math.min(
+                amount,
+                await supplyUnitsToAmount({ [row.original.label]: supplyUnits } as Record<AssetName, BigNumber>),
               ),
-            );
+              math.subtract(2, slippageMultiplier),
+            ),
+          );
 
       if (!getNFTBalance?.items?.[0]) {
         toast({
