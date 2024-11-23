@@ -35,6 +35,8 @@ import {
 import { RowSelectionState, Updater } from "@tanstack/react-table";
 import { BigNumber } from "mathjs";
 import React, { useEffect, useState } from "react";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 
 interface NFTData {
   data: {
@@ -258,7 +260,7 @@ export default function App() {
       const netAPRValue: number =
         math.larger(totalSupplyValue, 0) || math.larger(totalDebtValue, 0)
           ? (calculatedSupplyAPR * num(totalSupplyValue) - calculatedBorrowAPR * num(totalDebtValue)) /
-            (num(totalSupplyValue) > 0 ? num(totalSupplyValue) : num(totalDebtValue))
+          (num(totalSupplyValue) > 0 ? num(totalSupplyValue) : num(totalDebtValue))
           : 0;
 
       console.log("Supply APR: ", calculatedSupplyAPR);
@@ -581,8 +583,15 @@ export default function App() {
   return (
     <div className="relative min-h-screen">
       <BackgroundEffects />
-      <main className="flex min-h-screen flex-col items-center justify-center p-8">
-        <div className="container mx-auto py-10 space-y-8">
+      <main className="flex min-h-screen flex-col p-8">
+        <div className="container mx-auto space-y-4">
+          {/* Title */}
+          <div className="flex flex-col space-y-1.5 mb-6">
+            <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
+              Lattic3 Market
+            </h1>
+          </div>
+
           {/* Statistics Card */}
           <StatisticsCard healthRatio={health} netWorth={netWorth} netAPR={netAPR} isLoading={isLoading} />
 
@@ -592,18 +601,24 @@ export default function App() {
             <Card>
               <CardHeader>
                 <div className="grid grid-cols-2">
-                  <CardTitle>Your Supply</CardTitle>
-                  <div className="flex justify-end">
-                    <div className="grid grid-cols-[auto,1fr] gap-x-6 items-center min-h-[72px]">
-                      <CardDescription className="text-left text-foreground">Total Supply:</CardDescription>
-                      <CardDescription className="text-right text-foreground">
-                        ${totalSupply.toFixed(2)}
-                      </CardDescription>
-                      <CardDescription className="text-left text-foreground">Total APR:</CardDescription>
-                      <CardDescription className="text-right text-foreground">
-                        {totalSupplyAPR.toFixed(1)}%
-                      </CardDescription>
-                      <div className="col-span-2"></div>
+                  <div className="flex flex-col gap-1">
+                    <CardTitle>Your Supply</CardTitle>
+                    <span className="text-2xl font-semibold">${totalSupply.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-end h-[60px] sm:h-[70px] md:h-[80px] lg:h-[90px]">
+                    <div className="space-y-4">
+                      <div className="flex flex-col gap-2">
+                        {/* APR */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-foreground">APR</span>
+                          <span className={`px-2 py-1 text-sm font-medium rounded-full ${totalSupplyAPR > 0
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-red-100 text-red-700'
+                            }`}>
+                            {totalSupplyAPR.toFixed(1)}%
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -617,21 +632,70 @@ export default function App() {
             <Card>
               <CardHeader>
                 <div className="grid grid-cols-2">
-                  <CardTitle>Your Borrows</CardTitle>
-                  <div className="flex justify-end">
-                    <div className="grid grid-cols-[auto,1fr] gap-x-6 items-center min-h-[72px]">
-                      <CardDescription className="text-left text-foreground">Total Debt:</CardDescription>
-                      <CardDescription className="text-right text-foreground">
-                        ${totalBorrowDebt.toFixed(2)}
-                      </CardDescription>
-                      <CardDescription className="text-left text-foreground">Total APR:</CardDescription>
-                      <CardDescription className="text-right text-foreground">
-                        {totalBorrowAPR.toFixed(1)}%
-                      </CardDescription>
-                      <CardDescription className="text-left text-foreground">Borrow Power Used:</CardDescription>
-                      <CardDescription className="text-right text-foreground">
-                        {borrowPowerUsed.toFixed(1)}%
-                      </CardDescription>
+                  <div className="flex flex-col gap-1">
+                    <CardTitle>Your Borrows</CardTitle>
+                    <span className="text-2xl font-semibold">${totalBorrowDebt.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-end h-[60px] sm:h-[70px] md:h-[80px] lg:h-[90px]">
+                    <div className="space-y-4">
+                      <div className="flex flex-col gap-2">
+                        {/* APR */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-foreground">APR</span>
+                          <span className={`px-2 py-1 text-sm font-medium rounded-full ${totalBorrowAPR > 0
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-green-100 text-green-700'
+                            }`}>
+                            {totalBorrowAPR.toFixed(1)}%
+                          </span>
+                        </div>
+
+                        {/* Borrow Power Section */}
+                        <div className="flex flex-col gap-2">
+                          <div className="flex justify-between items-center gap-x-4">
+                            <span className="text-sm text-foreground">Borrow Power Used</span>
+                            <span className={`text-sm font-semibold ${borrowPowerUsed >= 80
+                                ? 'text-red-500'
+                                : borrowPowerUsed >= 50
+                                  ? 'text-yellow-500'
+                                  : 'text-blue-500'
+                              }`}>
+                              {borrowPowerUsed.toFixed(1)}%
+                            </span>
+                          </div>
+
+                          {/* Progress Bar */}
+                          <div className="relative w-full h-3">
+                            <div className="absolute w-full h-full bg-secondary rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all duration-300 ${borrowPowerUsed >= 80
+                                    ? 'bg-gradient-to-r from-red-500 to-red-400'
+                                    : borrowPowerUsed >= 50
+                                      ? 'bg-gradient-to-r from-yellow-500 to-yellow-400'
+                                      : 'bg-gradient-to-r from-blue-500 to-blue-400'
+                                  }`}
+                                style={{ width: `${Math.min(borrowPowerUsed, 100)}%` }}
+                              />
+                            </div>
+                            <div className="absolute w-full h-full flex justify-between items-center px-[2px]">
+                              {[25, 50, 75].map((milestone) => (
+                                <div
+                                  key={milestone}
+                                  className={`w-0.5 h-1.5 bg-secondary-foreground/20 rounded-full ${borrowPowerUsed >= milestone ? 'opacity-100' : 'opacity-50'
+                                    }`}
+                                />
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Risk Labels */}
+                          <div className="flex justify-between items-center text-[10px] uppercase tracking-wider font-medium text-muted-foreground/60">
+                            <span>Safe</span>
+                            <span>Moderate</span>
+                            <span>High Risk</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

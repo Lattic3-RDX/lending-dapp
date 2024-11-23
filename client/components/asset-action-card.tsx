@@ -126,24 +126,34 @@ export function AssetActionCard({
             )}
           </div>
           <div className="flex items-center space-x-2">
-            <Label 
-              htmlFor="mode-toggle" 
-              className={`transition-opacity ${!isBorrowMode ? "opacity-100 font-bold text-green-700" : "opacity-50"}`}
-            >
-              Supply
-            </Label>
+            <div className="w-16 text-center">
+              <span 
+                className={`transition-all ${
+                  !isBorrowMode 
+                    ? "font-bold text-green-700" 
+                    : "font-normal text-foreground opacity-40"
+                }`}
+              >
+                Supply
+              </span>
+            </div>
             <Switch 
               id="mode-toggle" 
               checked={isBorrowMode} 
               onCheckedChange={setIsBorrowMode}
               className={isBorrowMode ? "data-[state=checked]:bg-red-500" : "data-[state=checked]:bg-green-500"}
             />
-            <Label 
-              htmlFor="mode-toggle" 
-              className={`transition-opacity ${isBorrowMode ? "opacity-100 font-bold text-red-700" : "opacity-50"}`}
-            >
-              Borrow
-            </Label>
+            <div className="w-16 text-center">
+              <span 
+                className={`transition-all ${
+                  isBorrowMode 
+                    ? "font-bold text-red-700" 
+                    : "font-normal text-foreground opacity-40"
+                }`}
+              >
+                Borrow
+              </span>
+            </div>
           </div>
         </div>
       </CardHeader>
