@@ -244,8 +244,37 @@ export const borrowUnitsToAmount = async (asset: Record<AssetName, BigNumber>): 
     return bn(-1);
   }
 
-  const amount = round_dec(m_bn(math.multiply(borrowUnits, bn(cluster.debt_ratio))));
+  const amount = round_dec(m_bn(math.divide(borrowUnits, bn(cluster.debt_ratio))));
   console.log("Amount: ", amount.toString());
+
+  return amount;
+};
+
+export const amountToBorrowUnits = async (asset: Record<AssetName, BigNumber>): Promise<BigNumber> => {
+  const address = getAssetAddress(Object.keys(asset)[0] as AssetName);
+  const borrowUnits = Object.values(asset)[0];
+
+  console.log("Address: ", address.toString());
+  console.log("Amount: ", borrowUnits.toString());
+
+  const cluster_states_res = await fetch("api/assets/clusters", { method: "GET" });
+
+  if (!cluster_states_res.ok) {
+    console.error("Error fetching cluster states:", cluster_states_res.statusText);
+    return bn(-1);
+  }
+
+  const cluster_states = await cluster_states_res.json();
+  const cluster = cluster_states[address];
+  console.log("Cluster: ", cluster);
+
+  if (!cluster) {
+    console.error(`No cluster state found for asset ${address}`);
+    return bn(-1);
+  }
+
+  const amount = round_dec(m_bn(math.multiply(borrowUnits, bn(cluster.debt_ratio))));
+  console.log("Borrow unit amount: ", amount.toString());
 
   return amount;
 };

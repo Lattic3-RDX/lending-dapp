@@ -223,14 +223,13 @@ export default function App() {
           const [label] = assetConfig;
 
           const assetName = label as AssetName;
-          const amount = borrowedAsset.borrowed_amount;
           const unitRecord: Record<AssetName, BigNumber> = {
             [assetName]: borrowedAsset.borrowed_amount,
           } as Record<AssetName, BigNumber>;
 
-          const value = await borrowUnitsToAmount(unitRecord);
+          const amount = await borrowUnitsToAmount(unitRecord);
           const price = await getAssetPrice(assetName);
-          totalDebtValue = m_bn(math.add(totalDebtValue, math.multiply(value, price)));
+          totalDebtValue = m_bn(math.add(totalDebtValue, math.multiply(amount, price)));
 
           return {
             address: borrowedAsset.address,
@@ -260,7 +259,7 @@ export default function App() {
       const netAPRValue: number =
         math.larger(totalSupplyValue, 0) || math.larger(totalDebtValue, 0)
           ? (calculatedSupplyAPR * num(totalSupplyValue) - calculatedBorrowAPR * num(totalDebtValue)) /
-          (num(totalSupplyValue) > 0 ? num(totalSupplyValue) : num(totalDebtValue))
+            (num(totalSupplyValue) > 0 ? num(totalSupplyValue) : num(totalDebtValue))
           : 0;
 
       console.log("Supply APR: ", calculatedSupplyAPR);
@@ -587,9 +586,7 @@ export default function App() {
         <div className="container mx-auto space-y-4">
           {/* Title */}
           <div className="flex flex-col space-y-1.5 mb-6">
-            <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
-              Lattic3 Market
-            </h1>
+            <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">Lattic3 Market</h1>
           </div>
 
           {/* Statistics Card */}
@@ -611,10 +608,11 @@ export default function App() {
                         {/* APR */}
                         <div className="flex items-center gap-2">
                           <span className="text-sm text-foreground">APR</span>
-                          <span className={`px-2 py-1 text-sm font-medium rounded-full ${totalSupplyAPR > 0
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-red-100 text-red-700'
-                            }`}>
+                          <span
+                            className={`px-2 py-1 text-sm font-medium rounded-full ${
+                              totalSupplyAPR > 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                            }`}
+                          >
                             {totalSupplyAPR.toFixed(1)}%
                           </span>
                         </div>
@@ -642,10 +640,11 @@ export default function App() {
                         {/* APR */}
                         <div className="flex items-center gap-2">
                           <span className="text-sm text-foreground">APR</span>
-                          <span className={`px-2 py-1 text-sm font-medium rounded-full ${totalBorrowAPR > 0
-                              ? 'bg-red-100 text-red-700'
-                              : 'bg-green-100 text-green-700'
-                            }`}>
+                          <span
+                            className={`px-2 py-1 text-sm font-medium rounded-full ${
+                              totalBorrowAPR > 0 ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"
+                            }`}
+                          >
                             {totalBorrowAPR.toFixed(1)}%
                           </span>
                         </div>
@@ -654,12 +653,15 @@ export default function App() {
                         <div className="flex flex-col gap-2">
                           <div className="flex justify-between items-center gap-x-4">
                             <span className="text-sm text-foreground">Borrow Power Used</span>
-                            <span className={`text-sm font-semibold ${borrowPowerUsed >= 80
-                                ? 'text-red-500'
-                                : borrowPowerUsed >= 50
-                                  ? 'text-yellow-500'
-                                  : 'text-blue-500'
-                              }`}>
+                            <span
+                              className={`text-sm font-semibold ${
+                                borrowPowerUsed >= 80
+                                  ? "text-red-500"
+                                  : borrowPowerUsed >= 50
+                                    ? "text-yellow-500"
+                                    : "text-blue-500"
+                              }`}
+                            >
                               {borrowPowerUsed.toFixed(1)}%
                             </span>
                           </div>
@@ -668,12 +670,13 @@ export default function App() {
                           <div className="relative w-full h-3">
                             <div className="absolute w-full h-full bg-secondary rounded-full overflow-hidden">
                               <div
-                                className={`h-full rounded-full transition-all duration-300 ${borrowPowerUsed >= 80
-                                    ? 'bg-gradient-to-r from-red-500 to-red-400'
+                                className={`h-full rounded-full transition-all duration-300 ${
+                                  borrowPowerUsed >= 80
+                                    ? "bg-gradient-to-r from-red-500 to-red-400"
                                     : borrowPowerUsed >= 50
-                                      ? 'bg-gradient-to-r from-yellow-500 to-yellow-400'
-                                      : 'bg-gradient-to-r from-blue-500 to-blue-400'
-                                  }`}
+                                      ? "bg-gradient-to-r from-yellow-500 to-yellow-400"
+                                      : "bg-gradient-to-r from-blue-500 to-blue-400"
+                                }`}
                                 style={{ width: `${Math.min(borrowPowerUsed, 100)}%` }}
                               />
                             </div>
@@ -681,8 +684,9 @@ export default function App() {
                               {[25, 50, 75].map((milestone) => (
                                 <div
                                   key={milestone}
-                                  className={`w-0.5 h-1.5 bg-secondary-foreground/20 rounded-full ${borrowPowerUsed >= milestone ? 'opacity-100' : 'opacity-50'
-                                    }`}
+                                  className={`w-0.5 h-1.5 bg-secondary-foreground/20 rounded-full ${
+                                    borrowPowerUsed >= milestone ? "opacity-100" : "opacity-50"
+                                  }`}
                                 />
                               ))}
                             </div>
