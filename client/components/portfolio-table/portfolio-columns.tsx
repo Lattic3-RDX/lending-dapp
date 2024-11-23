@@ -2,7 +2,7 @@ import { useRadixContext } from "@/contexts/provider";
 import config from "@/lib/config.json";
 import position_repay_rtm from "@/lib/manifests/position_repay";
 import position_withdraw_rtm from "@/lib/manifests/position_withdraw";
-import { bn, m_bn, math, num } from "@/lib/math";
+import { bn, m_bn, math, num, round_dec } from "@/lib/math";
 import { gatewayApi, rdt } from "@/lib/radix";
 import {
   Asset,
@@ -88,10 +88,17 @@ function ActionCell({
       const supplyRecord: Record<AssetName, BigNumber> = {
         [row.original.label]: amount,
       } as Record<AssetName, BigNumber>;
+
       let supplyUnits = await ammountToSupplyUnits(supplyRecord);
-      console.log("Supply units: ", supplyUnits.toString());
       supplyUnits = m_bn(math.min(supplyUnits, supplyUnitBalance));
-      console.log("Supply units: ", supplyUnits.toString());
+      // ! Commented-out because the 'assert estimate' was calculated from the amount of supply units * slippage instead of just supply units
+      // const withdrawAmount = m_bn(
+      //   math.multiply(
+      //   math.min(
+      //     amount,
+      //     await supplyUnitsToAmount({ [row.original.label]: supplyUnits } as Record<AssetName, BigNumber>),
+      //   ), 1 - config.slippage / 100),
+      // );
 
       if (!getNFTBalance?.items?.[0]) {
         toast({
@@ -109,11 +116,11 @@ function ActionCell({
         position_badge_local_id: getNFTBalance.items[0],
         asset: {
           address: row.original.pool_unit_address ?? "",
-          amount: supplyUnits.toString(),
+          amount: round_dec(supplyUnits).toString(),
         },
         required: {
           address: row.original.address ?? "",
-          amount: amount.toString(),
+          amount: round_dec(bn(0)).toString(),
         },
       });
 

@@ -3,7 +3,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { TruncatedNumber } from "@/components/ui/truncated-number";
 import { bn, m_bn, math, num, round_dec } from "@/lib/math";
-import { Asset, getAssetIcon, getAssetPrice } from "@/types/asset";
+import {
+  ammountToSupplyUnits,
+  Asset,
+  AssetName,
+  getAssetIcon,
+  getAssetPrice,
+  getUnitBalance,
+  supplyUnitsToAmount,
+} from "@/types/asset";
 import { ArrowRight, X } from "lucide-react";
 import { BigNumber } from "mathjs";
 import React, { useEffect, useState } from "react";
@@ -100,7 +108,7 @@ export function WithdrawDialog({
       setTransactionState("awaiting_signature");
       try {
         // Add slippage to amount (convert percentage to decimal)
-        const slippageMultiplier = 1 + (slippage / 100);
+        const slippageMultiplier = 1 + slippage / 100;
         const amountWithSlippage = m_bn(math.multiply(amount, slippageMultiplier));
 
         await onConfirm(amountWithSlippage);
@@ -116,7 +124,7 @@ export function WithdrawDialog({
   useEffect(() => {
     const fetchNFTInfo = async () => {
       if (!accounts || !isOpen) return;
-      
+
       const accountState = await gatewayApi?.state.getEntityDetailsVaultAggregated(accounts[0].address);
       const getNFTBalance = accountState?.non_fungible_resources.items.find(
         (fr: { resource_address: string }) => fr.resource_address === config.borrowerBadgeAddr,
@@ -125,7 +133,7 @@ export function WithdrawDialog({
       if (getNFTBalance?.items?.[0]) {
         setNftInfo({
           address: config.borrowerBadgeAddr,
-          localId: getNFTBalance.items[0]
+          localId: getNFTBalance.items[0],
         });
       }
     };
@@ -135,26 +143,51 @@ export function WithdrawDialog({
 
   // Add manifest generation effect
   useEffect(() => {
-    if (!accounts || !isOpen || !nftInfo || !tempAmount) return;
+    // if (!accounts || !isOpen || !nftInfo || !tempAmount) return;
 
-    const amount = round_dec(bn(tempAmount)).toString();
-    
-    const previewManifest = position_withdraw_rtm({
-      component: config.marketComponent,
-      account: accounts[0].address,
-      position_badge_address: nftInfo.address,
-      position_badge_local_id: nftInfo.localId,
-      asset: {
-        address: asset.address,
-        amount: amount,
-      },
-      required: {
-        address: asset.address,
-        amount: amount,  // Same amount since we're withdrawing what we put in
-      }
-    });
+    const preview = async () => {
+      if (!accounts || !isOpen || !nftInfo || !tempAmount) return;
 
-    setManifest(previewManifest);
+      const selectAmount = round_dec(bn(tempAmount));
+      const supplyUnitBalance = await getUnitBalance(accounts[0].address, asset.label);
+
+      const supplyRecord: Record<AssetName, BigNumber> = {
+        [asset.label]: selectAmount,
+      } as Record<AssetName, BigNumber>;
+
+      let supplyUnits = m_bn(math.multiply(await ammountToSupplyUnits(supplyRecord), 1 + slippage / 100));
+      supplyUnits = m_bn(math.min(supplyUnits, supplyUnitBalance));
+      const amount = m_bn(
+        math.multiply(
+          math.min(
+            selectAmount,
+            await supplyUnitsToAmount({
+              [asset.label]: supplyUnits,
+            } as Record<AssetName, BigNumber>),
+          ),
+          1 - slippage / 100,
+        ),
+      );
+
+      const previewManifest = position_withdraw_rtm({
+        component: config.marketComponent,
+        account: accounts[0].address,
+        position_badge_address: nftInfo.address,
+        position_badge_local_id: nftInfo.localId,
+        asset: {
+          address: asset.pool_unit_address,
+          amount: round_dec(supplyUnits).toString(),
+        },
+        required: {
+          address: asset.address,
+          amount: round_dec(amount).toString(), // Same amount since we're withdrawing what we put in
+        },
+      });
+
+      setManifest(previewManifest);
+    };
+
+    preview();
   }, [accounts, asset, tempAmount, isOpen, nftInfo]);
 
   return (
