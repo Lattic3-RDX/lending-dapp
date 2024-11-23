@@ -39,7 +39,7 @@ function ActionCell({
   const { accounts } = useRadixContext();
 
   // Move all the handler logic here
-  const handleWithdraw = async (amount: BigNumber) => {
+  const handleWithdraw = async (amount: BigNumber, slippageMultiplier: BigNumber) => {
     try {
       if (!accounts || !gatewayApi) {
         toast({
@@ -89,16 +89,22 @@ function ActionCell({
         [row.original.label]: amount,
       } as Record<AssetName, BigNumber>;
 
-      let supplyUnits = await ammountToSupplyUnits(supplyRecord);
+      let supplyUnits = m_bn(math.multiply(await ammountToSupplyUnits(supplyRecord), slippageMultiplier));
       supplyUnits = m_bn(math.min(supplyUnits, supplyUnitBalance));
-      // ! Commented-out because the 'assert estimate' was calculated from the amount of supply units * slippage instead of just supply units
-      // const withdrawAmount = m_bn(
-      //   math.multiply(
-      //   math.min(
-      //     amount,
-      //     await supplyUnitsToAmount({ [row.original.label]: supplyUnits } as Record<AssetName, BigNumber>),
-      //   ), 1 - config.slippage / 100),
-      // );
+
+      // If amount is supplyUnitBalance, do not set requested. Else,
+      const withdrawAmount =
+        supplyUnits == supplyUnitBalance
+          ? "None"
+          : m_bn(
+              math.multiply(
+                math.min(
+                  amount,
+                  await supplyUnitsToAmount({ [row.original.label]: supplyUnits } as Record<AssetName, BigNumber>),
+                ),
+                math.subtract(2, slippageMultiplier),
+              ),
+            );
 
       if (!getNFTBalance?.items?.[0]) {
         toast({
@@ -118,10 +124,7 @@ function ActionCell({
           address: row.original.pool_unit_address ?? "",
           amount: round_dec(supplyUnits).toString(),
         },
-        required: {
-          address: row.original.address ?? "",
-          amount: round_dec(bn(0)).toString(),
-        },
+        requested: withdrawAmount.toString(),
       });
 
       console.log("Manifest: ", manifest);
@@ -161,7 +164,7 @@ function ActionCell({
     }
   };
 
-  const handleRepay = async (amount: BigNumber) => {
+  const handleRepay = async (amount: BigNumber, slippageMultiplier: BigNumber) => {
     try {
       if (!accounts || !gatewayApi) {
         toast({
@@ -199,8 +202,10 @@ function ActionCell({
         return;
       }
       console.log("repaying", amount.toString(), row.original.label, row.original.wallet_balance.toString());
-      const debtAmount = m_bn(math.min(amount, row.original.wallet_balance));
+      const debtAmount = m_bn(math.min(m_bn(math.multiply(amount, slippageMultiplier)), row.original.wallet_balance));
       console.log("Debt amount:", debtAmount.toString());
+
+      const requested = debtAmount == row.original.wallet_balance ? "None" : amount;
 
       const manifest = position_repay_rtm({
         component: marketComponent,
@@ -209,8 +214,9 @@ function ActionCell({
         position_badge_local_id: getNFTBalance.items[0],
         asset: {
           address: row.original.address,
-          amount: debtAmount.toString(),
+          amount: round_dec(debtAmount).toString(),
         },
+        requested: requested.toString(),
       });
 
       console.log("Repay manifest:", manifest);

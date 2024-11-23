@@ -25,7 +25,7 @@ import { SlippageSlider } from "@/components/slippage-slider";
 interface WithdrawDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (amount: BigNumber) => Promise<void>;
+  onConfirm: (amount: BigNumber, slippageMultiplier: BigNumber) => Promise<void>;
   asset: Asset;
   totalSupply: BigNumber;
   totalBorrowDebt: BigNumber;
@@ -109,9 +109,9 @@ export function WithdrawDialog({
       try {
         // Add slippage to amount (convert percentage to decimal)
         const slippageMultiplier = 1 + slippage / 100;
-        const amountWithSlippage = m_bn(math.multiply(amount, slippageMultiplier));
+        // const amountWithSlippage = m_bn(math.multiply(amount, slippageMultiplier));
 
-        await onConfirm(amountWithSlippage);
+        await onConfirm(amount, bn(slippageMultiplier));
         onClose();
       } catch (error) {
         setTransactionState("error");
@@ -158,14 +158,11 @@ export function WithdrawDialog({
       let supplyUnits = m_bn(math.multiply(await ammountToSupplyUnits(supplyRecord), 1 + slippage / 100));
       supplyUnits = m_bn(math.min(supplyUnits, supplyUnitBalance));
       const amount = m_bn(
-        math.multiply(
-          math.min(
-            selectAmount,
-            await supplyUnitsToAmount({
-              [asset.label]: supplyUnits,
-            } as Record<AssetName, BigNumber>),
-          ),
-          1 - slippage / 100,
+        math.min(
+          selectAmount,
+          await supplyUnitsToAmount({
+            [asset.label]: supplyUnits,
+          } as Record<AssetName, BigNumber>),
         ),
       );
 
@@ -178,10 +175,7 @@ export function WithdrawDialog({
           address: asset.pool_unit_address,
           amount: round_dec(supplyUnits).toString(),
         },
-        required: {
-          address: asset.address,
-          amount: round_dec(amount).toString(), // Same amount since we're withdrawing what we put in
-        },
+        requested: amount.toString(),
       });
 
       setManifest(previewManifest);

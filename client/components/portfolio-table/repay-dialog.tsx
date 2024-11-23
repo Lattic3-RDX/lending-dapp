@@ -3,7 +3,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { TruncatedNumber } from "@/components/ui/truncated-number";
 import { bn, m_bn, math, num, round_dec } from "@/lib/math";
-import { Asset, getAssetIcon, getAssetPrice, ammountToSupplyUnits, supplyUnitsToAmount, getUnitBalance, AssetName } from "@/types/asset";
+import {
+  Asset,
+  getAssetIcon,
+  getAssetPrice,
+  ammountToSupplyUnits,
+  getUnitBalance,
+  AssetName,
+  getWalletBalance,
+} from "@/types/asset";
 import { ArrowRight, X } from "lucide-react";
 import { BigNumber } from "mathjs";
 import React, { useEffect, useState } from "react";
@@ -17,7 +25,7 @@ import { SlippageSlider } from "@/components/slippage-slider";
 interface RepayDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (amount: BigNumber) => Promise<void>;
+  onConfirm: (amount: BigNumber, slippageMultiplier: BigNumber) => Promise<void>;
   asset: Asset;
   totalSupply: BigNumber;
   totalBorrowDebt: BigNumber;
@@ -104,10 +112,10 @@ export function RepayDialog({ isOpen, onClose, onConfirm, asset, totalSupply, to
       setTransactionState("awaiting_signature");
       try {
         // Add slippage to amount (convert percentage to decimal)
-        const slippageMultiplier = 1 + (slippage / 100);
-        const amountWithSlippage = m_bn(math.multiply(amount, slippageMultiplier));
+        const slippageMultiplier = 1 + slippage / 100;
+        // const amountWithSlippage = m_bn(math.multiply(amount, slippageMultiplier));
 
-        await onConfirm(amountWithSlippage);
+        await onConfirm(amount, bn(slippageMultiplier));
         onClose();
       } catch (error) {
         setTransactionState("error");
@@ -120,7 +128,7 @@ export function RepayDialog({ isOpen, onClose, onConfirm, asset, totalSupply, to
   useEffect(() => {
     const fetchNFTInfo = async () => {
       if (!accounts || !isOpen) return;
-      
+
       const accountState = await gatewayApi?.state.getEntityDetailsVaultAggregated(accounts[0].address);
       const getNFTBalance = accountState?.non_fungible_resources.items.find(
         (fr: { resource_address: string }) => fr.resource_address === config.borrowerBadgeAddr,
@@ -129,7 +137,7 @@ export function RepayDialog({ isOpen, onClose, onConfirm, asset, totalSupply, to
       if (getNFTBalance?.items?.[0]) {
         setNftInfo({
           address: config.borrowerBadgeAddr,
-          localId: getNFTBalance.items[0]
+          localId: getNFTBalance.items[0],
         });
       }
     };
@@ -143,14 +151,14 @@ export function RepayDialog({ isOpen, onClose, onConfirm, asset, totalSupply, to
       if (!accounts || !isOpen || !nftInfo || !tempAmount) return;
 
       const selectAmount = round_dec(bn(tempAmount));
-      const supplyUnitBalance = await getUnitBalance(accounts[0].address, asset.label);
+      const debtBalance = await getWalletBalance(asset.label, accounts[0].address);
 
-      const supplyRecord: Record<AssetName, BigNumber> = {
+      const debtRecord: Record<AssetName, BigNumber> = {
         [asset.label]: selectAmount,
       } as Record<AssetName, BigNumber>;
 
-      let supplyUnits = m_bn(math.multiply(await ammountToSupplyUnits(supplyRecord), 1 + slippage / 100));
-      supplyUnits = m_bn(math.min(supplyUnits, supplyUnitBalance));
+      const debtAmount = m_bn(math.min(m_bn(math.multiply(selectAmount, 1 + slippage / 100)), debtBalance));
+      const debtRequested = debtAmount == debtBalance ? "None" : selectAmount;
 
       const previewManifest = position_repay_rtm({
         component: config.marketComponent,
@@ -159,8 +167,9 @@ export function RepayDialog({ isOpen, onClose, onConfirm, asset, totalSupply, to
         position_badge_local_id: nftInfo.localId,
         asset: {
           address: asset.pool_unit_address,
-          amount: round_dec(supplyUnits).toString(),
+          amount: round_dec(debtAmount).toString(),
         },
+        requested: debtRequested.toString(),
       });
 
       setManifest(previewManifest);
