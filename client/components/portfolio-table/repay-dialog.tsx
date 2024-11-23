@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { TruncatedNumber } from "@/components/ui/truncated-number";
 import { bn, m_bn, math, num, round_dec } from "@/lib/math";
-import { Asset, getAssetIcon, getAssetPrice } from "@/types/asset";
+import { Asset, getAssetIcon, getAssetPrice, ammountToSupplyUnits, supplyUnitsToAmount, getUnitBalance, AssetName } from "@/types/asset";
 import { ArrowRight, X } from "lucide-react";
 import { BigNumber } from "mathjs";
 import React, { useEffect, useState } from "react";
@@ -139,21 +139,35 @@ export function RepayDialog({ isOpen, onClose, onConfirm, asset, totalSupply, to
 
   // Add manifest generation effect
   useEffect(() => {
-    if (!accounts || !isOpen || !nftInfo || !tempAmount) return;
+    const preview = async () => {
+      if (!accounts || !isOpen || !nftInfo || !tempAmount) return;
 
-    const previewManifest = position_repay_rtm({
-      component: config.marketComponent,
-      account: accounts[0].address,
-      position_badge_address: nftInfo.address,
-      position_badge_local_id: nftInfo.localId,
-      asset: {
-        address: asset.address,
-        amount: round_dec(bn(tempAmount)).toString(),
-      },
-    });
+      const selectAmount = round_dec(bn(tempAmount));
+      const supplyUnitBalance = await getUnitBalance(accounts[0].address, asset.label);
 
-    setManifest(previewManifest);
-  }, [accounts, asset, tempAmount, isOpen, nftInfo]);
+      const supplyRecord: Record<AssetName, BigNumber> = {
+        [asset.label]: selectAmount,
+      } as Record<AssetName, BigNumber>;
+
+      let supplyUnits = m_bn(math.multiply(await ammountToSupplyUnits(supplyRecord), 1 + slippage / 100));
+      supplyUnits = m_bn(math.min(supplyUnits, supplyUnitBalance));
+
+      const previewManifest = position_repay_rtm({
+        component: config.marketComponent,
+        account: accounts[0].address,
+        position_badge_address: nftInfo.address,
+        position_badge_local_id: nftInfo.localId,
+        asset: {
+          address: asset.pool_unit_address,
+          amount: round_dec(supplyUnits).toString(),
+        },
+      });
+
+      setManifest(previewManifest);
+    };
+
+    preview();
+  }, [accounts, asset, tempAmount, isOpen, nftInfo, slippage]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
