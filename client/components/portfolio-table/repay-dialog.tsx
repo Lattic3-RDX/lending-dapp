@@ -53,11 +53,11 @@ export function RepayDialog({ isOpen, onClose, onConfirm, asset, totalSupply, to
       setError("Amount must be greater than 0");
       return false;
     }
-    if (amount > asset.select_native) {
+    if (math.larger(amount, asset.select_native)) {
       setError("Amount exceeds supplied balance");
       return false;
     }
-    if (amount > asset.wallet_balance) {
+    if (math.larger(amount, asset.wallet_balance)) {
       setError("Amount exceeds wallet balance");
       return false;
     }
