@@ -47,11 +47,12 @@ mod lattic3_cluster {
             repay    => restrict_to: [OWNER, admin];
 
             get_ratio         => PUBLIC;
-            get_amount         => PUBLIC;
+            get_amount        => PUBLIC;
             get_units         => PUBLIC;
             get_cluster_state => PUBLIC;
 
-            provide_liquidity => restrict_to: [OWNER, admin];
+            provide_liquidity  => restrict_to: [OWNER, admin];
+            withdraw_liquidity => restrict_to: [OWNER];
 
             tick_interest              => PUBLIC;
             set_interest_tick_interval => restrict_to: [OWNER, admin];
@@ -507,6 +508,24 @@ mod lattic3_cluster {
             self.__validate_res_bucket(&provided);
 
             self.liquidity.put(provided);
+        }
+
+        /// Withdraws liquidity from the cluster.
+        ///
+        /// # Parameters
+        /// * `amount` - The amount of liquidity to withdraw.
+        ///
+        /// # Panics
+        /// * If the provided amount is invalid.
+        /// * If the withdrawn amount is more than in the cluster's liquidity reserves.
+        pub fn withdraw_liquidity(&mut self, amount: Decimal) -> Bucket {
+            assert!(amount > dec!(0), "Amount must be greater than zero");
+            assert!(
+                amount <= self.liquidity.amount(),
+                "Trying to withdraw more than liquidity"
+            );
+
+            self.liquidity.take(amount)
         }
 
         //] --------- Internal State Management -------- /

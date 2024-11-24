@@ -67,7 +67,7 @@ mod lattic3 {
     // External Cluster blueprint
     extern_blueprint! {
         // "package_sim1pkys4qlttszxq29qw5ys9lvn8grmswd0n6nsxrdxce3er3l85eagjm", // Resim
-        "package_tdx_2_1phf9npc88y4jnm43ny3qcsmnmwjw2rcr7h640pq5nn8k8xryptas24", // Stokenet
+        "package_tdx_2_1pkxjgnf0sc8cyv63fucee0eqmqjewnrnwqwnt4vwckwgpjwj844t8e", // Stokenet
         Cluster {
             fn instantiate(resource: ResourceAddress, cluster_owner_rule: AccessRule, cluster_admin_rule: AccessRule) -> Global<Cluster>;
 
