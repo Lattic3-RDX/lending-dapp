@@ -148,25 +148,33 @@ export function WithdrawDialog({
     const preview = async () => {
       if (!accounts || !isOpen || !nftInfo || !tempAmount) return;
 
-      const selectAmount = bn(tempAmount);
+      const amount = bn(tempAmount);
+
       const supplyUnitBalance = await getUnitBalance(accounts[0].address, asset.label);
-      console.log("Supply unit balance:", supplyUnitBalance.toString());
 
       const supplyRecord: Record<AssetName, BigNumber> = {
-        [asset.label]: selectAmount,
+        [asset.label]: amount,
       } as Record<AssetName, BigNumber>;
-
       const rawSupplyUnits = await ammountToSupplyUnits(supplyRecord);
-      console.log("Raw supply units:", rawSupplyUnits.toString());
-      let supplyUnits = m_bn(math.multiply(await ammountToSupplyUnits(supplyRecord), 1 + slippage / 100));
-      console.log("With slippage:", 1 + slippage / 100, supplyUnits.toString());
+
+      let supplyUnits = m_bn(math.multiply(rawSupplyUnits, 1 + slippage / 100));
       supplyUnits = m_bn(math.min(supplyUnits, supplyUnitBalance));
-      console.log("Supply units:", supplyUnits.toString(), math.equal(supplyUnits, supplyUnitBalance));
-      const supplyRequested = math.equal(supplyUnits, supplyUnitBalance)
-        ? "None"
-        : round_dec(
-            await supplyUnitsToAmount({ [asset.label]: supplyUnits } as Record<AssetName, BigNumber>),
-          ).toString();
+
+      let supplyRequested = "None";
+      if (!math.equal(supplyUnits, supplyUnitBalance)) {
+        // Value of the supply units un-adjusted for slipapge
+        // ! Removed due to causing lower-than-expected estimation
+        // const supplyUnitValue = math.multiply(
+        //   await supplyUnitsToAmount({ [row.original.label]: supplyUnits } as Record<AssetName, BigNumber>),
+        //   math.subtract(2, slippageMultiplier),
+        // );
+
+        const supplyUnitValue = await supplyUnitsToAmount({ [asset.label]: supplyUnits } as Record<
+          AssetName,
+          BigNumber
+        >);
+        supplyRequested = round_dec(math.min(amount, m_bn(supplyUnitValue))).toString();
+      }
 
       const previewManifest = position_withdraw_rtm({
         component: config.marketComponent,
@@ -177,7 +185,7 @@ export function WithdrawDialog({
           address: asset.pool_unit_address,
           amount: round_dec(supplyUnits).toString(),
         },
-        requested: supplyRequested.toString(),
+        requested: supplyRequested,
       });
 
       setManifest(previewManifest);

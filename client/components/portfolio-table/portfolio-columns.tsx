@@ -92,18 +92,23 @@ function ActionCell({
       let supplyUnits = m_bn(math.multiply(await ammountToSupplyUnits(supplyRecord), slippageMultiplier));
       supplyUnits = m_bn(math.min(supplyUnits, supplyUnitBalance));
 
-      // If amount is supplyUnitBalance, do not set requested. Else,
-      const withdrawAmount = math.equal(supplyUnits, supplyUnitBalance)
-        ? "None"
-        : m_bn(
-            math.multiply(
-              math.min(
-                amount,
-                await supplyUnitsToAmount({ [row.original.label]: supplyUnits } as Record<AssetName, BigNumber>),
-              ),
-              math.subtract(2, slippageMultiplier),
-            ),
-          );
+      let supplyRequested = "None";
+      if (!math.equal(supplyUnits, supplyUnitBalance)) {
+        // Value of the supply units un-adjusted for slipapge
+        // ! Removed due to causing lower-than-expected estimation
+        // const supplyUnitValue = math.multiply(
+        //   await supplyUnitsToAmount({ [row.original.label]: supplyUnits } as Record<AssetName, BigNumber>),
+        //   math.subtract(2, slippageMultiplier),
+        // );
+
+        const supplyUnitValue = await supplyUnitsToAmount({ [row.original.label]: supplyUnits } as Record<
+          AssetName,
+          BigNumber
+        >);
+
+        console.log("Supply unit value:", supplyUnitValue.toString());
+        supplyRequested = math.min(amount, m_bn(supplyUnitValue)).toString();
+      }
 
       if (!getNFTBalance?.items?.[0]) {
         toast({
@@ -123,7 +128,7 @@ function ActionCell({
           address: row.original.pool_unit_address ?? "",
           amount: round_dec(supplyUnits).toString(),
         },
-        requested: withdrawAmount.toString(),
+        requested: supplyRequested.toString(),
       });
 
       console.log("Manifest: ", manifest);

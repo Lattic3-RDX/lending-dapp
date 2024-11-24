@@ -22,11 +22,25 @@ export default function position_borrow_rtm({
 }: ManifestArgs) {
   // Bucket fetch transaction manifests
   let asset_entry = "";
+  // Manual 'deposit' call for each asset
+  let asset_deposit = "";
 
   assets.forEach((asset) => {
     // Get hashmap entry for the asset
     asset_entry += `
     Address("${asset.address}") => Decimal("${asset.amount}"),`;
+
+    asset_deposit += `
+TAKE_FROM_WORKTOP
+    Address("${asset.address}")
+    Decimal("${asset.amount}")
+    Bucket("bucket_${asset.address}");
+
+CALL_METHOD
+    Address("${account}")
+    "deposit"
+    Bucket("bucket_${asset.address}");
+`;
   });
 
   const rtm = `
@@ -46,10 +60,7 @@ CALL_METHOD
   Map<Address, Decimal>(${asset_entry}
   );
 
-CALL_METHOD
-  Address("${account}")
-  "deposit_batch"
-  Expression("ENTIRE_WORKTOP");
+${asset_deposit}
 `;
 
   return rtm;

@@ -93,6 +93,7 @@ export const getAssetAddrRecord = (): Record<AssetName, string> => {
 
 export const getUnitBalance = async (accountAddress: string, label: AssetName): Promise<BigNumber> => {
   const unitAddress = assetConfigs[label]?.pool_unit_address;
+
   if (!gatewayApi) {
     console.error("Gateway API not initialized");
     return bn(-1);
@@ -100,8 +101,9 @@ export const getUnitBalance = async (accountAddress: string, label: AssetName): 
   try {
     const response = await gatewayApi.state.getEntityDetailsVaultAggregated(accountAddress);
 
-    const fungibleResources = response.fungible_resources.items || [];
-    fungibleResources.filter((resource) => resource.resource_address === unitAddress);
+    const fungibleResources = (response.fungible_resources.items || []).filter(
+      (resource) => resource.resource_address === unitAddress,
+    );
 
     if (fungibleResources.length === 0) {
       return bn(-1);
@@ -189,8 +191,8 @@ export const supplyUnitsToAmount = async (asset: Record<AssetName, BigNumber>): 
   const address = getAssetAddress(Object.keys(asset)[0] as AssetName);
   const supplyUnits = Object.values(asset)[0];
 
-  console.log("Address: ", address);
-  console.log("Supply unit amount: ", supplyUnits.toString());
+  // console.log("Address: ", address);
+  // console.log("Supply unit amount: ", supplyUnits.toString());
 
   const cluster_states_res = await fetch("api/assets/clusters", { method: "GET" });
 
@@ -208,7 +210,7 @@ export const supplyUnitsToAmount = async (asset: Record<AssetName, BigNumber>): 
   }
 
   const amount = round_dec(m_bn(math.divide(supplyUnits, bn(cluster.supply_ratio))));
-  console.log("Amount: ", amount.toString());
+  // console.log("Amount: ", amount.toString());
 
   return amount;
 };
@@ -217,8 +219,8 @@ export const ammountToSupplyUnits = async (asset: Record<AssetName, BigNumber>):
   const address = getAssetAddress(Object.keys(asset)[0] as AssetName);
   const amount = Object.values(asset)[0];
 
-  console.log("Address: ", address);
-  console.log("Supply amount: ", amount.toString());
+  // console.log("Address: ", address);
+  // console.log("Supply amount: ", amount.toString());
 
   const cluster_states_res = await fetch("api/assets/clusters", { method: "GET" });
 
@@ -236,7 +238,7 @@ export const ammountToSupplyUnits = async (asset: Record<AssetName, BigNumber>):
   }
 
   const units = round_dec(m_bn(math.multiply(amount, bn(cluster.supply_ratio))));
-  console.log("Supply units: ", units.toString());
+  // console.log("Supply units: ", units.toString());
 
   return units;
 };
@@ -245,8 +247,8 @@ export const borrowUnitsToAmount = async (asset: Record<AssetName, BigNumber>): 
   const address = getAssetAddress(Object.keys(asset)[0] as AssetName);
   const borrowUnits = Object.values(asset)[0];
 
-  console.log("Address: ", address.toString());
-  console.log("Borrow unit amount: ", borrowUnits.toString());
+  // console.log("Address: ", address.toString());
+  // console.log("Borrow unit amount: ", borrowUnits.toString());
 
   const cluster_states_res = await fetch("api/assets/clusters", { method: "GET" });
 
@@ -257,7 +259,7 @@ export const borrowUnitsToAmount = async (asset: Record<AssetName, BigNumber>): 
 
   const cluster_states = await cluster_states_res.json();
   const cluster = cluster_states[address];
-  console.log("Cluster: ", cluster);
+  // console.log("Cluster: ", cluster);
 
   if (!cluster) {
     console.error(`No cluster state found for asset ${address}`);
@@ -265,7 +267,7 @@ export const borrowUnitsToAmount = async (asset: Record<AssetName, BigNumber>): 
   }
 
   const amount = round_dec(m_bn(math.divide(borrowUnits, bn(cluster.debt_ratio))));
-  console.log("Amount: ", amount.toString());
+  // console.log("Amount: ", amount.toString());
 
   return amount;
 };
@@ -274,8 +276,8 @@ export const amountToBorrowUnits = async (asset: Record<AssetName, BigNumber>): 
   const address = getAssetAddress(Object.keys(asset)[0] as AssetName);
   const borrowUnits = Object.values(asset)[0];
 
-  console.log("Address: ", address.toString());
-  console.log("Amount: ", borrowUnits.toString());
+  // console.log("Address: ", address.toString());
+  // console.log("Amount: ", borrowUnits.toString());
 
   const cluster_states_res = await fetch("api/assets/clusters", { method: "GET" });
 
@@ -286,7 +288,7 @@ export const amountToBorrowUnits = async (asset: Record<AssetName, BigNumber>): 
 
   const cluster_states = await cluster_states_res.json();
   const cluster = cluster_states[address];
-  console.log("Cluster: ", cluster);
+  // console.log("Cluster: ", cluster);
 
   if (!cluster) {
     console.error(`No cluster state found for asset ${address}`);
@@ -294,7 +296,7 @@ export const amountToBorrowUnits = async (asset: Record<AssetName, BigNumber>): 
   }
 
   const amount = round_dec(m_bn(math.multiply(borrowUnits, bn(cluster.debt_ratio))));
-  console.log("Borrow unit amount: ", amount.toString());
+  // console.log("Borrow unit amount: ", amount.toString());
 
   return amount;
 };
@@ -307,12 +309,10 @@ export const hasEmptyPosition = async (accountAddress: string): Promise<boolean>
 
   try {
     const accountState = await gatewayApi.state.getEntityDetailsVaultAggregated(accountAddress);
-    
+
     // Check if user has borrower badge NFT
     const borrowerBadgeAddr = config.borrowerBadgeAddr;
-    const hasNFT = accountState.non_fungible_resources.items.some(
-      (fr) => fr.resource_address === borrowerBadgeAddr
-    );
+    const hasNFT = accountState.non_fungible_resources.items.some((fr) => fr.resource_address === borrowerBadgeAddr);
 
     // If they don't have the NFT, they don't have an empty position
     if (!hasNFT) {
@@ -321,22 +321,17 @@ export const hasEmptyPosition = async (accountAddress: string): Promise<boolean>
 
     // Get supply positions
     const getNFTBalance = accountState.non_fungible_resources.items.find(
-      (fr) => fr.resource_address === borrowerBadgeAddr
+      (fr) => fr.resource_address === borrowerBadgeAddr,
     )?.vaults.items[0];
 
     if (!getNFTBalance?.items?.[0]) {
       return false;
     }
 
-    const metadata = await gatewayApi.state.getNonFungibleData(
-      borrowerBadgeAddr,
-      getNFTBalance.items[0]
-    ) as NFTData;
+    const metadata = (await gatewayApi.state.getNonFungibleData(borrowerBadgeAddr, getNFTBalance.items[0])) as NFTData;
 
     // Check supply field
-    const supplyField = metadata.data.programmatic_json.fields.find(
-      (field) => field.field_name === "supply"
-    );
+    const supplyField = metadata.data.programmatic_json.fields.find((field) => field.field_name === "supply");
 
     // If there's no supply field or no entries, consider it empty
     if (!supplyField || !supplyField.entries || supplyField.entries.length === 0) {
@@ -344,9 +339,7 @@ export const hasEmptyPosition = async (accountAddress: string): Promise<boolean>
     }
 
     // Check if all supply entries are 0
-    return supplyField.entries.every((entry) => 
-      math.equal(bn(entry.value.value), 0)
-    );
+    return supplyField.entries.every((entry) => math.equal(bn(entry.value.value), 0));
   } catch (error) {
     console.error("Error checking for empty position:", error);
     return false;
