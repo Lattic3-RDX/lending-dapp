@@ -113,15 +113,15 @@ export default function App() {
   const calculateBorrowPower = (totalSupplyValue: number, totalDebtValue: number): number => {
     // If no debt, borrow power used is 0%
     if (totalDebtValue <= 0) return 0;
-    
+
     // Calculate maximum borrowable amount (when health = 1.5)
     // At health = 1.5: totalSupplyValue / maxDebt = 1.5
     // Therefore: maxDebt = totalSupplyValue / 1.5
     const maxBorrowableDebt = totalSupplyValue / 1.5;
-    
+
     // Calculate percentage of max borrowing power used
     const borrowPowerUsed = (totalDebtValue / maxBorrowableDebt) * 100;
-    
+
     return borrowPowerUsed;
   };
 
@@ -447,7 +447,7 @@ export default function App() {
       const selectedAssets = getSelectedBorrowAssets();
       const assetsToBorrow = selectedAssets.map((asset) => ({
         address: asset.address,
-        amount: asset.select_native.toString(),
+        amount: round_dec(asset.select_native).toString(),
       }));
 
       // Get NFT ID from account state
@@ -614,8 +614,8 @@ export default function App() {
                     </p>
                   </div>
                 </div>
-                <Button 
-                  variant="destructive" 
+                <Button
+                  variant="destructive"
                   className="bg-red-500 hover:bg-red-600"
                   onClick={() => {
                     // TODO: Implement close position logic
