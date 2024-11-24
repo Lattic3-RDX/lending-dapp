@@ -2,6 +2,26 @@ import { bn, m_bn, math, round_dec } from "@/lib/math";
 import { gatewayApi } from "@/lib/radix";
 import { FungibleResourcesCollectionAllOfToJSON } from "@radixdlt/babylon-gateway-api-sdk";
 import { BigNumber } from "mathjs";
+import config from "@/lib/config.json";
+
+// Add this interface near the top with your other interfaces
+interface NFTData {
+  data: {
+    programmatic_json: {
+      fields: Array<{
+        field_name: string;
+        value?: {
+          value: string;
+        };
+        entries?: Array<{
+          value: {
+            value: string;
+          };
+        }>;
+      }>;
+    };
+  };
+}
 
 export type AssetName = "XRD" | "xUSDT" | "HUG";
 
@@ -277,4 +297,58 @@ export const amountToBorrowUnits = async (asset: Record<AssetName, BigNumber>): 
   console.log("Borrow unit amount: ", amount.toString());
 
   return amount;
+};
+
+export const hasEmptyPosition = async (accountAddress: string): Promise<boolean> => {
+  if (!gatewayApi) {
+    console.error("Gateway API not initialized");
+    return false;
+  }
+
+  try {
+    const accountState = await gatewayApi.state.getEntityDetailsVaultAggregated(accountAddress);
+    
+    // Check if user has borrower badge NFT
+    const borrowerBadgeAddr = config.borrowerBadgeAddr;
+    const hasNFT = accountState.non_fungible_resources.items.some(
+      (fr) => fr.resource_address === borrowerBadgeAddr
+    );
+
+    // If they don't have the NFT, they don't have an empty position
+    if (!hasNFT) {
+      return false;
+    }
+
+    // Get supply positions
+    const getNFTBalance = accountState.non_fungible_resources.items.find(
+      (fr) => fr.resource_address === borrowerBadgeAddr
+    )?.vaults.items[0];
+
+    if (!getNFTBalance?.items?.[0]) {
+      return false;
+    }
+
+    const metadata = await gatewayApi.state.getNonFungibleData(
+      borrowerBadgeAddr,
+      getNFTBalance.items[0]
+    ) as NFTData;
+
+    // Check supply field
+    const supplyField = metadata.data.programmatic_json.fields.find(
+      (field) => field.field_name === "supply"
+    );
+
+    // If there's no supply field or no entries, consider it empty
+    if (!supplyField || !supplyField.entries || supplyField.entries.length === 0) {
+      return true;
+    }
+
+    // Check if all supply entries are 0
+    return supplyField.entries.every((entry) => 
+      math.equal(bn(entry.value.value), 0)
+    );
+  } catch (error) {
+    console.error("Error checking for empty position:", error);
+    return false;
+  }
 };

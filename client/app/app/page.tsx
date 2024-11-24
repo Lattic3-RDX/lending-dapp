@@ -31,6 +31,7 @@ import {
   getAssetPrice,
   getWalletBalance,
   supplyUnitsToAmount,
+  hasEmptyPosition,
 } from "@/types/asset";
 import { RowSelectionState, Updater } from "@tanstack/react-table";
 import { BigNumber } from "mathjs";
@@ -88,6 +89,7 @@ export default function App() {
   const [netAPR, setNetAPR] = useState<number>(0);
   const [health, setHealth] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasEmptyPositionState, setHasEmptyPositionState] = useState<boolean>(false);
 
   const hasSelectedSupplyAssets = Object.keys(supplyRowSelection).length > 0;
   const hasSelectedBorrowAssets = Object.keys(borrowRowSelection).length > 0;
@@ -317,6 +319,17 @@ export default function App() {
 
     updateWalletBalances();
   }, [accounts]);
+
+  useEffect(() => {
+    const checkEmptyPosition = async () => {
+      if (accounts && accounts[0]) {
+        const isEmpty = await hasEmptyPosition(accounts[0].address);
+        setHasEmptyPositionState(isEmpty);
+      }
+    };
+
+    checkEmptyPosition();
+  }, [accounts, totalSupply]);
 
   if (isLoading) {
     return <LoadingSpinner />;
@@ -584,6 +597,11 @@ export default function App() {
     setIsBorrowDialogOpen(true);
   };
 
+  const closePosition = async () => {
+    // TODO: Implement close position logic
+    console.log("Close position clicked");
+  };
+
   const columns = createPortfolioColumns(refreshPortfolioData, totalSupply, totalBorrowDebt);
 
   return (
@@ -600,7 +618,7 @@ export default function App() {
           <StatisticsCard healthRatio={health} netWorth={netWorth} netAPR={netAPR} isLoading={isLoading} />
 
           {/* Empty Position Warning */}
-          {math.equal(totalSupply, 0) && (
+          {hasEmptyPositionState && (
             <Card className="bg-red-500/5 border-red-500/20">
               <CardContent className="flex items-center justify-between p-6">
                 <div className="flex items-center gap-4">
@@ -617,10 +635,7 @@ export default function App() {
                 <Button
                   variant="destructive"
                   className="bg-red-500 hover:bg-red-600"
-                  onClick={() => {
-                    // TODO: Implement close position logic
-                    console.log("Close position clicked");
-                  }}
+                  onClick={closePosition}
                 >
                   Close Position
                 </Button>
