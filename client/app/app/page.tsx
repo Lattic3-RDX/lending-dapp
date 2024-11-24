@@ -37,6 +37,7 @@ import { BigNumber } from "mathjs";
 import React, { useEffect, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { AlertCircle } from "lucide-react";
 
 interface NFTData {
   data: {
@@ -110,12 +111,18 @@ export default function App() {
   };
 
   const calculateBorrowPower = (totalSupplyValue: number, totalDebtValue: number): number => {
+    // If no debt, borrow power used is 0%
     if (totalDebtValue <= 0) return 0;
-    const currentHealth = totalSupplyValue / totalDebtValue;
-    if (currentHealth <= 1.5) return 100;
-    const borrowPowerPercentage = (totalDebtValue / totalSupplyValue) * 100;
-    console.log("Borrow Power Percentage: ", borrowPowerPercentage);
-    return Math.max(0, Number(borrowPowerPercentage.toFixed(1)));
+    
+    // Calculate maximum borrowable amount (when health = 1.5)
+    // At health = 1.5: totalSupplyValue / maxDebt = 1.5
+    // Therefore: maxDebt = totalSupplyValue / 1.5
+    const maxBorrowableDebt = totalSupplyValue / 1.5;
+    
+    // Calculate percentage of max borrowing power used
+    const borrowPowerUsed = (totalDebtValue / maxBorrowableDebt) * 100;
+    
+    return borrowPowerUsed;
   };
 
   const refreshPortfolioData = async () => {
@@ -591,6 +598,35 @@ export default function App() {
 
           {/* Statistics Card */}
           <StatisticsCard healthRatio={health} netWorth={netWorth} netAPR={netAPR} isLoading={isLoading} />
+
+          {/* Empty Position Warning */}
+          {math.equal(totalSupply, 0) && math.equal(totalBorrowDebt, 0) && (
+            <Card className="bg-red-500/5 border-red-500/20">
+              <CardContent className="flex items-center justify-between p-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-full bg-red-500/10">
+                    <AlertCircle className="w-6 h-6 text-red-500" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg text-red-500">Empty Position</h3>
+                    <p className="text-foreground">
+                      You have no assets supplied or borrowed. You can close your position.
+                    </p>
+                  </div>
+                </div>
+                <Button 
+                  variant="destructive" 
+                  className="bg-red-500 hover:bg-red-600"
+                  onClick={() => {
+                    // TODO: Implement close position logic
+                    console.log("Close position clicked");
+                  }}
+                >
+                  Close Position
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
           {/* First row: Supply and Borrow cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
