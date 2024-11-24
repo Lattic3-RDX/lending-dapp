@@ -600,7 +600,7 @@ export default function App() {
           <StatisticsCard healthRatio={health} netWorth={netWorth} netAPR={netAPR} isLoading={isLoading} />
 
           {/* Empty Position Warning */}
-          {math.equal(totalSupply, 0) && math.equal(totalBorrowDebt, 0) && (
+          {math.equal(totalSupply, 0) && (
             <Card className="bg-red-500/5 border-red-500/20">
               <CardContent className="flex items-center justify-between p-6">
                 <div className="flex items-center gap-4">
