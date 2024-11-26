@@ -632,11 +632,7 @@ export default function App() {
                     </p>
                   </div>
                 </div>
-                <Button
-                  variant="destructive"
-                  className="bg-red-500 hover:bg-red-600"
-                  onClick={closePosition}
-                >
+                <Button variant="destructive" className="bg-red-500 hover:bg-red-600" onClick={closePosition}>
                   Close Position
                 </Button>
               </CardContent>
