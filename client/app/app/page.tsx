@@ -19,6 +19,7 @@ import config from "@/lib/config.json";
 import open_position_rtm from "@/lib/manifests/open_position";
 import position_borrow_rtm from "@/lib/manifests/position_borrow";
 import position_supply_rtm from "@/lib/manifests/position_supply";
+import position_close_rtm from "@/lib/manifests/close_position";
 import { bn, m_bn, math, num, round_dec } from "@/lib/math";
 import { gatewayApi, rdt } from "@/lib/radix";
 import {
@@ -598,8 +599,69 @@ export default function App() {
   };
 
   const closePosition = async () => {
-    // TODO: Implement close position logic
-    console.log("Close position clicked");
+    try {
+      if (!accounts || !gatewayApi) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Wallet not connected",
+        });
+        return;
+      }
+
+      // Get NFT ID from account state
+      const accountState = await gatewayApi.state.getEntityDetailsVaultAggregated(accounts[0].address);
+      const getNFTBalance = accountState.non_fungible_resources.items.find(
+        (fr: { resource_address: string }) => fr.resource_address === config.borrowerBadgeAddr,
+      )?.vaults.items[0];
+
+      if (!getNFTBalance?.items?.[0]) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "No position NFT found",
+        });
+        return;
+      }
+
+      const manifest = position_close_rtm({
+        component: config.marketComponent,
+        account: accounts[0].address,
+        position_badge_address: config.borrowerBadgeAddr,
+        position_badge_local_id: getNFTBalance.items[0],
+      });
+
+      const result = await rdt?.walletApi.sendTransaction({
+        transactionManifest: manifest,
+        version: 1,
+      });
+
+      if (result?.isOk()) {
+        toast({
+          title: "Success",
+          description: "Position closed successfully",
+        });
+        await refreshPortfolioData();
+      } else if (result) {
+        const errorResult = result as { error: { error: string } };
+        let message = errorResult.error.error || "Transaction failed";
+        if (errorResult.error.error.includes("rejectedByUser")) {
+          message = "Transaction rejected by user";
+        }
+        toast({
+          variant: "destructive",
+          title: "Failed to close position",
+          description: message,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to close position:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+      });
+    }
   };
 
   const columns = createPortfolioColumns(refreshPortfolioData, totalSupply, totalBorrowDebt);
