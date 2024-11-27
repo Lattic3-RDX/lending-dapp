@@ -3,7 +3,7 @@ use scrypto::prelude::*;
 
 /* --------------- Price Stream --------------- */
 #[blueprint]
-mod redroot_price_stream {
+mod lattic3_price_stream {
     enable_method_auth! {
         roles {
             updater => updatable_by: [];
@@ -21,12 +21,11 @@ mod redroot_price_stream {
         owner_badge_address: ResourceAddress,
         updater_manager: ResourceManager,
 
-        // asset_list: LazyVec<ResourceAddress>, // TODO: implement the asset_list
-        prices: KeyValueStore<ResourceAddress, Decimal>,
+        prices: HashMap<ResourceAddress, Decimal>,
     }
 
     impl PriceStream {
-        pub fn instantiate(dapp_definition_address: ComponentAddress) -> (Global<PriceStream>, Bucket) {
+        pub fn instantiate(dapp_definition_address: ComponentAddress, owner_badge: Bucket) -> (Global<PriceStream>, Bucket) {
             // Address reservation
             let (address_reservation, component_address) = Runtime::allocate_component_address(PriceStream::blueprint_id());
 
@@ -35,14 +34,14 @@ mod redroot_price_stream {
             let component_access_rule: AccessRule = rule!(require(global_caller(component_address)));
 
             // Component owner
-            let owner_badge: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
-                .divisibility(DIVISIBILITY_NONE)
-                .metadata(metadata! {init {
-                    "name"        => "Redroot Price Stream Owner Badge", locked;
-                    "description" => "Badge representing the owner of the Redroot price stream", locked;
-                }})
-                .mint_initial_supply(1)
-                .into();
+            // / let owner_badge: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
+            // /     .divisibility(DIVISIBILITY_NONE)
+            // /     .metadata(metadata! {init {
+            // /         "name"        => "Lattic3 Price Stream Owner Badge", locked;
+            // /         "description" => "Badge representing the owner of the Lattic3 price stream", locked;
+            // /     }})
+            // /     .mint_initial_supply(1)
+            // /     .into();
             let owner_access_rule: AccessRule = rule!(require(owner_badge.resource_address()));
             let owner_role: OwnerRole = OwnerRole::Fixed(owner_access_rule.clone());
 
@@ -51,7 +50,7 @@ mod redroot_price_stream {
             let updater_manager: ResourceManager = ResourceBuilder::new_fungible(owner_role.clone())
                 .divisibility(DIVISIBILITY_NONE)
                 .metadata(metadata! {init {
-                    "name"        => "Redroot PriceStream Updater Badge", locked;
+                    "name"        => "Lattic3 PriceStream Updater Badge", locked;
                     "description" => "", locked;
                 }})
                 .mint_roles(mint_roles! {
@@ -70,10 +69,10 @@ mod redroot_price_stream {
             let updater_access_rule: AccessRule = rule!(require(updater_manager.address()));
 
             //. Component data
-            let component_data = PriceStream {
+            let mut component_data = PriceStream {
                 owner_badge_address: owner_badge.resource_address(),
                 updater_manager,
-                prices: KeyValueStore::new(),
+                prices: HashMap::new(),
             };
 
             // ! -------- TESTING --------
@@ -89,8 +88,8 @@ mod redroot_price_stream {
                     metadata_locker_updater => rule!(deny_all);
                 },
                 init {
-                    "name"            => "Redroot Price Stream", locked;
-                    "description"     => "Price stream for the Redroot lendign platform", locked;
+                    "name"            => "Lattic3 Price Stream", locked;
+                    "description"     => "Price stream for the Lattic3 lending platform", locked;
                     "dapp_definition" => dapp_definition_address, updatable;
                 }
             };
@@ -119,7 +118,7 @@ mod redroot_price_stream {
             *self.prices.get_mut(&asset).unwrap() = price;
         }
 
-        pub fn add_asset(&self, asset: ResourceAddress, price: Decimal) {
+        pub fn add_asset(&mut self, asset: ResourceAddress, price: Decimal) {
             assert!(self.prices.get(&asset).is_none(), "Asset already added");
 
             self.prices.insert(asset, price);
@@ -140,7 +139,5 @@ mod redroot_price_stream {
                 None
             }
         }
-
-        // TODO: implement a get all assets function
     }
 }

@@ -4,6 +4,15 @@ use scrypto_avltree::{AvlTree, NodeIterator, NodeIteratorMut};
 
 /* ------------------- Types ------------------ */
 pub type ValueMap = HashMap<ResourceAddress, Decimal>;
+pub type ValueUnitMap = HashMap<ResourceAddress, (Decimal, Decimal)>; // (amount, units corresponding to amount)
+pub type ValueTuple = (ResourceAddress, PreciseDecimal);
+
+/* ---------- Mathematical Operations --------- */
+pub const ZERO_PRICE: Decimal = dec!(0.0001); // If price <= ZERO_PRICE, it will be considered zero
+
+pub fn trunc(precise: PreciseDecimal) -> Decimal {
+    return precise.checked_truncate(RoundingMode::ToZero).unwrap();
+}
 
 /* ------------------ LazyVec ----------------- */
 /// State explosion-safe vector; builds on Ociswap's AvlTree library

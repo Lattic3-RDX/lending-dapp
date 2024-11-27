@@ -5,76 +5,82 @@
 @layer base {
   :root {
     /* Main */
-    --background: #fcfff7;
+    --background: #FCFFF7;
     --foreground: #070707;
 
     --primary: #070707;
-    --primary-foreground: #ffffff;
+    --primary-foreground: #FCFFF7;
 
-    --secondary: #f5f5f5;
-    --secondary-foreground: #070707;
+    --secondary: #070707;
+    --secondary-foreground: #FCFFF7;
 
-    --muted: #f5f5f5;
-    --muted-foreground: #747474;
+    --muted: #070707;
+    --muted-foreground: #FCFFF7;
 
-    --accent: #fb3640;
-    --accent-foreground: #070707;
+    --accent: #e7e7e7a3;
+    --accent-foreground: #FB3640;
 
-    --destructive: #ff4c3b;
-    --destructive-foreground: #ffffff;
+    --destructive: #FB3640;
+    --destructive-foreground: #FCFFF7;
+
+    --success: #22AE4C;
+    --success-foreground: #FCFFF7;
 
     --radius: 0.5rem;
 
-    --border: #e1e1e1;
-    --input: #e1e1e1;
+    --border: #070707;
+    --input: #070707;
     --ring: #070707;
 
     /* Card */
-    --card: #fcfff7;
+    --card: #FCFFF7;
     --card-foreground: #070707;
 
     /* Popup */
-    --popover: #ffffff;
+    --popover: #FCFFF7;
     --popover-foreground: #070707;
 
     /* Chart */
-    --chart-1: #f6a4b1;
-    --chart-2: #a2d4d3;
-    --chart-3: #a3c7c8;
-    --chart-4: #a8c77d;
-    --chart-5: #a2d882;
-
-    /* Radix Connect */
-    --radix-connect-button-width: 140px;
-    --radix-connect-button-height: 42px;
-    --radix-connect-button-border-radius: 12px;
+    --chart-1: #FB3640;
+    --chart-2: #22AE4C;
+    --chart-3: #070707;
+    --chart-4: #FB3640;
+    --chart-5: #22AE4C;
   }
 
   .dark {
-    --background: #1b2a34;
-    --foreground: #d0e4f2;
-    --card: #1b2a34;
-    --card-foreground: #d0e4f2;
-    --popover: #1b2a34;
-    --popover-foreground: #d0e4f2;
-    --primary: #d0e4f2;
-    --primary-foreground: #2b3e1d;
-    --secondary: #2e3c43;
-    --secondary-foreground: #d0e4f2;
-    --muted: #2e3c43;
-    --muted-foreground: #b5a1a7;
-    --accent: #2e3c43;
-    --accent-foreground: #d0e4f2;
-    --destructive: #a1c2b2;
-    --destructive-foreground: #d0e4f2;
-    --border: #2e3c43;
-    --input: #2e3c43;
-    --ring: #d4e1e9;
-    --chart-1: #a4c8e1;
-    --chart-2: #a4d2b7;
-    --chart-3: #e9c96b;
-    --chart-4: #a45cc6;
-    --chart-5: #a93b33;
+    --background: #070707;
+    --foreground: #FCFFF7;
+    
+    --primary: #FCFFF7;
+    --primary-foreground: #070707;
+    
+    --secondary: #070707;
+    --secondary-foreground: #FCFFF7;
+    
+    --muted: #070707;
+    --muted-foreground: #FCFFF7;
+    
+    --accent: #e7e7e7a3;
+    --accent-foreground: #FCFFF7;
+    
+    --destructive: #FB3640;
+    --destructive-foreground: #FCFFF7;
+    
+    --success: #22AE4C;
+    --success-foreground: #FCFFF7;
+    
+    --radius: 0.5rem;
+    
+    --border: #070707;
+    --input: #070707;
+    --ring: #070707;
+    
+    --chart-1: #FB3640;
+    --chart-2: #22AE4C;
+    --chart-3: #070707;
+    --chart-4: #FB3640;
+    --chart-5: #22AE4C;
   }
 }
 

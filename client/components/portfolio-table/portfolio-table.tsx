@@ -4,12 +4,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 interface PortfolioTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+  onRefresh: () => Promise<void>;
 }
 
-export function PortfolioTable<TData, TValue>({
-  columns,
-  data,
-}: PortfolioTableProps<TData, TValue>) {
+export function PortfolioTable<TData, TValue>({ columns, data, onRefresh }: PortfolioTableProps<TData, TValue>) {
   const table = useReactTable({
     data,
     columns,
@@ -23,12 +21,7 @@ export function PortfolioTable<TData, TValue>({
           <TableRow key={headerGroup.id}>
             {headerGroup.headers.map((header) => (
               <TableHead key={header.id}>
-                {header.isPlaceholder
-                  ? null
-                  : flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
-                    )}
+                {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
               </TableHead>
             ))}
           </TableRow>
@@ -39,9 +32,7 @@ export function PortfolioTable<TData, TValue>({
           table.getRowModel().rows.map((row) => (
             <TableRow key={row.id}>
               {row.getVisibleCells().map((cell) => (
-                <TableCell key={cell.id}>
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </TableCell>
+                <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
               ))}
             </TableRow>
           ))
@@ -55,4 +46,4 @@ export function PortfolioTable<TData, TValue>({
       </TableBody>
     </Table>
   );
-} 
+}

@@ -1,37 +1,74 @@
+# Lattic3 - Multi-Collateralized Lending Platform  
 
-# Radish - Multi-Collateralized Lending Platform
+**Lattic3** is a decentralized lending platform built on the **Radix blockchain**, allowing users to use multiple assets as collateral for loans. It offers a simple, user-friendly way to access decentralized finance (DeFi).  
 
-**Radish** is a decentralized lending platform that leverages the asset-oriented Radix Layer 1 blockchain to enable users to collateralize multiple assets for loans.
+[🚀 Live](https://radish.on-fleek.app/)
 
-<div align="center">
-<img width="40%" src=https://github.com/user-attachments/assets/51eb3590-b29d-470f-9ceb-bc00bcb40453/>
-</div>
+---
 
-This repository contains two primary components: 
-- **Scrypto blueprints** for smart contracts.
-- **Next.js frontend** with custom shadCN components for user interaction.
+## Features  
 
-[Pitch Deck](https://docs.google.com/presentation/d/1cyRt_FNlBnn0lmo-lSLnMutafHp2g7d_hWwUQlDiL-Q/edit?usp=sharing)
+- **Multi-Asset Collateral**: Combine multiple assets to maximize your borrowing potential and diversify your portfolio in a single transaction.  
+- **NFT Loan Badges**: Track loan stats with unique NFTs visible in the dashboard.  
 
-[Demo](youtube.com)
+---
 
-The front-end is available [here](https://radish.on-fleek.app/).
+## Front-end: Next.js
 
-## Features
+1. Clone the repository:  
+   ```bash
+   git clone https://github.com/Lattic3-RDX/lending-dapp.git
+   ```
+2. Navigate to the frontend directory:
+    ```bash
+    cd lending-dapp/client
+    ```
+3. Install dependencies:
+    ```bash
+    pnpm install
+    ```
+4. Start the server:
+    ```bash
+    pnpm run dev
+    ```
+    
+---
 
-Radish offers the following key functionalities:
-1. **Estimate Loan**: Users can submit up to three different assets as collateral and input their desired amounts. The platform then calculates the amount of Radish stablecoin they would receive if the loan were approved, using Radix blueprints.
-2. **Get Loan**: Users can finalize the loan by submitting collateral, allowing them to mint and receive Radish stablecoin in return.
-3. **Estimate Withdrawal**: Borrowers can estimate how much collateral they can reclaim by returning a specified amount of Radish tokens.
-4. **Withdraw Collateral**: Users can partially or fully withdraw their collateral by repaying Radish stablecoin.
+## Back-end: Radix
 
-Upon borrowing, users receive a unique **NFT Badge** that tracks their loan statistics. These statistics are also available in the user's dashboard on the frontend.
+To set up the backend for **Lattic3**, follow these steps:  
 
-## Roadmap
+### Prerequisites  
 
-- **Stablecoin Backing**: Currently, the Radish stablecoin is not backed by any assets.
-- **Liquidation Event**: The platform does not yet have liquidation functionality. A future implementation would involve integrating an oracle and a decentralized exchange (DEX) like OciSwap to automatically liquidate collateral when necessary.
+- **Radix Scrypto Toolkit**: Download and install the toolkit from the [Radix Developer Portal](https://developers.radixdlt.com).  
+- **Rust**: Ensure Rust is installed. You can download it [here](https://www.rust-lang.org/).  
 
-## Vision
+---
 
-We aim to continue developing Radish after the hackathon, pursuing milestone-based grants provided by the Radix team to drive further innovation and feature expansion.
+### Steps  
+
+1. Clone the repository:  
+   ```bash
+   git clone https://github.com/Lattic3-RDX/lending-dapp.git
+   ```
+
+2. Navigate to the scrypto directory:
+    ```bash
+    cd lending-dapp/scrypto
+    ```
+
+3. Build the Scrypto project:
+    ```bash
+    scrypto build
+    ```
+
+4. Test the blueprints:
+    ```bash
+    scrypto test
+    ```
+
+5. Deploy to your local Radix environment:
+    ```bash
+    resim publish .
+    ```
+Interact with the blueprints using Radix’s REPL commands or integrate them with the frontend.

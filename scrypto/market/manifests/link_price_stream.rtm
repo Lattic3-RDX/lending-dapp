@@ -9,7 +9,6 @@ CALL_METHOD
   Address("${market_owner_badge}")
   Decimal("1");
 
-
 CALL_METHOD
     Address("${market_component}")
     "link_price_stream"

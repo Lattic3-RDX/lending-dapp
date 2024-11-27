@@ -538,6 +538,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "lattic3-price-stream"
+version = "1.0.0"
+dependencies = [
+ "scrypto",
+ "scrypto-test",
+]
+
+[[package]]
 name = "lazy_static"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1081,14 +1089,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9b6dfecf2c74bce2466cabf93f6664d6998a69eb21e39f4207930065b27b771f"
 dependencies = [
  "bitflags 2.6.0",
-]
-
-[[package]]
-name = "redroot-price-stream"
-version = "1.0.0"
-dependencies = [
- "scrypto",
- "scrypto-test",
 ]
 
 [[package]]

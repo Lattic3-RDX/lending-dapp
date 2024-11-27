@@ -5,13 +5,13 @@ CALL_METHOD
 
 # Get position badge proof
 CALL_METHOD
-  Address("${user_account}")
-  "create_proof_of_non_fungibles"
-  Address("${market_position_badge}")
-  Array<NonFungibleLocalId>(NonFungibleLocalId("#1#"));
+    Address("${user_account}")
+    "create_proof_of_non_fungibles"
+    Address("${market_position_badge}")
+    Array<NonFungibleLocalId>(NonFungibleLocalId("#1#"));
 
 POP_FROM_AUTH_ZONE
-    Proof("market_position_proof");
+    Proof("position_proof");
 # --------
 
 # Get XRD Bucket
@@ -30,7 +30,7 @@ TAKE_FROM_WORKTOP
 CALL_METHOD
     Address("${market_component}")
     "position_supply"
-    Proof("market_position_proof")
+    Proof("position_proof")
     Array<Bucket>(Bucket("bucket_${xrd}"));
 
 CALL_METHOD

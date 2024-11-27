@@ -1,0 +1,18 @@
+CALL_METHOD
+  Address("account_tdx_2_128zw2yyy9t9966h2eakq8rhedwfwaylfaz53v84fpaq2jeq8y2eaj8")
+  "create_proof_of_non_fungibles"
+  Address("resource_tdx_2_1ngv8c7kfnyqwnjpqhch9ryhlr8crtsvz6mycutx9w8ucuytdqncre8")
+  Array<NonFungibleLocalId>(NonFungibleLocalId("#1#"));
+
+POP_FROM_AUTH_ZONE
+    Proof("market_position_proof");
+
+CALL_METHOD
+    Address("component_tdx_2_1crz8z5at4q2ptuftylcuke05kmsezwrtxsfj3mlpe66h4mjs466wwe")
+    "get_position_health"
+    Proof("market_position_proof");
+
+CALL_METHOD
+    Address("account_tdx_2_128zw2yyy9t9966h2eakq8rhedwfwaylfaz53v84fpaq2jeq8y2eaj8")
+    "deposit_batch"
+    Expression("ENTIRE_WORKTOP");

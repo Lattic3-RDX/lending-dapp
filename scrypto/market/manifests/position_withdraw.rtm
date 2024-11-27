@@ -5,33 +5,38 @@ CALL_METHOD
 
 # Get position badge proof
 CALL_METHOD
-  Address("${user_account}")
-  "create_proof_of_non_fungibles"
-  Address("${market_position_badge}")
-  Array<NonFungibleLocalId>(NonFungibleLocalId("#1#"));
+    Address("${user_account}")
+    "create_proof_of_non_fungibles"
+    Address("${market_position_badge}")
+    Array<NonFungibleLocalId>(NonFungibleLocalId("#1#"));
 
 POP_FROM_AUTH_ZONE
-    Proof("market_position_proof");
+    Proof("position_proof");
 # --------
 
 # Get $rrtXRD Bucket
 CALL_METHOD
     Address("${user_account}")
     "withdraw"
-    Address("${xrd_pool_unit}")
-    Decimal("50");
+    Address("resource_sim1tkwpeygqzaz4rsf0urhv6mf2m386dzr9ggemuqjw0ztnj7gquz07d9")
+    Decimal("100");
 
 TAKE_FROM_WORKTOP
-    Address("${xrd_pool_unit}")
-    Decimal("50")
-    Bucket("bucket_rrtXRD");
+    Address("resource_sim1tkwpeygqzaz4rsf0urhv6mf2m386dzr9ggemuqjw0ztnj7gquz07d9")
+    Decimal("100")
+    Bucket("bucket_1");
 # --------
 
 CALL_METHOD
     Address("${market_component}")
     "position_withdraw"
-    Proof("market_position_proof")
-    Bucket("bucket_rrtXRD");
+    Proof("position_proof")
+    Bucket("bucket_1")
+    Some(Decimal("100")); # Requested amount: value of supply units before added slippage
+
+ASSERT_WORKTOP_CONTAINS
+    Address("${xrd}")
+    Decimal("99.9"); # Requested value * (1 - slippage)
 
 CALL_METHOD
     Address("${user_account}")

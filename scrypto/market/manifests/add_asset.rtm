@@ -1,0 +1,20 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000");
+
+CALL_METHOD
+    Address("${main_account}")
+    "create_proof_of_amount"
+    Address("${market_owner_badge}")
+    Decimal("1");
+
+CALL_METHOD
+    Address("${market_component}")
+    "add_asset"
+    Address("${xrd}");
+
+CALL_METHOD
+    Address("${main_account}")
+    "deposit_batch"
+    Expression("ENTIRE_WORKTOP");

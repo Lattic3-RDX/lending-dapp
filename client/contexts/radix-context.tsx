@@ -2,7 +2,7 @@
 /* ------------------ Imports ----------------- */
 import { rdt } from "@/lib/radix";
 import { DataRequestBuilder, WalletDataStateAccount } from "@radixdlt/radix-dapp-toolkit";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 /* ---------------- Definitions --------------- */
 // prettier-ignore
@@ -47,16 +47,22 @@ export function RadixProvider({ children }: { children: React.ReactNode }) {
   // const [gatewayApi, setGatewayApi] = useState<RadixContextState["gatewayApi"]>(null);
 
   // Getting account state
-  if (rdt) {
+  useEffect(() => {
+    if (!rdt) {
+      return;
+    }
+
     rdt.walletApi.setRequestData(DataRequestBuilder.accounts().atLeast(1));
-    rdt.walletApi.walletData$.subscribe((walletData) => {
+    const sub = rdt.walletApi.walletData$.subscribe((walletData) => {
       // setAccounts(walletData.accounts);
       if (accounts != walletData.accounts) {
         console.log("[wallet.tsx] subscription data", walletData);
         setAccounts(walletData.accounts);
       }
+
+      return () => sub.unsubscribe();
     });
-  }
+  }, [accounts]);
 
   // Context Provider
   const contextState: RadixContextState = {

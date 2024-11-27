@@ -3,12 +3,25 @@ CALL_METHOD
     "lock_fee"
     Decimal("5000");
 
+# Get Owner Badge Bucket
+CALL_METHOD
+    Address("${main_account}")
+    "withdraw"
+    Address("${market_owner_badge}")
+    Decimal("1");
+
+TAKE_FROM_WORKTOP
+    Address("${market_owner_badge}")
+    Decimal("1")
+    Bucket("bucket_owner_badge");
+# --------
+
 CALL_FUNCTION
     Address("${market_package}")
-    "Redroot"
+    "Lattic3"
     "instantiate"
     Address("${main_account}")
-    Array<Address>();
+    Bucket("bucket_owner_badge");
 
 CALL_METHOD
     Address("${main_account}")

@@ -1,19 +1,30 @@
 CALL_METHOD
     Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
     "lock_fee"
-    Decimal("5000")
-;
+    Decimal("5000");
+
+# Get Owner Badge Bucket
+CALL_METHOD
+    Address("${main_account}")
+    "withdraw"
+    Address("${price_stream_owner_badge}")
+    Decimal("1");
+
+TAKE_FROM_WORKTOP
+    Address("${price_stream_owner_badge}")
+    Decimal("1")
+    Bucket("bucket_owner_badge");
+# --------
 
 CALL_FUNCTION
     Address("${price_stream_package}")
     "PriceStream"
     "instantiate"
     Address("${main_account}")
-;
+    Bucket("bucket_owner_badge");
 
 CALL_METHOD
     Address("${main_account}")
     "try_deposit_batch_or_refund"
     Expression("ENTIRE_WORKTOP")
-    Enum<0u8>()
-;
+    Enum<0u8>();

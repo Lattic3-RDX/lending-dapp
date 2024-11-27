@@ -30,7 +30,7 @@ fn log_tx(func: &str, tx: &TransactionReceiptV1) {
 fn setup() -> (
     LedgerSimulator<NoExtension, InMemorySubstateDatabase>, // Ledger simulation
     PackageAddress,                                         // Package
-    ComponentAddress,                                       // Redroot
+    ComponentAddress,                                       // Lattic3
     (Account, Account),                                     // Accounts: Main, User 1
     ResourceAddress,                                        // Owner Badge
 ) {
@@ -53,12 +53,12 @@ fn setup() -> (
     //. Package Setup
     let package_address = ledger.compile_and_publish(this_package!()); // Publish package
 
-    // Instantiate component (Redroot)
+    // Instantiate component (Lattic3)
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
-            "Redroot",
+            "Lattic3",
             "instantiate",
             manifest_args!(main_account.address.clone(), vec![hug, usdc, weth]), // ! REMOVE VECTOR WHEN NOT ON DEVNET
         )
@@ -154,7 +154,7 @@ fn log_assets(ledger: &mut LedgerSimulator<NoExtension, InMemorySubstateDatabase
 // }
 
 /* ------------------- Tests ------------------ */
-/// Basic test to check that Redroot instantises correctly
+/// Basic test to check that Lattic3 instantises correctly
 #[test]
 fn instantisation_test() -> Result<(), RuntimeError> {
     // Deconstruct setup

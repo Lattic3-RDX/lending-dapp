@@ -8,18 +8,18 @@ CALL_METHOD
     Address("${user_account}")
     "withdraw"
     Address("${xrd}")
-    Decimal("200");
+    Decimal("100");
 
 TAKE_FROM_WORKTOP
     Address("${xrd}")
-    Decimal("200")
-    Bucket("bucket_${xrd}");
+    Decimal("100")
+    Bucket("bucket_xrd");
 # --------
 
 CALL_METHOD
     Address("${market_component}")
     "open_position"
-    Array<Bucket>(Bucket("bucket_${xrd}"));
+    Array<Bucket>(Bucket("bucket_xrd"));
 
 CALL_METHOD
     Address("${user_account}")

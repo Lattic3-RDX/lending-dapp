@@ -1,0 +1,20 @@
+CALL_METHOD
+    Address("${user_account}")
+    "withdraw_non_fungibles"
+    Address("${market_position_badge}")
+    Array<NonFungibleLocalId>(NonFungibleLocalId("${position_badge_local_id}"));
+
+TAKE_NON_FUNGIBLES_FROM_WORKTOP
+    Address("${market_position_badge}")
+    Array<NonFungibleLocalId>(NonFungibleLocalId("${position_badge_local_id}"))
+    Bucket("position_badge");
+
+CALL_METHOD
+    Address("${market_component}")
+    "close_position"
+    Bucket("position_badge");
+
+CALL_METHOD
+    Address("${user_account}")
+    "deposit_batch"
+    Expression("ENTIRE_WORKTOP");

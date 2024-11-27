@@ -5,33 +5,34 @@ CALL_METHOD
 
 # Get position badge proof
 CALL_METHOD
-  Address("${user_account}")
-  "create_proof_of_non_fungibles"
-  Address("${market_position_badge}")
-  Array<NonFungibleLocalId>(NonFungibleLocalId("#1#"));
+    Address("${user_account}")
+    "create_proof_of_non_fungibles"
+    Address("${market_position_badge}")
+    Array<NonFungibleLocalId>(NonFungibleLocalId("#1#"));
 
 POP_FROM_AUTH_ZONE
-    Proof("market_position_proof");
+    Proof("position_proof");
 # --------
 
-# Get $rrtXRD Bucket
+# Get XRD Bucket
 CALL_METHOD
     Address("${user_account}")
     "withdraw"
     Address("${xrd}")
-    Decimal("50");
+    Decimal("10.025");
 
 TAKE_FROM_WORKTOP
     Address("${xrd}")
-    Decimal("50")
+    Decimal("10.025")
     Bucket("bucket_XRD");
 # --------
 
 CALL_METHOD
     Address("${market_component}")
     "position_repay"
-    Proof("market_position_proof")
-    Bucket("bucket_XRD");
+    Proof("position_proof")
+    Bucket("bucket_XRD")
+    None;
 
 CALL_METHOD
     Address("${user_account}")

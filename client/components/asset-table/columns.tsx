@@ -7,11 +7,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Asset } from "@/types/asset";
+import { TruncatedNumber } from "@/components/ui/truncated-number";
 
 export const columns: ColumnDef<Asset, unknown>[] = [
   {
     id: "select",
     header: "Select assets",
+    size: 100,
     cell: ({ row }) => (
       <Checkbox
         checked={row.getIsSelected()}
@@ -19,6 +21,8 @@ export const columns: ColumnDef<Asset, unknown>[] = [
           row.toggleSelected(!!checked);
         }}
         aria-label="Select row"
+        disabled={row.original.wallet_balance.toNumber() <= 0}
+        className={row.original.wallet_balance.toNumber() <= 0 ? "opacity-50" : ""}
       />
     ),
     enableSorting: false,
@@ -26,60 +30,84 @@ export const columns: ColumnDef<Asset, unknown>[] = [
   },
   {
     accessorKey: "label",
-    header: "Assets",
-    cell: ({ row }) => {
-      const iconUrl = getAssetIcon(row.getValue("label") as AssetName);
-      return (
-        <div className="flex items-center gap-2">
-          <img src={iconUrl} className="w-6 h-6 rounded-full" alt="" />
-          <span>{row.getValue("label")}</span>
-        </div>
-      );
-    },
+    header: "Asset",
+    size: 200,
+    cell: ({ row }) => (
+      <div className={`flex items-center gap-3 ${row.original.wallet_balance.toNumber() <= 0 ? "opacity-50" : ""}`}>
+        <img
+          src={getAssetIcon(row.getValue("label"))}
+          alt={`${row.getValue("label")} icon`}
+          className="w-6 h-6 rounded-full"
+        />
+        <span className="font-semibold">{row.getValue("label")}</span>
+      </div>
+    ),
   },
   {
     accessorKey: "wallet_balance",
-    header: "Wallet Balance",
+    header: "Balance",
+    size: 150,
     cell: ({ row }) => {
       const isExpanded = row.getIsExpanded();
-      return isExpanded ? null : row.getValue("wallet_balance");
+      if (isExpanded) return null;
+
+      const balance = row.getValue("wallet_balance");
+      if (balance === -1) {
+        return <span className="text-muted-foreground">Loading...</span>;
+      }
+      return (
+        <span className={`font-semibold ${Number(balance) <= 0 ? "opacity-50" : ""}`}>
+          <TruncatedNumber value={Number(balance)} />
+        </span>
+      );
     },
   },
   {
     accessorKey: "select_native",
     header: "Selected Amount",
+    size: 150,
     cell: ({ row }) => {
       const isExpanded = row.getIsExpanded();
       const isSelected = row.getIsSelected();
       if (isExpanded) return null;
       return (
         <div>
-          {isSelected && row.original.select_native > 0 ? row.original.select_native : "-"}
+          {isSelected && row.original.select_native.toNumber() > 0 ? <TruncatedNumber value={row.original.select_native.toNumber()} /> : "-"}
         </div>
       );
     },
   },
   {
-    accessorKey: "apy",
-    header: "APY",
+    accessorKey: "APR",
+    header: "APR",
+    size: 150,
     cell: ({ row }) => {
-      const apy = row.getValue("apy");
-      return `${apy}%`;
-    }
+      const isExpanded = row.getIsExpanded();
+      if (isExpanded) return null;
+
+      const APR = row.getValue("APR");
+      return `${Number(APR).toFixed(1)}%`;
+    },
   },
   {
     id: "actions",
+    size: 100,
     cell: ({ row }) => {
       const isExpanded = row.getIsExpanded();
       return (
-        <Button 
-          variant="ghost" 
-          size="sm"
-          onClick={() => row.toggleExpanded()}
-        >
+        <Button variant="ghost" size="sm" onClick={() => row.toggleExpanded()}>
           {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </Button>
       );
     },
   },
 ];
+
+export const columnSizes = {
+  select: 100,
+  asset: 200,
+  balanceOrAvailable: 150,
+  selectedAmount: 150,
+  APR: 150,
+  actions: 100,
+} as const;
