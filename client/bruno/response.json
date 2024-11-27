@@ -1,0 +1,271 @@
+{
+  "address": "resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxtfd2jc",
+  "price": "0.01579",
+  "details": {
+    "ledger_state": {
+      "network": "stokenet",
+      "state_version": 106753348,
+      "proposer_round_timestamp": "2024-11-27T13:35:31.238Z",
+      "epoch": 56627,
+      "round": 712
+    },
+    "items": [
+      {
+        "address": "resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxtfd2jc",
+        "fungible_resources": { "total_count": 0, "items": [] },
+        "non_fungible_resources": { "total_count": 0, "items": [] },
+        "metadata": {
+          "total_count": 6,
+          "items": [
+            {
+              "key": "tags",
+              "value": {
+                "raw_hex": "5c228001200c00",
+                "programmatic_json": {
+                  "variant_id": "128",
+                  "fields": [{ "element_kind": "String", "elements": [], "kind": "Array" }],
+                  "kind": "Enum"
+                },
+                "typed": { "values": [], "type": "StringArray" }
+              },
+              "is_locked": true,
+              "last_updated_at_state_version": 2
+            },
+            {
+              "key": "icon_url",
+              "value": {
+                "raw_hex": "5c220d010c2e68747470733a2f2f6173736574732e7261646978646c742e636f6d2f69636f6e732f69636f6e2d7872642e706e67",
+                "programmatic_json": {
+                  "variant_id": "13",
+                  "fields": [{ "value": "https://assets.radixdlt.com/icons/icon-xrd.png", "kind": "String" }],
+                  "kind": "Enum"
+                },
+                "typed": { "value": "https://assets.radixdlt.com/icons/icon-xrd.png", "type": "Url" }
+              },
+              "is_locked": true,
+              "last_updated_at_state_version": 103177731
+            },
+            {
+              "key": "symbol",
+              "value": {
+                "raw_hex": "5c2200010c03585244",
+                "programmatic_json": {
+                  "variant_id": "0",
+                  "fields": [{ "value": "XRD", "kind": "String" }],
+                  "kind": "Enum"
+                },
+                "typed": { "value": "XRD", "type": "String" }
+              },
+              "is_locked": true,
+              "last_updated_at_state_version": 2
+            },
+            {
+              "key": "description",
+              "value": {
+                "raw_hex": "5c2200010c9e01546865205261646978205075626c6963204e6574776f726b2773206e617469766520746f6b656e2c207573656420746f2070617920746865206e6574776f726b2773207265717569726564207472616e73616374696f6e206665657320616e6420746f2073656375726520746865206e6574776f726b207468726f756768207374616b696e6720746f206974732076616c696461746f72206e6f6465732e",
+                "programmatic_json": {
+                  "variant_id": "0",
+                  "fields": [
+                    {
+                      "value": "The Radix Public Network's native token, used to pay the network's required transaction fees and to secure the network through staking to its validator nodes.",
+                      "kind": "String"
+                    }
+                  ],
+                  "kind": "Enum"
+                },
+                "typed": {
+                  "value": "The Radix Public Network's native token, used to pay the network's required transaction fees and to secure the network through staking to its validator nodes.",
+                  "type": "String"
+                }
+              },
+              "is_locked": true,
+              "last_updated_at_state_version": 2
+            },
+            {
+              "key": "name",
+              "value": {
+                "raw_hex": "5c2200010c055261646978",
+                "programmatic_json": {
+                  "variant_id": "0",
+                  "fields": [{ "value": "Radix", "kind": "String" }],
+                  "kind": "Enum"
+                },
+                "typed": { "value": "Radix", "type": "String" }
+              },
+              "is_locked": true,
+              "last_updated_at_state_version": 2
+            },
+            {
+              "key": "info_url",
+              "value": {
+                "raw_hex": "5c220d010c2568747470733a2f2f7777772e7261646978646c742e636f6d2f696e666f2d75726c2f787264",
+                "programmatic_json": {
+                  "variant_id": "13",
+                  "fields": [{ "value": "https://www.radixdlt.com/info-url/xrd", "kind": "String" }],
+                  "kind": "Enum"
+                },
+                "typed": { "value": "https://www.radixdlt.com/info-url/xrd", "type": "Url" }
+              },
+              "is_locked": true,
+              "last_updated_at_state_version": 103177731
+            }
+          ]
+        },
+        "details": {
+          "role_assignments": {
+            "owner": {
+              "rule": {
+                "type": "Protected",
+                "access_rule": {
+                  "type": "ProofRule",
+                  "proof_rule": {
+                    "type": "Require",
+                    "requirement": {
+                      "type": "NonFungible",
+                      "non_fungible": {
+                        "local_id": { "id_type": "Integer", "sbor_hex": "5cc0010000000000000000", "simple_rep": "#0#" },
+                        "resource_address": "resource_tdx_2_1nfxxxxxxxxxxsystxnxxxxxxxxx002683325037xxxxxxxxxcss8hx"
+                      }
+                    }
+                  }
+                }
+              },
+              "updater": "None"
+            },
+            "entries": [
+              {
+                "role_key": { "module": "Main", "name": "burner" },
+                "assignment": {
+                  "resolution": "Explicit",
+                  "explicit_rule": {
+                    "type": "Protected",
+                    "access_rule": {
+                      "type": "ProofRule",
+                      "proof_rule": {
+                        "type": "Require",
+                        "requirement": {
+                          "type": "NonFungible",
+                          "non_fungible": {
+                            "local_id": {
+                              "id_type": "Bytes",
+                              "sbor_hex": "5cc0022068c44e9d432e71c51e2a2ac285897b372328d8b31374ff29131bc6b25b6bd070",
+                              "simple_rep": "[68c44e9d432e71c51e2a2ac285897b372328d8b31374ff29131bc6b25b6bd070]"
+                            },
+                            "resource_address": "resource_tdx_2_1nfxxxxxxxxxxglcllrxxxxxxxxx002350006550xxxxxxxxxqtcnwk"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "updater_roles": [{ "module": "Main", "name": "burner_updater" }]
+              },
+              {
+                "role_key": { "module": "Main", "name": "minter" },
+                "assignment": {
+                  "resolution": "Explicit",
+                  "explicit_rule": {
+                    "type": "Protected",
+                    "access_rule": {
+                      "type": "ProofRule",
+                      "proof_rule": {
+                        "type": "Require",
+                        "requirement": {
+                          "type": "NonFungible",
+                          "non_fungible": {
+                            "local_id": {
+                              "id_type": "Bytes",
+                              "sbor_hex": "5cc0022068c44e9d432e71c51e2a2ac285897b372328d8b31374ff29131bc6b25b6bd070",
+                              "simple_rep": "[68c44e9d432e71c51e2a2ac285897b372328d8b31374ff29131bc6b25b6bd070]"
+                            },
+                            "resource_address": "resource_tdx_2_1nfxxxxxxxxxxglcllrxxxxxxxxx002350006550xxxxxxxxxqtcnwk"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "updater_roles": [{ "module": "Main", "name": "minter_updater" }]
+              },
+              {
+                "role_key": { "module": "Main", "name": "freezer" },
+                "assignment": { "resolution": "Explicit", "explicit_rule": { "type": "DenyAll" } },
+                "updater_roles": [{ "module": "Main", "name": "freezer_updater" }]
+              },
+              {
+                "role_key": { "module": "Main", "name": "recaller" },
+                "assignment": { "resolution": "Explicit", "explicit_rule": { "type": "DenyAll" } },
+                "updater_roles": [{ "module": "Main", "name": "recaller_updater" }]
+              },
+              {
+                "role_key": { "module": "Main", "name": "depositor" },
+                "assignment": { "resolution": "Explicit", "explicit_rule": { "type": "AllowAll" } },
+                "updater_roles": [{ "module": "Main", "name": "depositor_updater" }]
+              },
+              {
+                "role_key": { "module": "Main", "name": "withdrawer" },
+                "assignment": { "resolution": "Explicit", "explicit_rule": { "type": "AllowAll" } },
+                "updater_roles": [{ "module": "Main", "name": "withdrawer_updater" }]
+              },
+              {
+                "role_key": { "module": "Main", "name": "burner_updater" },
+                "assignment": { "resolution": "Explicit", "explicit_rule": { "type": "DenyAll" } },
+                "updater_roles": [{ "module": "Main", "name": "burner_updater" }]
+              },
+              {
+                "role_key": { "module": "Main", "name": "minter_updater" },
+                "assignment": { "resolution": "Explicit", "explicit_rule": { "type": "DenyAll" } },
+                "updater_roles": [{ "module": "Main", "name": "minter_updater" }]
+              },
+              {
+                "role_key": { "module": "Main", "name": "freezer_updater" },
+                "assignment": { "resolution": "Explicit", "explicit_rule": { "type": "DenyAll" } },
+                "updater_roles": [{ "module": "Main", "name": "freezer_updater" }]
+              },
+              {
+                "role_key": { "module": "Main", "name": "recaller_updater" },
+                "assignment": { "resolution": "Explicit", "explicit_rule": { "type": "DenyAll" } },
+                "updater_roles": [{ "module": "Main", "name": "recaller_updater" }]
+              },
+              {
+                "role_key": { "module": "Main", "name": "depositor_updater" },
+                "assignment": { "resolution": "Explicit", "explicit_rule": { "type": "DenyAll" } },
+                "updater_roles": [{ "module": "Main", "name": "depositor_updater" }]
+              },
+              {
+                "role_key": { "module": "Main", "name": "withdrawer_updater" },
+                "assignment": { "resolution": "Explicit", "explicit_rule": { "type": "DenyAll" } },
+                "updater_roles": [{ "module": "Main", "name": "withdrawer_updater" }]
+              },
+              {
+                "role_key": { "module": "Metadata", "name": "metadata_locker" },
+                "assignment": { "resolution": "Owner" },
+                "updater_roles": [{ "module": "Metadata", "name": "metadata_locker_updater" }]
+              },
+              {
+                "role_key": { "module": "Metadata", "name": "metadata_locker_updater" },
+                "assignment": { "resolution": "Owner" },
+                "updater_roles": [{ "module": "Metadata", "name": "metadata_locker_updater" }]
+              },
+              {
+                "role_key": { "module": "Metadata", "name": "metadata_setter" },
+                "assignment": { "resolution": "Owner" },
+                "updater_roles": [{ "module": "Metadata", "name": "metadata_setter_updater" }]
+              },
+              {
+                "role_key": { "module": "Metadata", "name": "metadata_setter_updater" },
+                "assignment": { "resolution": "Owner" },
+                "updater_roles": [{ "module": "Metadata", "name": "metadata_setter_updater" }]
+              }
+            ]
+          },
+          "divisibility": 18,
+          "total_supply": "1704154649916.709308348869929441",
+          "total_minted": "1704155266021.175319143688261041",
+          "total_burned": "616104.4660107948183316",
+          "type": "FungibleResource"
+        }
+      }
+    ]
+  }
+}
