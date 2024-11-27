@@ -1,0 +1,15 @@
+meta {
+  name: Get asset details
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/assets/{{asset}}
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  asset: resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxtfd2jc
+}
