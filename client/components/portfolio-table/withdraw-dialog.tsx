@@ -2,16 +2,30 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { TruncatedNumber } from "@/components/ui/truncated-number";
-import { bn, m_bn, math, num } from "@/lib/math";
-import { Asset, getAssetIcon, getAssetPrice } from "@/types/asset";
+import { bn, m_bn, math, num, round_dec } from "@/lib/math";
+import {
+  ammountToSupplyUnits,
+  Asset,
+  AssetName,
+  getAssetIcon,
+  getAssetPrice,
+  getUnitBalance,
+  supplyUnitsToAmount,
+} from "@/types/asset";
 import { ArrowRight, X } from "lucide-react";
 import { BigNumber } from "mathjs";
 import React, { useEffect, useState } from "react";
+import { TransactionPreview } from "@/components/transaction-preview";
+import { useRadixContext } from "@/contexts/provider";
+import position_withdraw_rtm from "@/lib/manifests/position_withdraw";
+import config from "@/lib/config.json";
+import { gatewayApi } from "@/lib/radix";
+import { SlippageSlider } from "@/components/slippage-slider";
 
 interface WithdrawDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (amount: BigNumber) => Promise<void>;
+  onConfirm: (amount: BigNumber, slippageMultiplier: BigNumber) => Promise<void>;
   asset: Asset;
   totalSupply: BigNumber;
   totalBorrowDebt: BigNumber;
@@ -34,6 +48,10 @@ export function WithdrawDialog({
   const [transactionState, setTransactionState] = useState<"idle" | "awaiting_signature" | "processing" | "error">(
     "idle",
   );
+  const { accounts } = useRadixContext();
+  const [manifest, setManifest] = useState<string>("");
+  const [nftInfo, setNftInfo] = useState<{ address: string; localId: string } | null>(null);
+  const [slippage, setSlippage] = useState(0.5);
 
   const validateAmount = (value: string) => {
     const amount = bn(value != "" ? value : 0);
@@ -89,10 +107,11 @@ export function WithdrawDialog({
     if (math.larger(amount, 0) && !error) {
       setTransactionState("awaiting_signature");
       try {
-        // Add 0.05% to amount
-        const amountWithSlippage = m_bn(math.multiply(amount, 1.0005));
+        // Add slippage to amount (convert percentage to decimal)
+        const slippageMultiplier = 1 + slippage / 100;
+        // const amountWithSlippage = m_bn(math.multiply(amount, slippageMultiplier));
 
-        await onConfirm(amountWithSlippage);
+        await onConfirm(amount, bn(slippageMultiplier));
         onClose();
       } catch (error) {
         setTransactionState("error");
@@ -100,6 +119,80 @@ export function WithdrawDialog({
       }
     }
   };
+
+  // Add NFT info fetching effect
+  useEffect(() => {
+    const fetchNFTInfo = async () => {
+      if (!accounts || !isOpen) return;
+
+      const accountState = await gatewayApi?.state.getEntityDetailsVaultAggregated(accounts[0].address);
+      const getNFTBalance = accountState?.non_fungible_resources.items.find(
+        (fr: { resource_address: string }) => fr.resource_address === config.borrowerBadgeAddr,
+      )?.vaults.items[0];
+
+      if (getNFTBalance?.items?.[0]) {
+        setNftInfo({
+          address: config.borrowerBadgeAddr,
+          localId: getNFTBalance.items[0],
+        });
+      }
+    };
+
+    fetchNFTInfo();
+  }, [accounts, isOpen]);
+
+  // Add manifest generation effect
+  useEffect(() => {
+    // if (!accounts || !isOpen || !nftInfo || !tempAmount) return;
+
+    const preview = async () => {
+      if (!accounts || !isOpen || !nftInfo || !tempAmount) return;
+
+      const amount = bn(tempAmount);
+
+      const supplyUnitBalance = await getUnitBalance(accounts[0].address, asset.label);
+
+      const supplyRecord: Record<AssetName, BigNumber> = {
+        [asset.label]: amount,
+      } as Record<AssetName, BigNumber>;
+      const rawSupplyUnits = await ammountToSupplyUnits(supplyRecord);
+
+      let supplyUnits = m_bn(math.multiply(rawSupplyUnits, 1 + slippage / 100));
+      supplyUnits = m_bn(math.min(supplyUnits, supplyUnitBalance));
+
+      let supplyRequested = "None";
+      if (!math.equal(supplyUnits, supplyUnitBalance)) {
+        // Value of the supply units un-adjusted for slipapge
+        // ! Removed due to causing lower-than-expected estimation
+        // const supplyUnitValue = math.multiply(
+        //   await supplyUnitsToAmount({ [row.original.label]: supplyUnits } as Record<AssetName, BigNumber>),
+        //   math.subtract(2, slippageMultiplier),
+        // );
+
+        const supplyUnitValue = await supplyUnitsToAmount({ [asset.label]: supplyUnits } as Record<
+          AssetName,
+          BigNumber
+        >);
+        supplyRequested = round_dec(math.min(amount, m_bn(supplyUnitValue))).toString();
+      }
+
+      const previewManifest = position_withdraw_rtm({
+        component: config.marketComponent,
+        account: accounts[0].address,
+        position_badge_address: nftInfo.address,
+        position_badge_local_id: nftInfo.localId,
+        asset: {
+          address: asset.pool_unit_address,
+          amount: round_dec(supplyUnits).toString(),
+        },
+        requested: supplyRequested,
+      });
+
+      setManifest(previewManifest);
+    };
+
+    preview();
+  }, [accounts, asset, tempAmount, isOpen, nftInfo]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -183,6 +276,10 @@ export function WithdrawDialog({
               </div>
             </div>
           </div>
+
+          <SlippageSlider value={slippage} onChange={setSlippage} />
+
+          <TransactionPreview manifest={manifest} />
 
           <Button
             className="w-full h-12 text-base"

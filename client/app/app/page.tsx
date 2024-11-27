@@ -4,22 +4,22 @@ import { AssetActionCard } from "@/components/asset-action-card";
 import { AssetTable } from "@/components/asset-table/asset-table";
 import { borrowColumns } from "@/components/asset-table/borrow-columns";
 import { columns } from "@/components/asset-table/columns";
-import BorrowDialog from "@/components/borrow-dialog";
+import BorrowDialog from "@/components/asset-table/borrow-dialog";
 import { createPortfolioColumns } from "@/components/portfolio-table/portfolio-columns";
 import { PortfolioTable } from "@/components/portfolio-table/portfolio-table";
 import { StatisticsCard } from "@/components/statistics-card";
-import SupplyDialog from "@/components/supply-dialog";
+import SupplyDialog from "@/components/asset-table/supply-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { ShootingStars } from "@/components/ui/shooting-stars";
-import { StarsBackground } from "@/components/ui/stars-background";
+import { BackgroundEffects } from "@/components/background-effects";
 import { useToast } from "@/components/ui/use-toast";
 import { useRadixContext } from "@/contexts/provider";
 import config from "@/lib/config.json";
 import open_position_rtm from "@/lib/manifests/open_position";
 import position_borrow_rtm from "@/lib/manifests/position_borrow";
 import position_supply_rtm from "@/lib/manifests/position_supply";
+import position_close_rtm from "@/lib/manifests/close_position";
 import { bn, m_bn, math, num, round_dec } from "@/lib/math";
 import { gatewayApi, rdt } from "@/lib/radix";
 import {
@@ -32,10 +32,14 @@ import {
   getAssetPrice,
   getWalletBalance,
   supplyUnitsToAmount,
+  hasEmptyPosition,
 } from "@/types/asset";
 import { RowSelectionState, Updater } from "@tanstack/react-table";
 import { BigNumber } from "mathjs";
 import React, { useEffect, useState } from "react";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { AlertCircle } from "lucide-react";
 
 interface NFTData {
   data: {
@@ -86,6 +90,7 @@ export default function App() {
   const [netAPR, setNetAPR] = useState<number>(0);
   const [health, setHealth] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasEmptyPositionState, setHasEmptyPositionState] = useState<boolean>(false);
 
   const hasSelectedSupplyAssets = Object.keys(supplyRowSelection).length > 0;
   const hasSelectedBorrowAssets = Object.keys(borrowRowSelection).length > 0;
@@ -109,12 +114,18 @@ export default function App() {
   };
 
   const calculateBorrowPower = (totalSupplyValue: number, totalDebtValue: number): number => {
+    // If no debt, borrow power used is 0%
     if (totalDebtValue <= 0) return 0;
-    const currentHealth = totalSupplyValue / totalDebtValue;
-    if (currentHealth <= 1.5) return 100;
-    const borrowPowerPercentage = (totalDebtValue / totalSupplyValue) * 100;
-    console.log("Borrow Power Percentage: ", borrowPowerPercentage);
-    return Math.max(0, Number(borrowPowerPercentage.toFixed(1)));
+
+    // Calculate maximum borrowable amount (when health = 1.5)
+    // At health = 1.5: totalSupplyValue / maxDebt = 1.5
+    // Therefore: maxDebt = totalSupplyValue / 1.5
+    const maxBorrowableDebt = totalSupplyValue / 1.5;
+
+    // Calculate percentage of max borrowing power used
+    const borrowPowerUsed = (totalDebtValue / maxBorrowableDebt) * 100;
+
+    return borrowPowerUsed;
   };
 
   const refreshPortfolioData = async () => {
@@ -222,14 +233,13 @@ export default function App() {
           const [label] = assetConfig;
 
           const assetName = label as AssetName;
-          const amount = borrowedAsset.borrowed_amount;
           const unitRecord: Record<AssetName, BigNumber> = {
             [assetName]: borrowedAsset.borrowed_amount,
           } as Record<AssetName, BigNumber>;
 
-          const value = await borrowUnitsToAmount(unitRecord);
+          const amount = await borrowUnitsToAmount(unitRecord);
           const price = await getAssetPrice(assetName);
-          totalDebtValue = m_bn(math.add(totalDebtValue, math.multiply(value, price)));
+          totalDebtValue = m_bn(math.add(totalDebtValue, math.multiply(amount, price)));
 
           return {
             address: borrowedAsset.address,
@@ -310,6 +320,17 @@ export default function App() {
 
     updateWalletBalances();
   }, [accounts]);
+
+  useEffect(() => {
+    const checkEmptyPosition = async () => {
+      if (accounts && accounts[0]) {
+        const isEmpty = await hasEmptyPosition(accounts[0].address);
+        setHasEmptyPositionState(isEmpty);
+      }
+    };
+
+    checkEmptyPosition();
+  }, [accounts, totalSupply]);
 
   if (isLoading) {
     return <LoadingSpinner />;
@@ -440,7 +461,7 @@ export default function App() {
       const selectedAssets = getSelectedBorrowAssets();
       const assetsToBorrow = selectedAssets.map((asset) => ({
         address: asset.address,
-        amount: asset.select_native.toString(),
+        amount: round_dec(asset.select_native).toString(),
       }));
 
       // Get NFT ID from account state
@@ -467,34 +488,6 @@ export default function App() {
       });
 
       console.log("Borrow manifest:", manifest);
-
-      // const status = await gatewayApi.status.getCurrent();
-      // const currentEpoch = status.ledger_state.epoch;
-
-      // const transactionPreviewRequest = {
-      //   manifest,
-      //   start_epoch_inclusive: currentEpoch,
-      //   end_epoch_exclusive: currentEpoch + 1,
-      //   tip_percentage: 0,
-      //   nonce: Math.round(Math.random() * 10e8),
-      //   signer_public_keys: [],
-      //   flags: {
-      //     use_free_credit: true,
-      //     assume_all_signature_proofs: true,
-      //     skip_epoch_check: true,
-      //   },
-      // };
-
-      // console.log("transactionPreviewRequest", transactionPreviewRequest);
-
-      // // Fetch transaction preview from gateway api
-      // const response = await gatewayApi.transaction.innerClient.transactionPreview({
-      //   transactionPreviewRequest,
-      // });
-
-      // // Return transaction preview
-      // console.log("Res", response);
-      // return;
 
       const result = await rdt?.walletApi.sendTransaction({
         transactionManifest: manifest,
@@ -605,23 +598,112 @@ export default function App() {
     setIsBorrowDialogOpen(true);
   };
 
+  const closePosition = async () => {
+    try {
+      if (!accounts || !gatewayApi) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Wallet not connected",
+        });
+        return;
+      }
+
+      // Get NFT ID from account state
+      const accountState = await gatewayApi.state.getEntityDetailsVaultAggregated(accounts[0].address);
+      const getNFTBalance = accountState.non_fungible_resources.items.find(
+        (fr: { resource_address: string }) => fr.resource_address === config.borrowerBadgeAddr,
+      )?.vaults.items[0];
+
+      if (!getNFTBalance?.items?.[0]) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "No position NFT found",
+        });
+        return;
+      }
+
+      const manifest = position_close_rtm({
+        component: config.marketComponent,
+        account: accounts[0].address,
+        position_badge_address: config.borrowerBadgeAddr,
+        position_badge_local_id: getNFTBalance.items[0],
+      });
+
+      const result = await rdt?.walletApi.sendTransaction({
+        transactionManifest: manifest,
+        version: 1,
+      });
+
+      if (result?.isOk()) {
+        toast({
+          title: "Success",
+          description: "Position closed successfully",
+        });
+        await refreshPortfolioData();
+      } else if (result) {
+        const errorResult = result as { error: { error: string } };
+        let message = errorResult.error.error || "Transaction failed";
+        if (errorResult.error.error.includes("rejectedByUser")) {
+          message = "Transaction rejected by user";
+        }
+        toast({
+          variant: "destructive",
+          title: "Failed to close position",
+          description: message,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to close position:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+      });
+    }
+  };
+
   const columns = createPortfolioColumns(refreshPortfolioData, totalSupply, totalBorrowDebt);
 
   return (
     <div className="relative min-h-screen">
-      {/* Background Effects - Move to the very back */}
-      <div className="fixed inset-0 pointer-events-none -z-10">
-        <div className="h-full w-full bg-background dark:bg-foreground bg-grid-slate-200/20 dark:bg-grid-slate-50/[0.2]" />
-        {/* Radial gradient overlay */}
-        <div className="absolute pointer-events-none inset-0 flex items-center justify-center bg-background dark:bg-black [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]" />
-        <ShootingStars />
-        <StarsBackground />
-      </div>
+      <BackgroundEffects />
+      <main className="flex min-h-screen flex-col p-8">
+        <div className="container mx-auto space-y-4">
+          {/* Title */}
+          <div className="flex flex-col space-y-1.5 mb-6">
+            <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">Lattic3 Market</h1>
+          </div>
 
-      <main className="flex min-h-screen flex-col items-center justify-center p-8">
-        <div className="container mx-auto py-10 space-y-8">
           {/* Statistics Card */}
           <StatisticsCard healthRatio={health} netWorth={netWorth} netAPR={netAPR} isLoading={isLoading} />
+
+          {/* Empty Position Warning */}
+          {hasEmptyPositionState && (
+            <Card className="bg-red-500/5 border-red-500/20">
+              <CardContent className="flex items-center justify-between p-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-full bg-red-500/10">
+                    <AlertCircle className="w-6 h-6 text-red-500" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg text-red-500">Empty Position</h3>
+                    <p className="text-foreground">
+                      You have no assets supplied or borrowed. You can close your position.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="destructive"
+                  className="bg-red-500 hover:bg-red-600"
+                  onClick={closePosition}
+                >
+                  Close Position
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
           {/* First row: Supply and Borrow cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -629,18 +711,25 @@ export default function App() {
             <Card>
               <CardHeader>
                 <div className="grid grid-cols-2">
-                  <CardTitle>Your Supply</CardTitle>
-                  <div className="flex justify-end">
-                    <div className="grid grid-cols-[auto,1fr] gap-x-6 items-center min-h-[72px]">
-                      <CardDescription className="text-left text-foreground">Total Supply:</CardDescription>
-                      <CardDescription className="text-right text-foreground">
-                        ${totalSupply.toFixed(2)}
-                      </CardDescription>
-                      <CardDescription className="text-left text-foreground">Total APR:</CardDescription>
-                      <CardDescription className="text-right text-foreground">
-                        {totalSupplyAPR.toFixed(1)}%
-                      </CardDescription>
-                      <div className="col-span-2"></div>
+                  <div className="flex flex-col gap-1">
+                    <CardTitle>Your Supply</CardTitle>
+                    <span className="text-2xl font-semibold">${totalSupply.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-end h-[60px] sm:h-[70px] md:h-[80px] lg:h-[90px]">
+                    <div className="space-y-4">
+                      <div className="flex flex-col gap-2">
+                        {/* APR */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-foreground">APR</span>
+                          <span
+                            className={`px-2 py-1 text-sm font-medium rounded-full ${
+                              totalSupplyAPR > 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                            }`}
+                          >
+                            {totalSupplyAPR.toFixed(1)}%
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -654,21 +743,76 @@ export default function App() {
             <Card>
               <CardHeader>
                 <div className="grid grid-cols-2">
-                  <CardTitle>Your Borrows</CardTitle>
-                  <div className="flex justify-end">
-                    <div className="grid grid-cols-[auto,1fr] gap-x-6 items-center min-h-[72px]">
-                      <CardDescription className="text-left text-foreground">Total Debt:</CardDescription>
-                      <CardDescription className="text-right text-foreground">
-                        ${totalBorrowDebt.toFixed(2)}
-                      </CardDescription>
-                      <CardDescription className="text-left text-foreground">Total APR:</CardDescription>
-                      <CardDescription className="text-right text-foreground">
-                        {totalBorrowAPR.toFixed(1)}%
-                      </CardDescription>
-                      <CardDescription className="text-left text-foreground">Borrow Power Used:</CardDescription>
-                      <CardDescription className="text-right text-foreground">
-                        {borrowPowerUsed.toFixed(1)}%
-                      </CardDescription>
+                  <div className="flex flex-col gap-1">
+                    <CardTitle>Your Borrows</CardTitle>
+                    <span className="text-2xl font-semibold">${totalBorrowDebt.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-end h-[60px] sm:h-[70px] md:h-[80px] lg:h-[90px]">
+                    <div className="space-y-4">
+                      <div className="flex flex-col gap-2">
+                        {/* APR */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-foreground">APR</span>
+                          <span
+                            className={`px-2 py-1 text-sm font-medium rounded-full ${
+                              totalBorrowAPR > 0 ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"
+                            }`}
+                          >
+                            {totalBorrowAPR.toFixed(1)}%
+                          </span>
+                        </div>
+
+                        {/* Borrow Power Section */}
+                        <div className="flex flex-col gap-2">
+                          <div className="flex justify-between items-center gap-x-4">
+                            <span className="text-sm text-foreground">Borrow Power Used</span>
+                            <span
+                              className={`text-sm font-semibold ${
+                                borrowPowerUsed >= 80
+                                  ? "text-red-500"
+                                  : borrowPowerUsed >= 50
+                                    ? "text-yellow-500"
+                                    : "text-blue-500"
+                              }`}
+                            >
+                              {borrowPowerUsed.toFixed(1)}%
+                            </span>
+                          </div>
+
+                          {/* Progress Bar */}
+                          <div className="relative w-full h-3">
+                            <div className="absolute w-full h-full bg-secondary rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all duration-300 ${
+                                  borrowPowerUsed >= 80
+                                    ? "bg-gradient-to-r from-red-500 to-red-400"
+                                    : borrowPowerUsed >= 50
+                                      ? "bg-gradient-to-r from-yellow-500 to-yellow-400"
+                                      : "bg-gradient-to-r from-blue-500 to-blue-400"
+                                }`}
+                                style={{ width: `${Math.min(borrowPowerUsed, 100)}%` }}
+                              />
+                            </div>
+                            <div className="absolute w-full h-full flex justify-between items-center px-[2px]">
+                              {[25, 50, 75].map((milestone) => (
+                                <div
+                                  key={milestone}
+                                  className={`w-0.5 h-1.5 bg-secondary-foreground/20 rounded-full ${
+                                    borrowPowerUsed >= milestone ? "opacity-100" : "opacity-50"
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Risk Labels */}
+                          <div className="flex justify-between items-center text-[10px] uppercase tracking-wider font-medium text-muted-foreground/60">
+                            <span>Safe</span>
+                            <span>Moderate</span>
+                            <span>High Risk</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

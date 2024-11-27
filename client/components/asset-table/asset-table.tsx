@@ -49,36 +49,63 @@ export function AssetTable<TData extends Asset, TValue>({
   const [selectionOrder, setSelectionOrder] = React.useState<string[]>([]);
 
   const handleAmountChange = (address: string, amount: BigNumber) => {
-    setTableData((current) =>
-      current.map((row) => (row.address === address ? { ...row, select_native: amount } : row)),
-    );
+    // First check if the row is already selected
+    const row = table.getRow(address);
+    const isSelected = row?.getIsSelected();
+
+    // If not selected, select it first
+    if (row && !isSelected) {
+      row.toggleSelected(true);
+    }
+
+    // Then update the amount
     onAmountChange(address, amount, mode);
   };
 
   const handleConfirm = (asset: Asset, amount: BigNumber) => {
+    console.log("Handle confirm", asset, amount);
     setExpandedRows({});
+    const row = table.getRow(asset.address);
+    if (row) {
+      row.toggleSelected(true);
+    }
   };
 
   // Handle row selection changes
   const handleRowSelectionChange = (updaterOrValue: Updater<RowSelectionState>) => {
     const newSelection = typeof updaterOrValue === "function" ? updaterOrValue(rowSelection) : updaterOrValue;
 
-    // Reset amounts for unselected assets
+    // Get the previously selected rows
+    const previouslySelected = Object.entries(rowSelection)
+      .filter(([_, isSelected]) => isSelected)
+      .map(([id]) => id);
+
+    // Get newly selected rows
+    const currentlySelected = Object.entries(newSelection)
+      .filter(([_, isSelected]) => isSelected)
+      .map(([id]) => id);
+    
+    const newlySelected = currentlySelected.filter(id => !previouslySelected.includes(id));
+
+    // Reset amounts only for unselected assets, preserve amounts for newly selected ones
     setTableData((current) =>
       current.map((row) => {
         const rowIndex = table.getRowModel().rows.findIndex((r) => r.original.address === row.address);
         const isSelected = newSelection[rowIndex];
-        if (!isSelected) {
-          onAmountChange(row.address, bn(0), mode); // Notify parent of amount change
+        const isNewlySelected = newlySelected.includes(row.address);
+        
+        // Only reset amount if the row is unselected and not newly selected
+        if (!isSelected && !isNewlySelected) {
+          onAmountChange(row.address, bn(0), mode);
+          return { ...row, select_native: bn(0) };
         }
-        return isSelected ? row : { ...row, select_native: bn(0) };
+        return row;
       }),
     );
 
     // Update expanded rows based on selection state
     setExpandedRows((prev) => {
       const updatedRows: Record<string, boolean> = {};
-
       Object.keys(prev).forEach((rowId) => {
         updatedRows[rowId] = false;
       });
@@ -107,6 +134,11 @@ export function AssetTable<TData extends Asset, TValue>({
     enableExpanding: true,
     onExpandedChange: (updaterOrValue) => {
       const newValue = typeof updaterOrValue === "function" ? updaterOrValue(expandedRows) : updaterOrValue;
+      
+      // If it's just a re-render and not a user action, preserve the current state
+      if (newValue === expandedRows) {
+        return;
+      }
 
       const expandedState = typeof newValue === "boolean" ? {} : (newValue as Record<string, boolean>);
 
@@ -137,24 +169,26 @@ export function AssetTable<TData extends Asset, TValue>({
     enableRowSelection: true,
     onRowSelectionChange: (updater) => {
       const newSelection = typeof updater === "function" ? updater(rowSelection) : updater;
-
-      // Get currently selected rows
-      const selectedRows = Object.entries(newSelection)
-        .filter(([_, isSelected]) => isSelected)
-        .map(([id]) => id);
-
-      // Compare with previous selection to find newly selected row
+      
+      // Get previously selected rows
       const previouslySelected = Object.entries(rowSelection)
         .filter(([_, isSelected]) => isSelected)
         .map(([id]) => id);
-
-      const newlySelected = selectedRows.find((id) => !previouslySelected.includes(id));
-
-      // If there's a newly selected row, expand it and collapse others
+      
+      // Get currently selected rows
+      const currentlySelected = Object.entries(newSelection)
+        .filter(([_, isSelected]) => isSelected)
+        .map(([id]) => id);
+      
+      // Find newly selected row
+      const newlySelected = currentlySelected.find(id => !previouslySelected.includes(id));
+      
+      // Update selection order
       if (newlySelected) {
-        setExpandedRows({ [newlySelected]: true });
-      } else if (selectedRows.length === 0) {
-        setExpandedRows({});
+        setSelectionOrder(prev => [...prev, newlySelected]);
+      } else {
+        // Remove deselected items from order
+        setSelectionOrder(prev => prev.filter(id => currentlySelected.includes(id)));
       }
 
       handleRowSelectionChange(newSelection);

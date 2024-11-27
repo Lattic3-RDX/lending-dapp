@@ -106,8 +106,17 @@ export function AssetActionCard({
       <CardHeader>
         <div className="space-y-4">
           <div className="flex justify-between items-center h-9">
-            <div>
-              <CardTitle>{isBorrowMode ? "Available Borrows" : "Supply Collateral"}</CardTitle>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center">
+                <CardTitle>{isBorrowMode ? "Borrow Assets" : "Supply Assets"}</CardTitle>
+              </div>
+              <div className="w-24">
+                {isBorrowMode ? (
+                  <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-700">Debt</span>
+                ) : (
+                  <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">Collateral</span>
+                )}
+              </div>
             </div>
             {((showSupplyPreview && hasSelectedSupplyAssets && !isBorrowMode) ||
               (showBorrowPreview && hasSelectedBorrowAssets && isBorrowMode)) && (
@@ -117,13 +126,38 @@ export function AssetActionCard({
             )}
           </div>
           <div className="flex items-center space-x-2">
-            <Label htmlFor="mode-toggle">Supply</Label>
-            <Switch id="mode-toggle" checked={isBorrowMode} onCheckedChange={setIsBorrowMode} />
-            <Label htmlFor="mode-toggle">Borrow</Label>
+            <div className="w-16 text-center">
+              <span 
+                className={`transition-all ${
+                  !isBorrowMode 
+                    ? "font-bold text-green-700" 
+                    : "font-normal text-foreground opacity-40"
+                }`}
+              >
+                Supply
+              </span>
+            </div>
+            <Switch 
+              id="mode-toggle" 
+              checked={isBorrowMode} 
+              onCheckedChange={setIsBorrowMode}
+              className={isBorrowMode ? "data-[state=checked]:bg-red-500" : "data-[state=checked]:bg-green-500"}
+            />
+            <div className="w-16 text-center">
+              <span 
+                className={`transition-all ${
+                  isBorrowMode 
+                    ? "font-bold text-red-700" 
+                    : "font-normal text-foreground opacity-40"
+                }`}
+              >
+                Borrow
+              </span>
+            </div>
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="bg-background">
         <AssetTable
           columns={isBorrowMode ? borrowColumns : columns}
           data={isBorrowMode ? borrowData : supplyData}

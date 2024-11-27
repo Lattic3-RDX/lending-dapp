@@ -28,7 +28,8 @@ use scrypto::prelude::*;
 // Types registered to reduce fees; include those used for KV stores, structs, NFTs, etc.
 #[types(Decimal, ResourceAddress, ValueMap, ComponentAddress, GlobalAddress, AssetEntry, Position)]
 mod lattic3 {
-    // Method roles
+    //] --------------- Scrypto Setup -------------- /
+
     enable_method_auth! {
         roles {
             admin => updatable_by: [OWNER];
@@ -36,7 +37,7 @@ mod lattic3 {
         methods {
             // Position management
             open_position     => PUBLIC;
-            close_position    => restrict_to: [SELF];
+            close_position    => PUBLIC;
             position_supply   => PUBLIC;
             position_borrow   => PUBLIC;
             position_withdraw => PUBLIC;
@@ -54,17 +55,19 @@ mod lattic3 {
         }
     }
 
-    // Importing price stream blueprint
+    // External PriceStream blueprint
     extern_blueprint! {
-        "package_tdx_2_1p4ual4cc8tnvm93atjlp9q5ua3ae5l0xkgnd68mlqz6ehlr98qxr53",
+        // "package_sim1pkwaf2l9zkmake5h924229n44wp5pgckmpn0lvtucwers56awywems", // Resim
+        "package_tdx_2_1p4ual4cc8tnvm93atjlp9q5ua3ae5l0xkgnd68mlqz6ehlr98qxr53", // Stokenet
         PriceStream {
             fn get_price(&self, asset: ResourceAddress) -> Option<Decimal>;
         }
     }
 
-    // Importing cluster blueprint
+    // External Cluster blueprint
     extern_blueprint! {
-        "package_tdx_2_1p5txanumqvgq6gd7mp2y8t3uhhf4dznczdjpgfyydsulgukye0yc9s",
+        // "package_sim1pkys4qlttszxq29qw5ys9lvn8grmswd0n6nsxrdxce3er3l85eagjm", // Resim
+        "package_tdx_2_1pkxjgnf0sc8cyv63fucee0eqmqjewnrnwqwnt4vwckwgpjwj844t8e", // Stokenet
         Cluster {
             fn instantiate(resource: ResourceAddress, cluster_owner_rule: AccessRule, cluster_admin_rule: AccessRule) -> Global<Cluster>;
 
@@ -75,7 +78,7 @@ mod lattic3 {
 
             fn get_ratio(&self, layer: ClusterLayer) -> PreciseDecimal;
             fn get_units(&self, layer: ClusterLayer, amount: Decimal) -> Decimal;
-            fn get_value(&self, layer: ClusterLayer, unit_amount: Decimal) -> Decimal;
+            fn get_amount(&self, layer: ClusterLayer, unit_amount: Decimal) -> Decimal;
             fn get_cluster_state(&self) -> ClusterState;
 
             fn provide_liquidity(&mut self, provided: Bucket);
@@ -83,6 +86,8 @@ mod lattic3 {
             fn set_interest_tick_interval(&mut self, interval: i64);
         }
     }
+
+    //] ------------- Lattic3 Blueprint ------------ /
 
     struct Lattic3 {
         component_address: ComponentAddress,
@@ -102,11 +107,20 @@ mod lattic3 {
     }
 
     impl Lattic3 {
+        /// Instantiate a new Lattic3 platform.
+        ///
+        /// # Arguments
+        /// * `dapp_definition_address` - Address of the dApp definition account.
+        /// * `owner_badge` - Badge which represents the owner of the: platform, all clusters, etc.
+        ///
+        /// # Returns
+        /// * Globalized Lattic3 market component
+        /// * Lattic3 owner badge
         pub fn instantiate(dapp_definition_address: ComponentAddress, owner_badge: Bucket) -> (Global<Lattic3>, Bucket) {
             // Reserve address
             let (address_reservation, component_address) = Runtime::allocate_component_address(Lattic3::blueprint_id());
 
-            //. Badges and rules
+            //] Badges and rules
             // Component
             let component_access_rule: AccessRule = rule!(require(global_caller(component_address)));
 
@@ -166,7 +180,7 @@ mod lattic3 {
                 })
                 .create_with_no_initial_supply();
 
-            //. Internal data setup
+            //] Internal data setup
             // Initialise component data
             let component_data: Lattic3 = Self {
                 component_address,
@@ -181,7 +195,7 @@ mod lattic3 {
                 position_id: 0u64,
             };
 
-            //. Component
+            //] Component
             let asset_list = component_data.asset_list.clone();
 
             // Metadata
@@ -220,8 +234,24 @@ mod lattic3 {
             (component, owner_badge)
         }
 
-        //. ------------ Position Management ----------- /
-        // Operations
+        //] ------------ Position Management ----------- /
+
+        /// Opens a new position with the provided supply.
+        ///
+        /// Distributes supplied resources to corresponding clusters in exchange for supply units,
+        /// and mints a new position badge.
+        ///
+        /// # Arguments
+        /// * `supply` - A vector of `Bucket`s which is the supply for the new position.
+        ///
+        /// # Returns
+        /// * A `Bucket` of the minted position badge.
+        /// * A vector of `Bucket`s, which are the supply units corresponding to the input supply.
+        ///
+        /// # Panics
+        /// * If the `supply` vector is empty.
+        /// * If ome supplied resource is invalid (see `__validate_bucket`).
+        /// * If the maximum number of positions has been reached.
         pub fn open_position(&mut self, supply: Vec<Bucket>) -> (Bucket, Vec<Bucket>) {
             // Sanity checks
             assert!(self.__validate_buckets(&supply), "Invalid supply");
@@ -263,14 +293,23 @@ mod lattic3 {
             (position_badge, supply_units)
         }
 
+        /// Closes a position by burning the position NFT.
+        ///
+        /// # Panics
+        /// * If the `position_bucket` is not a valid position NFT.
+        /// * If the position is not clear (remaining supply or debts).
+        ///
+        /// # Events
+        /// * This function emits a `PositionCloseEvent` on successful execution.
         pub fn close_position(&self, position_bucket: NonFungibleBucket) {
             // Sanity checks
             assert_eq!(position_bucket.amount(), dec!(1), "Position NFT must be provided");
-            assert_eq!(
-                position_bucket.resource_address(),
-                self.position_manager.address(),
-                "Position NFT must be provided"
-            );
+            assert!(self.__validate_position_bucket(&position_bucket), "Invalid position NFT");
+
+            // Fetch NFT data
+            let position: Position = position_bucket.as_non_fungible().non_fungible::<Position>().data();
+            assert!(position.debt.is_empty(), "Cannot close position with debts");
+            assert!(position.supply.is_empty(), "Cannot close position with supplied assets");
 
             // Burn the nft
             position_bucket.burn();
@@ -279,14 +318,33 @@ mod lattic3 {
             Runtime::emit_event(PositionCloseEvent {});
         }
 
-        pub fn position_supply(&mut self, position_bucket: NonFungibleBucket, supply: Vec<Bucket>) -> (NonFungibleBucket, Vec<Bucket>) {
+        //# --------------- Supply Layer --------------- /
+
+        /// Supplies resources to a position.
+        ///
+        /// Distributes supplied resources to corresponding clusters in exchange for supply units,
+        /// and updates the position NFT accordingly.
+        ///
+        /// # Arguments
+        /// * `position_node` - A proof of the position NFT.
+        /// * `supply` - A vector of `Bucket`s which are the supplied assets.
+        ///
+        /// # Returns
+        /// * A vector of `Bucket`s of returned the supply units.
+        ///
+        /// # Panics
+        /// * If the `position` is invalid (see `__validate_position`).
+        /// * If the `supply` vector is empty.
+        /// * If some supplied resource is invalid (see `__validate_bucket`).
+        ///
+        /// # Events
+        /// * Emits a `PositionSupplyEvent` on successful supply.
+        pub fn position_supply(&mut self, position_node: NonFungibleProof, supply: Vec<Bucket>) -> Vec<Bucket> {
             // Sanity checks
-            assert!(self.__validate_position(&position_bucket), "Invalid position NFT");
             assert!(self.__validate_buckets(&supply), "Invalid supply");
 
             // Fetch NFT data
-            let local_id = position_bucket.non_fungible_local_id();
-            let mut position: Position = position_bucket.as_non_fungible().non_fungible::<Position>().data();
+            let (mut position, local_id) = self.__validate_position(position_node);
             info!("[position_supply] Position: {:#?}", position);
 
             // Supply resources to clusters
@@ -313,22 +371,103 @@ mod lattic3 {
             // Runtime::emit_event(PositionSupplyEvent { position_id: local_id, supply: supply_map, supply_units: unit_map });
 
             // Return
-            (position_bucket, supply_units)
+            supply_units
         }
 
-        pub fn position_borrow(&mut self, position_bucket: NonFungibleBucket, debt: ValueMap) -> (NonFungibleBucket, Vec<Bucket>) {
+        /// Withdraws assets from a position's supply.
+        ///
+        /// # Arguments
+        /// * `position_node` - A proof of the position NFT.
+        /// * `units` - A `Bucket` of the supply units to withdraw.
+        /// * `requested` - An optional `Decimal` representing the maximum amount of assets to withdraw.
+        ///                 If not provided, the full amount will be withdrawn.
+        ///                 Otherwise, the unredeemed supply units are returned as change.
+        ///
+        /// # Returns
+        /// * A `Bucket` of leftover supply units if limited by `requested`.
+        /// * A `Bucket` of the withdrawn assets.
+        ///
+        /// # Panics
+        /// * If the `position_node` is invalid (see `__validate_position`).
+        /// * If the `units` bucket is empty.
+        /// * If the operation puts the position in an invalid state (health below 1.0).
+        ///
+        /// # Events
+        /// * Emits a `PositionWithdrawEvent` on successful withdrawal
+        pub fn position_withdraw(&mut self, position_node: NonFungibleProof, mut units: Bucket, requested: Option<Decimal>) -> (Bucket, Bucket) {
             // Sanity checks
-            assert!(self.__validate_position(&position_bucket), "Invalid position NFT");
+            let (mut position, local_id) = self.__validate_position(position_node);
+            info!("[position_supply] Position: {:#?}", position);
+
+            let unit_address = units.resource_address();
+            assert!(!units.is_empty(), "Bucket for {:?} is empty", unit_address);
+
+            // Get debt unit's source asset
+            let address = *self
+                .supply_unit_to_address
+                .get(&unit_address)
+                .expect(format!("Cannot get address for pool unit {:?}", unit_address).as_str());
+            let mut cluster = self.assets.get(&address).expect("Cannot get asset entry").cluster_wrapper.cluster;
+
+            // If requested is Some, limit the amount of units provided by the unit amount of requested
+            let requested_units: Decimal = if let Some(amount) = requested {
+                cluster.get_units(ClusterLayer::Supply, amount)
+            } else {
+                Decimal::MAX
+            };
+            let unit_amount: Decimal = units.amount().min(requested_units);
+
+            // Recalculate supply
+            position.update_supply(&HashMap::from([(address, unit_amount.checked_mul(dec!(-1)).unwrap())]));
+
+            // Withdraw from cluster
+            let withdrawn = cluster.withdraw(units.take(unit_amount));
+
+            // Ensure that operation won't put position health below 1.0
+            let health = self.calculate_health_from_units(position.supply.clone(), position.debt.clone());
+            assert!(health >= dec!(1.0), "Position health will be below 1.0. Reverting operation");
+
+            // Update NFT data
+            self.position_manager.update_non_fungible_data(&local_id, "supply", position.supply);
+
+            // Fire position withdraw event
+            // Runtime::emit_event(PositionWithdrawEvent {
+            //     position_id: local_id.clone(),
+            //     supply_unit: (supply_unit_address, supply_unit_amount),
+            //     withdraw: (address, withdrawn.amount().into()),
+            // });
+
+            (units, withdrawn)
+        }
+
+        //# ---------------- Debt Layer ---------------- /
+
+        /// Borrows resources against supply.
+        ///
+        /// Borrows resources from their corresponding clusters and updates the position NFT accordingly.
+        /// The operation keeps the position's health above 1.0.
+        ///
+        /// # Arguments
+        /// * `position_node` - A proof of the position NFT.
+        /// * `debt` - A `ValueMap` of the assets to borrow.
+        ///
+        /// # Returns
+        /// * A vector of `Bucket`s representing the borrowed resources.
+        ///
+        /// # Panics
+        /// * If the `position` is invalid (see `__validate_position`).
+        /// * If some borrowed resource is invalid (see `__validate_fungible`).
+        /// * If the maximum number of positions has been reached.
+        /// * If the operation would put the position health below 1.0.
+        pub fn position_borrow(&mut self, position_node: NonFungibleProof, debt: ValueMap) -> Vec<Bucket> {
+            // Sanity checks
+            let (mut position, local_id) = self.__validate_position(position_node);
+            info!("[position_supply] Position: {:#?}", position);
 
             for (&address, &amount) in &debt {
                 assert!(amount > dec!(0.0), "Borrow amount must be greater than 0");
                 assert!(self.__validate_fungible(address), "Asset with address {:?} is invalid", address);
             }
-
-            // Fetch NFT data
-            let local_id = position_bucket.non_fungible_local_id();
-            let mut position: Position = position_bucket.as_non_fungible().non_fungible::<Position>().data();
-            info!("[position_borrow] Position: {:#?}", position);
 
             // Borrow from clusters
             let mut borrowed: Vec<Bucket> = Vec::new();
@@ -354,118 +493,77 @@ mod lattic3 {
             // Runtime::emit_event(PositionBorrowEvent { position_id: local_id, debt, debt_units });
 
             // Return borrowed resources
-            (position_bucket, borrowed)
+            borrowed
         }
 
-        pub fn position_withdraw(&mut self, position_bucket: NonFungibleBucket, supply_units: Bucket) -> (NonFungibleBucket, Bucket) {
+        /// Repays debt for a position.
+        ///
+        /// Repays resources against borrowed resources and updates the position NFT accordingly.
+        /// The operation keeps the position's health above 1.0.
+        ///
+        /// # Arguments
+        /// * `position_node` - A proof of the position NFT.
+        /// * `repayment` - A `Bucket` of the resources to repay.
+        /// * `requested` - An optional `Decimal` representing the maximum amount of resources to repay.
+        ///                 If not provided, the full amount will be repaid.
+        ///                 Otherwise, the unredeemed supply units are returned as change.
+        ///
+        /// # Returns
+        /// * A `Bucket` of leftover repayment units if limited by `requested`.
+        ///
+        /// # Panics
+        /// * If the `position` is invalid (see `__validate_position`).
+        /// * If some repayment resource is invalid (see `__validate_fungible`).
+        /// * If the operation would put the position health below 1.0.
+        ///
+        /// # Events
+        /// * Emits a `PositionRepayEvent` on successful repayment
+        pub fn position_repay(&mut self, position_node: NonFungibleProof, mut repayment: Bucket, requested: Option<Decimal>) -> Bucket {
             // Sanity checks
-            assert!(self.__validate_position(&position_bucket), "Invalid position NFT");
+            let (mut position, local_id) = self.__validate_position(position_node);
+            info!("[position_supply] Position: {:#?}", position);
 
-            let supply_unit_address = supply_units.resource_address();
-            let supply_unit_amount: Decimal = supply_units.amount();
-            assert!(!supply_units.is_empty(), "Bucket for {:?} is empty", supply_unit_address);
-
-            // Fetch NFT data
-            let local_id = position_bucket.non_fungible_local_id();
-            let mut position: Position = position_bucket.as_non_fungible().non_fungible::<Position>().data();
-            info!("[position_withdraw] Position: {:#?}", position);
-
-            // Get debt unit's source asset
-            let address = *self
-                .supply_unit_to_address
-                .get(&supply_unit_address)
-                .expect(format!("Cannot get address for pool unit {:?}", supply_unit_address).as_str());
-
-            // Recalculate supply
-            position.update_supply(&HashMap::from([(address, supply_unit_amount.checked_mul(dec!(-1)).unwrap())]));
-
-            // Ensure that operation won't put position health below 1.0
-            let health = self.calculate_health_from_units(position.supply.clone(), position.debt.clone());
-            assert!(health >= dec!(1.0), "Position health will be below 1.0. Reverting operation");
-
-            // Withdraw from cluster
-            let withdrawn = self
-                .assets
-                .get_mut(&address)
-                .expect("Cannot get asset entry")
-                .cluster_wrapper
-                .cluster
-                .withdraw(supply_units);
-
-            // Fire position withdraw event
-            // Runtime::emit_event(PositionWithdrawEvent {
-            //     position_id: local_id.clone(),
-            //     supply_unit: (supply_unit_address, supply_unit_amount),
-            //     withdraw: (address, withdrawn.amount().into()),
-            // });
-
-            // Update NFT data or burn if empty
-            if position.supply.is_empty() && position.debt.is_empty() {
-                self.close_position(position_bucket);
-                return (NonFungibleBucket::new(self.position_manager.address()), withdrawn);
-            }
-
-            self.position_manager.update_non_fungible_data(&local_id, "supply", position.supply);
-
-            (position_bucket, withdrawn)
-        }
-
-        pub fn position_repay(&mut self, position_bucket: NonFungibleBucket, mut debt: Bucket) -> (NonFungibleBucket, Bucket) {
-            // Sanity checks
-            assert!(self.__validate_position(&position_bucket), "Invalid position NFT");
-
-            // Fetch NFT data
-            let local_id = position_bucket.non_fungible_local_id();
-            let mut position: Position = position_bucket.as_non_fungible().non_fungible::<Position>().data();
-            info!("[position_repay] Position: {:#?}", position);
-
-            let address = debt.resource_address();
-            let amount = debt.amount();
+            let address = repayment.resource_address();
 
             // Ensure repayment is valid
-            assert!(!debt.is_empty(), "Bucket for {:?} is empty", address);
+            assert!(!repayment.is_empty(), "Bucket for {:?} is empty", address);
             assert!(position.debt.contains_key(&address), "Asset {:?} not borrowed", address);
 
             // Convert debt to debt units
-            let asset = self.assets.get(&address).expect("Cannot get asset entry");
-            let debt_units = asset.cluster_wrapper.cluster.get_units(ClusterLayer::Debt, amount);
+            let mut cluster = self.assets.get(&address).expect("Cannot get asset entry").cluster_wrapper.cluster;
 
-            let repay_units = debt_units.min(*position.debt.get(&address).unwrap()); // Calculate amount of debt units to be repaid
-            let repay_amount = asset.cluster_wrapper.cluster.get_value(ClusterLayer::Debt, repay_units); // Convert debt units to debt amount
+            // Limit repayment amount by the requested amount, and by the debt owed to prevent overpayment
+            let debt = cluster.get_amount(ClusterLayer::Debt, *position.debt.get(&address).expect("Asset not borrowed"));
+            let repay_amount = repayment.amount().min(debt).min(requested.unwrap_or(Decimal::MAX));
 
-            info!(
-                "asset: {:?} | amount: {:?} | units: {:?} | repay_units: {:?} | repay_amount: {:?}",
-                address, amount, debt_units, repay_units, repay_amount
-            );
-
-            drop(asset); // ! Temporary fix until a better cluster management system is implemented
+            // Execute repayment
+            let repay_units = cluster.repay(repayment.take(repay_amount));
 
             // Recalculate debt
             position.update_debt(&HashMap::from([(address, repay_units.checked_mul(dec!(-1)).unwrap())]));
 
-            // Execute repayment
-            self.assets
-                .get_mut(&address)
-                .expect("Cannot get asset entry")
-                .cluster_wrapper
-                .cluster
-                .repay(debt.take(repay_amount));
-
             // Fire position repay event
             // Runtime::emit_event(PositionRepayEvent { position_id: local_id.clone(), repay: (address, amount) });
 
-            // Update NFT data or burn if empty
-            if position.supply.is_empty() && position.debt.is_empty() {
-                self.close_position(position_bucket);
-                return (NonFungibleBucket::new(self.position_manager.address()), debt);
-            }
-
+            // Update NFT data
             self.position_manager.update_non_fungible_data(&local_id, "debt", position.debt);
 
-            (position_bucket, debt)
+            repayment
         }
 
-        // Internal position methods
+        /// Retrieves the health of a specified position.
+        ///
+        /// This function calculates the health of a given position using its supply and debt data
+        /// by invoking the `calculate_health_from_units` method.
+        ///
+        /// # Arguments
+        /// * `position_proof` - A proof of the position NFT used to verify and fetch the position data.
+        ///
+        /// # Returns
+        /// * The health of the position as a `Decimal`.
+        ///
+        /// # Panics
+        /// * If the `position_proof` is invalid.
         pub fn get_position_health(&mut self, position_proof: NonFungibleProof) -> Decimal {
             // Sanity checks
             let position: Position = position_proof
@@ -479,6 +577,19 @@ mod lattic3 {
             health
         }
 
+        /// Calculates the health of a position based from its supply and debt.
+        ///
+        /// <div class="warning">This function ticks the interest on all clusters in the position, and is therefore expensive.</div>
+        ///
+        /// # Arguments
+        /// * `supply_units` - A `ValueMap` of the supplied asset units.
+        /// * `debt_units` - A `ValueMap` of the borrowed asset units.
+        ///
+        /// # Returns
+        /// * The health of the position as a `Decimal`.
+        ///
+        /// # Events
+        /// * This function emits a `PositionHealthEvent` on successful health calculation.
         pub fn calculate_health_from_units(&mut self, supply_units: ValueMap, debt_units: ValueMap) -> Decimal {
             // Return 'infinity' if no debt taken out
             if debt_units.is_empty() {
@@ -504,7 +615,7 @@ mod lattic3 {
                         .unwrap()
                         .cluster_wrapper
                         .cluster
-                        .get_value(ClusterLayer::Supply, unit_amount);
+                        .get_amount(ClusterLayer::Supply, unit_amount);
                     info!("Supply {:?}; units: {:?} -> amount: {:?}", address, unit_amount, amount);
                     (address, amount)
                 })
@@ -523,7 +634,7 @@ mod lattic3 {
                         .unwrap()
                         .cluster_wrapper
                         .cluster
-                        .get_value(ClusterLayer::Debt, unit_amount);
+                        .get_amount(ClusterLayer::Debt, unit_amount);
                     info!("Debt {:?}; units: {:?} -> amount: {:?}", address, unit_amount, amount);
                     (address, amount)
                 })
@@ -554,7 +665,8 @@ mod lattic3 {
             health
         }
 
-        //. --------------- Asset Listing -------------- /
+        //] --------------- Asset Listing -------------- /
+
         /// Add a fungible asset into the market, and output a FungibleAsset struct
         pub fn add_asset(&mut self, address: ResourceAddress) {
             info!("[add_asset] Adding asset: {:?}", address);
@@ -624,7 +736,7 @@ mod lattic3 {
             }
         }
 
-        //. ---------- Price Stream Management --------- /
+        //] ---------- Price Stream Management --------- /
         pub fn link_price_stream(&mut self, price_stream_address: ComponentAddress) {
             self.price_stream_address = Some(price_stream_address);
         }
@@ -633,7 +745,8 @@ mod lattic3 {
             self.price_stream_address = None;
         }
 
-        //. -------------- Utility Methods ------------- /
+        //] -------------- Utility Methods ------------- /
+
         /// Checks that the given asset is generally valid, is in the asset_list, and has a corresponding vault
         fn __validate_fungible(&self, address: ResourceAddress) -> bool {
             if !address.is_fungible() {
@@ -677,6 +790,8 @@ mod lattic3 {
 
         /// Checks that all resources provided in the buckets are valid and not empty
         fn __validate_buckets(&self, buckets: &Vec<Bucket>) -> bool {
+            assert!(!buckets.is_empty(), "Provided buckets are empty");
+
             for bucket in buckets {
                 if !self.__validate_bucket(bucket) {
                     return false;
@@ -686,7 +801,7 @@ mod lattic3 {
             true
         }
 
-        fn __validate_position(&self, position: &NonFungibleBucket) -> bool {
+        fn __validate_position_bucket(&self, position: &NonFungibleBucket) -> bool {
             if position.amount() != dec!(1) {
                 return false;
             }
@@ -696,6 +811,14 @@ mod lattic3 {
             }
 
             true
+        }
+
+        fn __validate_position(&self, position: NonFungibleProof) -> (Position, NonFungibleLocalId) {
+            let checked = position.check_with_message(self.position_manager.address(), "Position check failed");
+            let local_id = checked.non_fungible_local_id();
+            let position = checked.non_fungible::<Position>().data();
+
+            (position, local_id)
         }
 
         /// Calculates the USD values of all provided asset from the oracle

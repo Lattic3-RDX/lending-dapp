@@ -3,6 +3,7 @@ use crate::utils::ValueMap;
 use scrypto::prelude::*;
 
 /* ------------------- Badge ------------------ */
+// Position NFT
 #[derive(NonFungibleData, ScryptoSbor, Debug)]
 pub struct Position {
     #[mutable]
@@ -12,10 +13,21 @@ pub struct Position {
 }
 
 impl Position {
+    /// Initialises a new, empty `Position` struct.
     pub fn new() -> Self {
         Position { supply: ValueMap::new(), debt: ValueMap::new() }
     }
 
+    /// Updates the supply of the position based on the given `ValueMap`.
+    ///
+    /// Modifies the supply by adding to an entry if the given asset exists in the map,
+    /// or inserting a new one if it doesn't. If the amount is negative, it ensures
+    /// that the net result is non-negative, removing the entry if it becomes zero.
+    ///
+    /// # Panics
+    /// This function will panic if:
+    /// * A supply unit will have an amount <= 0.
+    /// * An entry in the passed `ValueMap` with an amount < 0, does not have an existing entry.
     pub fn update_supply(&mut self, supply: &ValueMap) {
         for (&address, &units) in supply {
             if units < dec!(0.0) {
@@ -53,6 +65,16 @@ impl Position {
         }
     }
 
+    /// Updates the debt of the position based on the given `ValueMap`.
+    ///
+    /// Modifies the debt by adding to an entry if the given asset exists in the map,
+    /// or inserting a new one if it doesn't. If the amount is negative, it ensures
+    /// that the net result is non-negative, removing the entry if it becomes zero.
+    ///
+    /// # Panics
+    /// This function will panic if:
+    /// * A debt unit will have an amount <= 0.
+    /// * An entry in the passed `ValueMap` with an amount < 0 does not have an existing entry.
     pub fn update_debt(&mut self, debt: &ValueMap) {
         for (&address, &units) in debt {
             if units < dec!(0.0) {

@@ -1,6 +1,7 @@
 /* ------------------ Imports ----------------- */
 import { marketComponent } from "@/lib/config.json";
-import { bn, math } from "@/lib/math";
+import { bn, m_bn, math } from "@/lib/math";
+import { gatewayApi } from "@/lib/radix";
 import { findField } from "@/lib/utils";
 import { BigNumber } from "mathjs";
 import type { NextRequest } from "next/server";
@@ -139,7 +140,14 @@ export async function GET(request: NextRequest) {
       math.smallerEq(bn(virtual_debt), 0) ? 1 : math.divide(bn(debt_units), bn(virtual_debt))
     ).toString();
 
-    const liquidity = math.subtract(bn(supply), bn(debt)).toString();
+    let liquidityVault = bn(-1);
+    if (!!gatewayApi) {
+      const clusterVaults = await gatewayApi.state.getEntityDetailsVaultAggregated(cluster_address);
+      liquidityVault = bn(clusterVaults.fungible_resources.items[0].vaults.items[0].amount);
+    }
+
+    const liquidityMath = math.subtract(bn(supply), bn(debt));
+    const liquidity = math.max(liquidityVault, m_bn(liquidityMath)).toString();
 
     const cluster_state = {
       cluster: cluster_address,

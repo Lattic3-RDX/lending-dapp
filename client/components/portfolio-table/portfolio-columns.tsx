@@ -2,7 +2,7 @@ import { useRadixContext } from "@/contexts/provider";
 import config from "@/lib/config.json";
 import position_repay_rtm from "@/lib/manifests/position_repay";
 import position_withdraw_rtm from "@/lib/manifests/position_withdraw";
-import { bn, m_bn, math, num } from "@/lib/math";
+import { bn, m_bn, math, num, round_dec } from "@/lib/math";
 import { gatewayApi, rdt } from "@/lib/radix";
 import {
   Asset,
@@ -39,7 +39,7 @@ function ActionCell({
   const { accounts } = useRadixContext();
 
   // Move all the handler logic here
-  const handleWithdraw = async (amount: BigNumber) => {
+  const handleWithdraw = async (amount: BigNumber, slippageMultiplier: BigNumber) => {
     try {
       if (!accounts || !gatewayApi) {
         toast({
@@ -88,10 +88,27 @@ function ActionCell({
       const supplyRecord: Record<AssetName, BigNumber> = {
         [row.original.label]: amount,
       } as Record<AssetName, BigNumber>;
-      let supplyUnits = await ammountToSupplyUnits(supplyRecord);
-      console.log("Supply units: ", supplyUnits.toString());
+
+      let supplyUnits = m_bn(math.multiply(await ammountToSupplyUnits(supplyRecord), slippageMultiplier));
       supplyUnits = m_bn(math.min(supplyUnits, supplyUnitBalance));
-      console.log("Supply units: ", supplyUnits.toString());
+
+      let supplyRequested = "None";
+      if (!math.equal(supplyUnits, supplyUnitBalance)) {
+        // Value of the supply units un-adjusted for slipapge
+        // ! Removed due to causing lower-than-expected estimation
+        // const supplyUnitValue = math.multiply(
+        //   await supplyUnitsToAmount({ [row.original.label]: supplyUnits } as Record<AssetName, BigNumber>),
+        //   math.subtract(2, slippageMultiplier),
+        // );
+
+        const supplyUnitValue = await supplyUnitsToAmount({ [row.original.label]: supplyUnits } as Record<
+          AssetName,
+          BigNumber
+        >);
+
+        console.log("Supply unit value:", supplyUnitValue.toString());
+        supplyRequested = math.min(amount, m_bn(supplyUnitValue)).toString();
+      }
 
       if (!getNFTBalance?.items?.[0]) {
         toast({
@@ -109,12 +126,9 @@ function ActionCell({
         position_badge_local_id: getNFTBalance.items[0],
         asset: {
           address: row.original.pool_unit_address ?? "",
-          amount: supplyUnits.toString(),
+          amount: round_dec(supplyUnits).toString(),
         },
-        required: {
-          address: row.original.address ?? "",
-          amount: amount.toString(),
-        },
+        requested: supplyRequested.toString(),
       });
 
       console.log("Manifest: ", manifest);
@@ -154,7 +168,7 @@ function ActionCell({
     }
   };
 
-  const handleRepay = async (amount: BigNumber) => {
+  const handleRepay = async (amount: BigNumber, slippageMultiplier: BigNumber) => {
     try {
       if (!accounts || !gatewayApi) {
         toast({
@@ -192,8 +206,10 @@ function ActionCell({
         return;
       }
       console.log("repaying", amount.toString(), row.original.label, row.original.wallet_balance.toString());
-      const debtAmount = m_bn(math.min(amount, row.original.wallet_balance));
+      const debtAmount = m_bn(math.min(m_bn(math.multiply(amount, slippageMultiplier)), row.original.wallet_balance));
       console.log("Debt amount:", debtAmount.toString());
+
+      const debtRequested = math.largerEq(debtAmount, row.original.select_native) ? "None" : round_dec(amount);
 
       const manifest = position_repay_rtm({
         component: marketComponent,
@@ -202,8 +218,9 @@ function ActionCell({
         position_badge_local_id: getNFTBalance.items[0],
         asset: {
           address: row.original.address,
-          amount: debtAmount.toString(),
+          amount: round_dec(debtAmount).toString(),
         },
+        requested: debtRequested.toString(),
       });
 
       console.log("Repay manifest:", manifest);

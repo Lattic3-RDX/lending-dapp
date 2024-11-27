@@ -1,8 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { ShootingStars } from "@/components/ui/shooting-stars";
-import { StarsBackground } from "@/components/ui/stars-background";
+import { BackgroundEffects } from "@/components/background-effects";
 import { FocusCards } from "@/components/ui/focus-cards";
 import { TypewriterEffectSmooth } from "@/components/ui/typewriter-effect";
 import { motion } from "framer-motion";
@@ -48,14 +47,7 @@ export default function Home() {
   return (
     <>
       <main className="flex min-h-screen flex-col items-center justify-center p-8 relative overflow-hidden">
-        {/* Background Effects */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="h-full w-full bg-background dark:bg-foreground bg-grid-slate-200/20 dark:bg-grid-slate-50/[0.2]" />
-          {/* Radial gradient overlay */}
-          <div className="absolute pointer-events-none inset-0 flex items-center justify-center bg-background dark:bg-black [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]" />
-          <ShootingStars />
-          <StarsBackground />
-        </div>
+        <BackgroundEffects />
 
         {/* Hero Section */}
         <div className="text-center space-y-6 relative z-10 max-w-3xl mx-auto mb-24">

@@ -45,13 +45,9 @@ export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm, mode
     setTempAmount(value);
     const numValue = bn(value == "" ? 0 : value);
 
-    if (!numValue.isNaN() && numValue > bn(0)) {
-      onAmountChange(numValue);
-    } else {
-      onAmountChange(bn(0));
-    }
-
-    validateAmount(value);
+    setTempAmount(numValue.toString());
+    onAmountChange(numValue);
+    validateAmount(numValue.toString());
   };
 
   const validateAmount = (value: string) => {
@@ -60,9 +56,9 @@ export function AssetCollapsibleContent({ asset, onAmountChange, onConfirm, mode
 
     if (numValue.isNaN()) {
       setError("Please enter a valid number");
-    } else if (numValue < bn(0)) {
+    } else if (math.smaller(numValue, 0)) {
       setError("Amount must be greater than or equal to 0");
-    } else if (numValue > maxAmount) {
+    } else if (math.larger(numValue, maxAmount)) {
       setError(`Amount cannot exceed ${maxAmount}`);
     } else {
       setError(null);

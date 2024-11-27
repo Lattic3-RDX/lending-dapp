@@ -22,8 +22,8 @@ export function StatisticsCard({ healthRatio, netWorth, netAPR, isLoading }: Sta
 
   if (isLoading) {
     return (
-      <Card className="bg-gradient-to-br from-background via-accent/5 to-background border border-accent/10">
-        <CardContent className="flex justify-center items-center min-h-[200px]">
+      <Card className="bg-background/50 backdrop-blur-sm">
+        <CardContent className="flex justify-center items-center min-h-[160px]">
           <LoadingSpinner />
         </CardContent>
       </Card>
@@ -31,39 +31,59 @@ export function StatisticsCard({ healthRatio, netWorth, netAPR, isLoading }: Sta
   }
 
   return (
-    <Card className="bg-gradient-to-br from-background via-accent/5 to-background border border-accent/10">
-      <CardContent className="p-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="group flex flex-col items-center p-6 rounded-lg bg-background/50 border border-accent/10">
-            <div className="text-2xl font-semibold leading-none tracking-tight">
+    <Card className="bg-background/50 backdrop-blur-sm">
+      <CardContent className="p-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Health Ratio Card */}
+          <div className="flex flex-col p-4 rounded-xl bg-background border border-accent/20">
+            <div className="text-sm font-medium text-foreground mb-3">
               Health Ratio
             </div>
-            <div className={`text-4xl font-bold transition-colors duration-300 ${
-              healthRatio < 1.5 && healthRatio !== -1 && healthRatio !== Infinity
-                ? 'text-destructive' 
-                : 'text-emerald-500'
-            } `}>
-              {formattedHealthRatio}
+            <div className="flex items-center justify-between">
+              <div className="text-3xl font-bold text-foreground">
+                {formattedHealthRatio}
+              </div>
+              <span className={`px-2 py-1 text-xs rounded-full ${
+                healthRatio < 1.5 && healthRatio !== -1 && healthRatio !== Infinity
+                  ? 'bg-red-100 text-red-700' 
+                  : 'bg-green-100 text-green-700'
+              }`}>
+                {healthRatio < 1.5 ? 'At Risk' : 'Safe'}
+              </span>
             </div>
           </div>
 
-          <div className="group flex flex-col items-center p-6 rounded-lg border border-accent/10">
-            <div className="text-2xl font-semibold leading-none tracking-tight">
+          {/* Net Worth Card */}
+          <div className="flex flex-col p-4 rounded-xl bg-background border border-accent/20">
+            <div className="text-sm font-medium text-foreground mb-3">
               Net Worth
             </div>
-            <div className="text-4xl font-bold text-foreground 0">
-              {formatCurrency(netWorth)}
+            <div className="flex items-center justify-between">
+              <div className="text-3xl font-bold text-foreground">
+                {formatCurrency(netWorth)}
+              </div>
+              <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700">
+                USD
+              </span>
             </div>
           </div>
 
-          <div className="group flex flex-col items-center p-6 rounded-lg bg-background/50 border border-accent/10">
-            <div className="text-2xl font-semibold leading-none tracking-tight">
+          {/* Net APR Card */}
+          <div className="flex flex-col p-4 rounded-xl bg-background border border-accent/20">
+            <div className="text-sm font-medium text-foreground mb-3">
               Net APR
             </div>
-            <div className={`text-4xl font-bold transition-colors duration-300 ${
-              netAPR > 0 ? 'text-emerald-500' : 'text-destructive'
-            }`}>
-              {netAPR.toFixed(1)}%
+            <div className="flex items-center justify-between">
+              <div className="text-3xl font-bold text-foreground">
+                {netAPR.toFixed(1)}%
+              </div>
+              <span className={`px-2 py-1 text-xs rounded-full ${
+                netAPR > 0 
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-red-100 text-red-700'
+              }`}>
+                {netAPR > 0 ? 'Earning' : 'Paying'}
+              </span>
             </div>
           </div>
         </div>

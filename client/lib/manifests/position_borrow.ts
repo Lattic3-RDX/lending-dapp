@@ -22,36 +22,45 @@ export default function position_borrow_rtm({
 }: ManifestArgs) {
   // Bucket fetch transaction manifests
   let asset_entry = "";
+  // Manual 'deposit' call for each asset
+  let asset_deposit = "";
 
   assets.forEach((asset) => {
     // Get hashmap entry for the asset
     asset_entry += `
     Address("${asset.address}") => Decimal("${asset.amount}"),`;
+
+    asset_deposit += `
+TAKE_FROM_WORKTOP
+    Address("${asset.address}")
+    Decimal("${asset.amount}")
+    Bucket("bucket_${asset.address}");
+
+CALL_METHOD
+    Address("${account}")
+    "deposit"
+    Bucket("bucket_${asset.address}");
+`;
   });
 
   const rtm = `
 CALL_METHOD
     Address("${account}")
-    "withdraw_non_fungibles"
+    "create_proof_of_non_fungibles"
     Address("${position_badge_address}")
     Array<NonFungibleLocalId>(NonFungibleLocalId("${position_badge_local_id}"));
 
-TAKE_NON_FUNGIBLES_FROM_WORKTOP
-    Address("${position_badge_address}")
-    Array<NonFungibleLocalId>(NonFungibleLocalId("${position_badge_local_id}"))
-    Bucket("position_badge");
+POP_FROM_AUTH_ZONE
+    Proof("position_proof");
 
 CALL_METHOD
   Address("${component}")
   "position_borrow"
-  Bucket("position_badge")
+  Proof("position_proof")
   Map<Address, Decimal>(${asset_entry}
   );
 
-CALL_METHOD
-  Address("${account}")
-  "deposit_batch"
-  Expression("ENTIRE_WORKTOP");
+${asset_deposit}
 `;
 
   return rtm;

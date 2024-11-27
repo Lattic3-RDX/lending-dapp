@@ -46,21 +46,19 @@ TAKE_FROM_WORKTOP
   const rtm = `
 CALL_METHOD
     Address("${account}")
-    "withdraw_non_fungibles"
+    "create_proof_of_non_fungibles"
     Address("${position_badge_address}")
     Array<NonFungibleLocalId>(NonFungibleLocalId("${position_badge_local_id}"));
 
-TAKE_NON_FUNGIBLES_FROM_WORKTOP
-    Address("${position_badge_address}")
-    Array<NonFungibleLocalId>(NonFungibleLocalId("${position_badge_local_id}"))
-    Bucket("position_badge");
+POP_FROM_AUTH_ZONE
+    Proof("position_proof");
 
 ${asset_buckets}
 
 CALL_METHOD
   Address("${component}")
   "position_supply"
-  Bucket("position_badge")
+  Proof("position_proof")
   Array<Bucket>(${bucket_vec});
 
 CALL_METHOD

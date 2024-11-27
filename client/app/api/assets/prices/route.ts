@@ -6,7 +6,7 @@ import type { NextRequest } from "next/server";
 /* ------------------- Setup ------------------ */
 // Force caching
 export const dynamic = "force-dynamic";
-export const revalidate = 20;
+export const revalidate = 30;
 
 /* ----------------- Endpoints ---------------- */
 /// Get price stream data for all assets
